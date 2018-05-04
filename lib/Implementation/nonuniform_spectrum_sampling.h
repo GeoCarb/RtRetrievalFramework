@@ -36,6 +36,11 @@ public:
      const SpectralDomain& Grid2,
      const SpectralDomain& Grid3,
      const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
+  NonuniformSpectrumSampling(const SpectralDomain& Grid1,
+     const SpectralDomain& Grid2,
+     const SpectralDomain& Grid3,
+     const SpectralDomain& Grid4,
+     const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
 
   NonuniformSpectrumSampling(const HeritageFile& Grid_file,
      const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
@@ -43,12 +48,22 @@ public:
      const HeritageFile& Grid_file2,
      const HeritageFile& Grid_file3,
      const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
+  NonuniformSpectrumSampling(const HeritageFile& Grid_file1,
+     const HeritageFile& Grid_file2,
+     const HeritageFile& Grid_file3,
+     const HeritageFile& Grid_file4,
+     const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
 
   NonuniformSpectrumSampling(const std::string& Grid_file,
      const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
   NonuniformSpectrumSampling(const std::string& Grid_file1,
      const std::string& Grid_file2,
      const std::string& Grid_file3,
+     const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
+  NonuniformSpectrumSampling(const std::string& Grid_file1,
+     const std::string& Grid_file2,
+     const std::string& Grid_file3,
+     const std::string& Grid_file4,
      const boost::shared_ptr<SpectrumSampling>& Interpolated_sampling);
 
 

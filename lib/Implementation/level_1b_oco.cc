@@ -268,6 +268,9 @@ SpectralRange Level1bOco::radiance_no_uncertainty(int Spec_index) const
   case 2:
     field = "SoundingMeasurements/radiance_strong_co2";
     break;
+  case 3:
+    field = "SoundingMeasurements/radiance_ch4";
+    break;
   default:
     throw Exception("Unrecognized Spec_Index");
   }
@@ -309,6 +312,9 @@ bool Level1bOco::has_spike_eof(int Spec_index) const
   case 2:
     field = "SpikeEOF/spike_eof_weighted_residual_strong_co2";
     break;
+  case 3:
+    field = "SpikeEOF/spike_eof_weighted_residual_ch4";
+    break;
   default:
     throw Exception("Unrecognized Spec_Index");
   }
@@ -338,6 +344,9 @@ blitz::Array<double, 1> Level1bOco::spike_eof(int Spec_index) const
     break;
   case 2:
     field = "SpikeEOF/spike_eof_weighted_residual_strong_co2";
+    break;
+  case 3:
+    field = "SpikeEOF/spike_eof_weighted_residual_ch4";
     break;
   default:
     throw Exception("Unrecognized Spec_Index");
