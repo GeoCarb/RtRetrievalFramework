@@ -908,7 +908,7 @@ function ConfigCommon:reference_co2_apriori_met_obj()
         self.ref_co2_ap_obj = GasVmrApriori(self.met, self.l1b, self.altitude:value(0), self:h(), "/Reference_Atmosphere", "CO2")
     end
 
-    return self.ref_co2_ap_obj 
+    return self.ref_co2_ap_obj
 end
 
 ------------------------------------------------------------
@@ -917,6 +917,69 @@ end
 
 function ConfigCommon:reference_co2_apriori_met_apriori()
    local t = self.config:reference_co2_apriori_met_obj()
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
+--- Load the H2O VMR object
+------------------------------------------------------------
+
+function ConfigCommon:reference_h2o_apriori_met_obj()
+    if (not self.ref_h2o_ap_obj) then
+        self.ref_h2o_ap_obj = GasVmrApriori(self.met, self.l1b, self.altitude:value(0), self:h(), "/Reference_Atmosphere", "H2O")
+    end
+
+    return self.ref_h2o_ap_obj
+end
+
+------------------------------------------------------------
+--- Get h2o apriori using reference apriori method
+------------------------------------------------------------
+
+function ConfigCommon:reference_h2o_apriori_met_apriori()
+   local t = self.config:reference_h2o_apriori_met_obj()
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
+--- Load the CH4 VMR object
+------------------------------------------------------------
+
+function ConfigCommon:reference_ch4_apriori_met_obj()
+    if (not self.ref_ch4_ap_obj) then
+        self.ref_ch4_ap_obj = GasVmrApriori(self.met, self.l1b, self.altitude:value(0), self:h(), "/Reference_Atmosphere", "CH4")
+    end
+
+    return self.ref_ch4_ap_obj
+end
+
+------------------------------------------------------------
+--- Get ch4 apriori using reference apriori method
+------------------------------------------------------------
+
+function ConfigCommon:reference_ch4_apriori_met_apriori()
+   local t = self.config:reference_ch4_apriori_met_obj()
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
+--- Load the CO VMR object
+------------------------------------------------------------
+
+function ConfigCommon:reference_co_apriori_met_obj()
+    if (not self.ref_co_ap_obj) then
+        self.ref_co_ap_obj = GasVmrApriori(self.met, self.l1b, self.altitude:value(0), self:h(), "/Reference_Atmosphere", "CO")
+    end
+
+    return self.ref_co_ap_obj
+end
+
+------------------------------------------------------------
+--- Get co apriori using reference apriori method
+------------------------------------------------------------
+
+function ConfigCommon:reference_co_apriori_met_apriori()
+   local t = self.config:reference_co_apriori_met_obj()
    return t:apriori_vmr(self.config.pressure)
 end
 
