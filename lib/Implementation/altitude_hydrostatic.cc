@@ -10,8 +10,10 @@ REGISTER_LUA_DERIVED_CLASS(AltitudeHydrostatic, Altitude)
 .def(luabind::constructor<const boost::shared_ptr<Pressure>&,
      const boost::shared_ptr<Temperature>&,
      DoubleWithUnit, DoubleWithUnit>())
+.def(luabind::constructor<const boost::shared_ptr<Pressure>&,
+     const boost::shared_ptr<Temperature>&,
+     DoubleWithUnit, DoubleWithUnit, const int>())
 REGISTER_LUA_END()
-
 #endif
 
 

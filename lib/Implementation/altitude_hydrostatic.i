@@ -15,11 +15,16 @@ class AltitudeHydrostatic : public Altitude {
 public:
   AltitudeHydrostatic(const boost::shared_ptr<Pressure>& P,
 		      const boost::shared_ptr<Temperature>& T,
-		      const DoubleWithUnit& Latitude, 
+		      const DoubleWithUnit& Latitude,
 		      const DoubleWithUnit& Surface_height);
-  virtual AutoDerivativeWithUnit<double> 
+  AltitudeHydrostatic(const boost::shared_ptr<Pressure>& P,
+		      const boost::shared_ptr<Temperature>& T,
+		      const DoubleWithUnit& Latitude,
+		      const DoubleWithUnit& Surface_height,
+                      const int Num_sublayer = 10);
+  virtual AutoDerivativeWithUnit<double>
   altitude(const AutoDerivativeWithUnit<double>& P) const;
-  virtual AutoDerivativeWithUnit<double> 
+  virtual AutoDerivativeWithUnit<double>
   gravity(const AutoDerivativeWithUnit<double>& P) const;
   virtual void notify_update(const Pressure& P);
   virtual void notify_update(const Temperature& T);
