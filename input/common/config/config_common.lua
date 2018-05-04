@@ -2815,8 +2815,14 @@ function ConfigCommon.hydrostatic_altitude:create()
    local res = VectorAltitude()
    local c = self.config
    for i=0,c.l1b:number_spectrometer() - 1 do
-      local alts = AltitudeHydrostatic(c.pressure, c.temperature, 
-               c.l1b:latitude(i), c.l1b:altitude(i))
+      local alts
+      if self.number_sub_layers then
+         alts = AltitudeHydrostatic(c.pressure, c.temperature,
+            c.l1b:latitude(i), c.l1b:altitude(i), self.number_sub_layers)
+      else
+         alts = AltitudeHydrostatic(c.pressure, c.temperature,
+            c.l1b:latitude(i), c.l1b:altitude(i))
+      end
       res:push_back(alts)
    end
    return res
