@@ -14,7 +14,13 @@ public:
   OcoSimApriori(const std::string& Oco_sim_scene,
 		const HdfSoundingId& Sid);
   double co2_vmr(double P) const;
+  blitz::Array<double, 1> pressure_levels() const;
+  blitz::Array<double, 1> h2o_vmr_grid(const Pressure& P) const;
+  blitz::Array<double, 1> o2_vmr_grid(const Pressure& P) const;
   blitz::Array<double, 1> co2_vmr_grid(const Pressure& P) const;
+  blitz::Array<double, 1> ch4_vmr_grid(const Pressure& P) const;
+  blitz::Array<double, 1> co_vmr_grid(const Pressure& P) const;
+  blitz::Array<double, 1> surface_albedo(int i) const;
   std::string print_to_string() const;
 };
 }
