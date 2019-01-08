@@ -3,7 +3,7 @@ module l_rad_driver_wrap
   use constants
   implicit none
   integer, parameter :: nfine = 3 ! actual number of fine layers
-  integer, parameter :: maxfine = 3 ! maximum number of fine layers
+  integer, parameter :: maxfine = 11 ! maximum number of fine layers
   integer, parameter :: nphibrdf = 50
   double precision, parameter :: dtor = PI/180.d0
   double precision, parameter :: Acrit = 1.d-10
