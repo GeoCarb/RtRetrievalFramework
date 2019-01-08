@@ -10,7 +10,7 @@ implicit none
 
 ! Links to module: "lidort_pars" in file: "lidort_pars.F90.in"
 type, bind(c) :: lidort_pars_c
-  character(kind=c_char, len=3) :: lidort_version_number
+  character(kind=c_char) :: lidort_version_number(3)
   integer(c_int) :: lidort_inunit
   integer(c_int) :: lidort_scenunit
   integer(c_int) :: lidort_funit
