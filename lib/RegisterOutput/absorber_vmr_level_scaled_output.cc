@@ -33,6 +33,9 @@ void AbsorberVmrLevelScaledOutput::register_output_apriori(const boost::shared_p
   std::string gname = a->gas_name();
   boost::to_lower(gname);
   out->register_data_source
+    ("/RetrievalResults/" + gname + "_profile_apriori", 
+     &AbsorberVmrScaled::vmr_profile, afreeze);
+  out->register_data_source
     ("/RetrievalResults/" + gname + "_scale_factor_apriori", 
      &AbsorberVmrScaled::scale_factor, afreeze);
 }
