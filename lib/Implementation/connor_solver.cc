@@ -10,13 +10,41 @@ using namespace blitz;
 
 #ifdef HAVE_LUA
 #include "register_lua.h"
+// Luabind is restricted to 10 arguments in a function. The
+// constructor for MerraAerosol takes too many. As an easy
+// workaround, just stuff a number of the values into an array.
+boost::shared_ptr<ConnorSolver> connor_solver_create(
+  const boost::shared_ptr<CostFunction>& Cf,
+  const boost::shared_ptr<ConvergenceCheck>& Conv,
+  double Gamma_initial,
+  const blitz::Array<double, 1>& val)
+{
+  return boost::shared_ptr<ConnorSolver>
+    (new ConnorSolver(Cf, Conv, Gamma_initial,
+		      val(0), val(1),
+                      val(2), val(3),
+                      val(4), val(5)));
+}
+boost::shared_ptr<ConnorSolver> connor_solver_create2(
+  const boost::shared_ptr<CostFunction>& Cf,
+  const boost::shared_ptr<ConvergenceCheck>& Conv,
+  double Gamma_initial,
+  const blitz::Array<double, 1>& val,
+  const std::string& Save_test_data = "")
+{
+  return boost::shared_ptr<ConnorSolver>
+    (new ConnorSolver(Cf, Conv, Gamma_initial,
+		      val(0), val(1),
+                      val(2), val(3),
+                      val(4), val(5),
+                      Save_test_data));
+}
 REGISTER_LUA_CLASS(ConnorSolver)
-.def(luabind::constructor<const boost::shared_ptr<CostFunction>&,
-			  const boost::shared_ptr<ConvergenceCheck>&,
-			  double>())
-.def(luabind::constructor<const boost::shared_ptr<CostFunction>&,
-			  const boost::shared_ptr<ConvergenceCheck>&,
-			  double, std::string>())
+.scope
+[
+ luabind::def("create", &connor_solver_create),
+ luabind::def("create", &connor_solver_create2)
+]
 REGISTER_LUA_END()
 #endif
 
@@ -150,12 +178,12 @@ void ConnorSolver::from_stream(std::istream& is)
 bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
 			 const blitz::Array<double, 1>& Apriori, 
 			 const blitz::Array<double, 2>& Apriori_cov)
-
 {
   using namespace blitz;
   firstIndex i1; secondIndex i2;
-  
+
 // Check for consistent data.
+
   if(Initial_guess.rows() != Apriori.rows())
     throw Exception("Intitial guess and Apriori must be the same size");
   if(Apriori.rows() != Apriori_cov.rows() ||
@@ -170,8 +198,22 @@ bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
   sigma_ap = sqrt(Apriori_cov(i1, i1));
   gamma = gamma_initial;
 
+  double h2o_scale_cov_save;
+  double ch4_scale_cov_save;
+  double co_scale_cov_save;
+  blitz::Array<double, 2> apriori_cov_copy;
+
   apriori_cov_scaled.resize(Apriori_cov.shape());
-  apriori_cov_scaled = Apriori_cov(i1, i2) / (sigma_ap(i1) * sigma_ap(i2));
+
+  apriori_cov_copy.resize(Apriori_cov.rows(),Apriori_cov.rows());
+  apriori_cov_copy.reference(Apriori_cov.copy());
+
+  if (h2o_scale_index >= 0)
+    h2o_scale_cov_save = Apriori_cov(h2o_scale_index,h2o_scale_index);
+  if (ch4_scale_index >= 0)
+    ch4_scale_cov_save = Apriori_cov(ch4_scale_index,ch4_scale_index);
+  if (co_scale_index >= 0)
+    co_scale_cov_save  = Apriori_cov(co_scale_index,co_scale_index);
 
 // Do Levenberg-Marquardt solution.
 
@@ -183,31 +225,54 @@ bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
   Array<double, 2> k_last;
   FitStatistic fstat_last;
   bool first = true;
-  while(!has_converged) {
+
+  while (! has_converged) {
+    if (h2o_scale_index >= 0) {
+      if (fstat.number_iteration == 0)
+        apriori_cov_copy(h2o_scale_index,h2o_scale_index) = h2o_scale_cov_initial;
+      else
+        apriori_cov_copy(h2o_scale_index,h2o_scale_index) = h2o_scale_cov_save;
+    }
+    if (ch4_scale_index >= 0) {
+      if (fstat.number_iteration == 0)
+        apriori_cov_copy(ch4_scale_index,ch4_scale_index) = ch4_scale_cov_initial;
+      else
+        apriori_cov_copy(ch4_scale_index,ch4_scale_index) = ch4_scale_cov_save;
+    }
+    if (co_scale_index >= 0) {
+      if (fstat.number_iteration == 0 || fstat.number_iteration == 1)
+        apriori_cov_copy(co_scale_index,co_scale_index) = co_scale_cov_initial;
+      else
+        apriori_cov_copy(co_scale_index,co_scale_index) = co_scale_cov_save;
+    }
+
+    sigma_ap = sqrt(apriori_cov_copy(i1, i1));
+    apriori_cov_scaled = apriori_cov_copy(i1, i2) / (sigma_ap(i1) * sigma_ap(i2));
+
     fstat.number_iteration += 1;
     cost_function()->cost_function(x_i, residual_, se, k);
     // To aid in testing, save state if requested.
-    if(first && save_test_data_ != "") {
+    if (first && save_test_data_ != "") {
       std::ofstream save(save_test_data_.c_str());
       save.precision(12);
       to_stream(save);
     }
     first = false;
     do_inversion();
-    
+
     bool step_diverged, convergence_failed;
     gamma_last_step_ = gamma;
     convergence_check()->convergence_check(fstat_last, fstat,
 					 has_converged,
 					 convergence_failed,
 					 gamma, step_diverged);
-    if(convergence_failed) {	// Return failure to converge if check
+    if (convergence_failed) {	// Return failure to converge if check
 				// tells us to.
       fstat.fit_succeeded = false;
       notify_update_do(*this);
       return false;
     }
-    if(step_diverged) {
+    if (step_diverged) {
       // Redo last step, but with new gamma calculated by
       // convergence_test
       x_i.resize(x_i_last.shape());

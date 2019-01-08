@@ -27,6 +27,12 @@ public:
   ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
 	       const boost::shared_ptr<ConvergenceCheck>& Conv,
 	       double Gamma_initial = 0.0,
+	       int H2O_scale_index = -1,
+	       double H2O_scale_cov_initial = 0.0,
+	       int CO_scale_index = 0,
+	       double CO_scale_cov_initial = 0.0,
+	       int CH_scale_index = 0,
+	       double CH4_scale_cov_initial = 0.0,
 	       const std::string& Save_test_data = "");
   virtual void add_observer(Observer<ConnorSolver>& Obs);
   virtual void remove_observer(Observer<ConnorSolver>& Obs);

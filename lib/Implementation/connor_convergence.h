@@ -14,8 +14,8 @@ namespace FullPhysics {
 class ConnorConvergence : public ConvergenceCheck {
 public:
   ConnorConvergence(const boost::shared_ptr<ForwardModel>& Fm, 
-		    double Threshold, 
-		    int Max_iteration, int Max_divergence, double Max_chisq);
+		    double Threshold, int Min_iteration, int Max_iteration,
+                    int Max_divergence, double Max_chisq);
   virtual ~ConnorConvergence() {}
   virtual void convergence_check(const FitStatistic& fit_stat_last,
 				 FitStatistic& fit_stat,
@@ -33,6 +33,7 @@ public:
 private:
   boost::shared_ptr<ForwardModel> fm;
   double threshold;
+  int min_iteration;
   int max_iteration;
   int max_divergence;
   double max_chisq;

@@ -7,7 +7,7 @@ using namespace FullPhysics;
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(ConnorConvergence, ConvergenceCheck)
 .def(luabind::constructor<const boost::shared_ptr<ForwardModel>&,
-			  double, int, int, double>())
+			  double, int, int, int, double>())
 REGISTER_LUA_END()
 #endif
 
@@ -27,12 +27,15 @@ REGISTER_LUA_END()
 
 ConnorConvergence::ConnorConvergence(
     const boost::shared_ptr<ForwardModel>& Fm,
-    double Threshold, int Max_iteration, int Max_divergence, double Max_chisq)
+    double Threshold, int Min_iteration, int Max_iteration,
+    int Max_divergence, double Max_chisq)
 : fm(Fm),
-  threshold(Threshold), max_iteration(Max_iteration), 
-  max_divergence(Max_divergence), max_chisq(Max_chisq)
+  threshold(Threshold), min_iteration(Min_iteration),
+  max_iteration(Max_iteration), max_divergence(Max_divergence),
+  max_chisq(Max_chisq)
 {
   range_min_check(threshold, 0.0);
+  range_min_check(Min_iteration, 1);
   range_min_check(Max_iteration, 1);
   range_min_check(Max_divergence, 1);
   range_min_check(Max_chisq, 0.0);
@@ -90,7 +93,8 @@ void ConnorConvergence::convergence_check(
     return;
   }
 
-  if(fs.d_sigma_sq_scaled < threshold)
+  if(fs.d_sigma_sq_scaled < threshold &&
+     fs.number_iteration >= min_iteration)
     has_converged = true;
   else if(fs.number_iteration >= max_iteration) {
     convergence_failed = true;

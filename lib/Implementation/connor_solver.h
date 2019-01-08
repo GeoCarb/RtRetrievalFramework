@@ -67,10 +67,24 @@ public:
   //-----------------------------------------------------------------------
   ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
 	       const boost::shared_ptr<ConvergenceCheck>& Conv,
-	       double Gamma_initial = 0.0,
+	       double Gamma_initial,
+               int H2O_scale_index,
+	       double H2O_scale_cov_initial,
+	       int CH4_scale_index,
+	       double CH4_scale_cov_initial,
+	       int CO_scale_index,
+	       double CO_scale_cov_initial,
 	       const std::string& Save_test_data = "")
-    : save_test_data_(Save_test_data), 
-      cost_function_(Cf), convergence_check_(Conv), gamma_initial(Gamma_initial)
+    : save_test_data_(Save_test_data),
+      cost_function_(Cf),
+      convergence_check_(Conv),
+      gamma_initial(Gamma_initial),
+      h2o_scale_index(H2O_scale_index),
+      h2o_scale_cov_initial(H2O_scale_cov_initial),
+      ch4_scale_index(CH4_scale_index),
+      ch4_scale_cov_initial(CH4_scale_cov_initial),
+      co_scale_index(CO_scale_index),
+      co_scale_cov_initial(CO_scale_cov_initial)
   { }
   virtual ~ConnorSolver() {}
 
@@ -330,6 +344,13 @@ protected:
   /// Initial value of gamma.
   //-----------------------------------------------------------------------
   double gamma_initial;
+
+  int h2o_scale_index;
+  double h2o_scale_cov_initial;
+  int ch4_scale_index;
+  double ch4_scale_cov_initial;
+  int co_scale_index;
+  double co_scale_cov_initial;
 
   static double rcond;
 };
