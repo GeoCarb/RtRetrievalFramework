@@ -151,7 +151,7 @@ void Level1bOco::initialize()
   spectral_coefficient_.value = wl_coeffs.value(ra, sounding_index, ra);
 
   // Read the stokes coefficients from the appropriate dataset
-  stokes_coef_.resize(altitude_.value.rows(), 4);
+  stokes_coef_.resize(altitude_.value.rows(), 4, 2);
   
   // Try reading one of these datasets
   std::string stokes_dataset = "FootprintGeometry/footprint_stokes_coefficients";
@@ -159,15 +159,27 @@ void Level1bOco::initialize()
 
   // Determine if we can read from the stokes dataset
   if (hfile->has_object(stokes_dataset)) {
-    TinyVector<int,4> stokes_shape = hfile->read_shape<4>(stokes_dataset);
-    TinyVector<int,4> stokes_start, stokes_size;
-    stokes_start = frame_index, sounding_index, 0, 0;
-    stokes_size = 1, 1, stokes_shape(2), stokes_shape(3);
+    if (hfile->read_rank<4>(stokes_dataset) == 4) {
+        TinyVector<int,4> stokes_shape = hfile->read_shape<4>(stokes_dataset);
+        TinyVector<int,4> stokes_start, stokes_size;
+        stokes_start = frame_index, sounding_index, 0, 0;
+        stokes_size = 1, 1, stokes_shape(2), stokes_shape(3);
 
-    Array<double, 4> st =
-      hfile->read_field<double, 4>(stokes_dataset, stokes_start, stokes_size);
-    stokes_coef_ = st(0, 0, ra, ra);
+        Array<double, 4> st =
+          hfile->read_field<double, 4>(stokes_dataset, stokes_start, stokes_size);
+        stokes_coef_ = 0.;
+        stokes_coef_(ra, ra, 0) = st(0, 0, ra, ra);
+    }
+    else {
+        TinyVector<int,5> stokes_shape = hfile->read_shape<5>(stokes_dataset);
+        TinyVector<int,5> stokes_start, stokes_size;
+        stokes_start = frame_index, sounding_index, 0, 0, 0;
+        stokes_size = 1, 1, stokes_shape(2), stokes_shape(3), stokes_shape(4);
 
+        Array<double, 5> st =
+          hfile->read_field<double, 5>(stokes_dataset, stokes_start, stokes_size);
+        stokes_coef_ = st(0, 0, ra, ra, ra);
+    }
   } else if(hfile->has_object(pol_ang_dataset)) {
     // OCO1 did not supply stokes coefficients, instead had
     // polarization angle which can be converted to

@@ -5,7 +5,7 @@ using namespace FullPhysics;
 #ifdef HAVE_LUA
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(StokesCoefficientConstant, StokesCoefficient)
-.def(luabind::constructor<const blitz::Array<double, 2>&>())
+.def(luabind::constructor<const blitz::Array<double, 3>&>())
 REGISTER_LUA_END()
 #endif
 
@@ -13,7 +13,7 @@ REGISTER_LUA_END()
 /// Constructor.
 //-----------------------------------------------------------------------
 StokesCoefficientConstant::StokesCoefficientConstant
-(const blitz::Array<double, 2>& Stokes_coeff)
+(const blitz::Array<double, 3>& Stokes_coeff)
 {
   stokes_coeff.resize(Stokes_coeff.shape(), 0);
   stokes_coeff = Stokes_coeff;

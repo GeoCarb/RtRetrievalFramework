@@ -59,12 +59,12 @@ public:
     // Not sure where azimuth comes from.
     return DoubleWithUnit(0.0, units::deg);
   }
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const {
+  virtual blitz::Array<double, 2> stokes_coefficient(int i) const {
     range_check(i, 0, number_spectrometer());
     // Not sure where stokes_coefficients comes from
     //set_stokes_coefs_from_pol_ang i.e. get from instrument
     //FIXME
-    blitz::Array<double, 1> dummy(4);
+    blitz::Array<double, 2> dummy(4,2);
     dummy = 0;
     return dummy;
     }

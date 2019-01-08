@@ -49,11 +49,11 @@ double level_1b_azm_i(const Level1b& Lev1, int Spec_index)
   return Lev1.relative_azimuth(Spec_index).convert(units::deg).value;
 }
 
-blitz::Array<double, 2> level_1b_stokes(const Level1b& Lev1)
+blitz::Array<double, 3> level_1b_stokes(const Level1b& Lev1)
 {
-  blitz::Array<double, 2> res(Lev1.number_spectrometer(), 4);
+  blitz::Array<double, 3> res(Lev1.number_spectrometer(), 4, 2);
   for(int i = 0; i < res.rows(); ++i)
-    res(i, blitz::Range::all()) = Lev1.stokes_coefficient(i);
+    res(i, blitz::Range::all(), blitz::Range::all()) = Lev1.stokes_coefficient(i);
   return res;
 }
 

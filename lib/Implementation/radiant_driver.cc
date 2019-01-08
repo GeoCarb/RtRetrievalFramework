@@ -69,9 +69,9 @@ RadiantDriver::RadiantDriver(const boost::shared_ptr<RtAtmosphere>& Atm,
 
 {
   atm = Atm;
-  Array<double, 2> stokes_coef_v(sza.rows(), number_stokes());
+  Array<double, 3> stokes_coef_v(sza.rows(), number_stokes(), 1);
   stokes_coef_v = 0;
-  stokes_coef_v(Range::all(), 0) = 1.0;
+  stokes_coef_v(Range::all(), 0, 0) = 1.0;
   stokes_coef.reset(new StokesCoefficientConstant(stokes_coef_v));
 
   for(int i = 0; i < number_spectrometer(); ++i) {

@@ -3,7 +3,7 @@
 using namespace FullPhysics;
 #ifdef HAVE_LUA
 #include "register_lua.h"
-blitz::Array<double, 2> stokes_coefficient_value(const StokesCoefficient& S)
+blitz::Array<double, 3> stokes_coefficient_value(const StokesCoefficient& S)
 {
   return S.stokes_coefficient().value();
 }

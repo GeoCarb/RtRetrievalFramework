@@ -5,7 +5,7 @@ using namespace FullPhysics;
 #ifdef HAVE_LUA
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(StokesCoefficientFraction, StokesCoefficient)
-.def(luabind::constructor<const blitz::Array<double, 2>&, 
+.def(luabind::constructor<const blitz::Array<double, 3>&, 
      const blitz::Array<double, 1>&, const blitz::Array<bool, 1>&>())
 REGISTER_LUA_END()
 #endif
@@ -14,7 +14,7 @@ REGISTER_LUA_END()
 /// Constructor.
 //-----------------------------------------------------------------------
 StokesCoefficientFraction::StokesCoefficientFraction
-(const blitz::Array<double, 2>& Stokes_coeff_parallel,
+(const blitz::Array<double, 3>& Stokes_coeff_parallel,
  const blitz::Array<double, 1>& Coeffs,
  const blitz::Array<bool, 1>& Flag)
 : stokes_coeff_parallel(Stokes_coeff_parallel.copy())

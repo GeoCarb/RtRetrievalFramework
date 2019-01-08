@@ -45,12 +45,13 @@ public:
     range_check(i, 0, number_spectrometer());
     return DoubleWithUnit(hmeta.value<std::vector<double> >("sounding_azimuth")[i], units::deg);
   }
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const
+  virtual blitz::Array<double, 2> stokes_coefficient(int i) const
   {
     range_check(i, 0, number_spectrometer());
-    blitz::Array<double, 1> res(4);
+    blitz::Array<double, 2> res(4,2);
     std::vector<double> t(hmeta.value<std::vector<double> >("stokes_coefficients"));
-    res = t[i * 4], t[i * 4 + 1], t[i * 4 + 2], t[i * 4 + 3];
+    res(blitz::Range::all(),0) = t[i * 4], t[i * 4 + 1], t[i * 4 + 2], t[i * 4 + 3];
+    res(blitz::Range::all(),1) = 0.;
     return res;
   }
   virtual DoubleWithUnit solar_azimuth(int i) const

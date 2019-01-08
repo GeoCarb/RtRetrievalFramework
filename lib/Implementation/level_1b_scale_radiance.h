@@ -44,7 +44,7 @@ public:
     virtual DoubleWithUnit sounding_azimuth(int i) const
     { return l1b->sounding_azimuth(i); }
 
-    virtual blitz::Array<double, 1> stokes_coefficient(int i) const
+    virtual blitz::Array<double, 2> stokes_coefficient(int i) const
     { return l1b->stokes_coefficient(i); }
 
     virtual DoubleWithUnit solar_zenith(int i) const

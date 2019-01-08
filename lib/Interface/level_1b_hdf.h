@@ -59,10 +59,10 @@ public:
     range_check(i, 0, number_spectrometer());
     return sounding_azimuth_(i);
   }
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const
+  virtual blitz::Array<double, 2> stokes_coefficient(int i) const
   {
     range_check(i, 0, number_spectrometer());
-    return stokes_coef_(i, blitz::Range::all());
+    return stokes_coef_(i, blitz::Range::all(), blitz::Range::all());
   }
   virtual DoubleWithUnit relative_velocity(int i) const 
   { return relative_velocity_; }
@@ -116,7 +116,7 @@ protected:
   boost::shared_ptr<HdfSoundingId> hdf_sounding_id_;
   ArrayWithUnit<double, 1> altitude_, latitude_, longitude_,
     solar_azimuth_, solar_zenith_, sounding_zenith_, sounding_azimuth_;
-  blitz::Array<double, 2> stokes_coef_;
+  blitz::Array<double, 3> stokes_coef_;
   DoubleWithUnit relative_velocity_;
   ArrayWithUnit<double, 2> spectral_coefficient_;
   Time time_;

@@ -42,9 +42,10 @@ DoubleWithUnit Level1bAverage::sounding_azimuth(int i) const
   return sum / ((int) l1b.size());
 }
 
-Array<double, 1> Level1bAverage::stokes_coefficient(int i) const
+Array<double, 2> Level1bAverage::stokes_coefficient(int i) const
 {
-  Array<double, 1> res(l1b[0]->stokes_coefficient(i).rows());
+  Array<double, 2> res(l1b[0]->stokes_coefficient(i).rows(),
+                       l1b[0]->stokes_coefficient(i).cols());
   res = 0;
   BOOST_FOREACH(const boost::shared_ptr<Level1b>& f, l1b)
     res += f->stokes_coefficient(i);

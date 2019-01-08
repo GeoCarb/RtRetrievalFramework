@@ -64,7 +64,7 @@ public:
 /// \return Stokes coefficients, with size 4.
 //-----------------------------------------------------------------------
 
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const = 0;
+  virtual blitz::Array<double, 2> stokes_coefficient(int i) const = 0;
 
 //-----------------------------------------------------------------------
 /// Solar zenith

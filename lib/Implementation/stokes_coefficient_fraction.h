@@ -10,7 +10,7 @@ namespace FullPhysics {
 *******************************************************************/
 class StokesCoefficientFraction : public StokesCoefficientImpBase {
 public:
-  StokesCoefficientFraction(const blitz::Array<double, 2>& Stokes_coeff_parallel,
+  StokesCoefficientFraction(const blitz::Array<double, 3>& Stokes_coeff_parallel,
 			    const blitz::Array<double, 1>& Coeffs,
 			    const blitz::Array<bool, 1>& Flag);
   virtual ~StokesCoefficientFraction() {}
@@ -36,7 +36,7 @@ public:
 protected:
   virtual void calc_stokes_coeff() const;
 private:
-  blitz::Array<double, 2> stokes_coeff_parallel;
+  blitz::Array<double, 3> stokes_coeff_parallel;
 };
 }
 #endif

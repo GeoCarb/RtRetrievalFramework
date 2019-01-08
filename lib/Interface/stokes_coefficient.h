@@ -28,7 +28,7 @@ public:
 /// use the first number_stokes() coefficients.
 //-----------------------------------------------------------------------
 
-  virtual ArrayAd<double, 2> stokes_coefficient() const = 0;
+  virtual ArrayAd<double, 3> stokes_coefficient() const = 0;
 
 //-----------------------------------------------------------------------
 /// Clone a StokesCoefficient object. Note that the cloned version will *not*

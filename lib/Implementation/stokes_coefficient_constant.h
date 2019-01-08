@@ -10,12 +10,12 @@ namespace FullPhysics {
 *******************************************************************/
 class StokesCoefficientConstant : public StokesCoefficientImpBase {
 public:
-  StokesCoefficientConstant(const blitz::Array<double, 2>& Stokes_coeff);
+  StokesCoefficientConstant(const blitz::Array<double, 3>& Stokes_coeff);
   virtual ~StokesCoefficientConstant() {}
   virtual void print(std::ostream& Os) const;
   virtual boost::shared_ptr<StokesCoefficient> clone() const;
   // Update the stokes coefficients.
-  void set_stokes_coefficient(const blitz::Array<double, 2> Stokes_coeff)
+  void set_stokes_coefficient(const blitz::Array<double, 3> Stokes_coeff)
   {
     if(Stokes_coeff.rows() != stokes_coeff.rows() ||
        Stokes_coeff.cols() != stokes_coeff.cols())

@@ -36,23 +36,50 @@ Spectrum RadiativeTransferFixedStokesCoefficient::reflectance
   }
 
   ArrayAd<double, 1> res(stk.rows(), stk.number_variable());
-  Array<double, 1> stokes_coef_sub(stokes_coef->stokes_coefficient().value()(Spec_index, Range(0, number_stokes() - 1)));
+
+  Array<double, 2> stokes_coef_sub(stokes_coef->stokes_coefficient().value()(Spec_index, Range(0, number_stokes() - 1), Range::all()));
+/*
   res.value() = sum(stk.value()(i1, i2) * stokes_coef_sub(i2), i2);
   if(!res.is_constant()) {
     if(!stokes_coef->stokes_coefficient().is_constant()) {
       Array<double, 2> stokes_coef_jac_sub(stokes_coef->stokes_coefficient().jacobian()(Spec_index, Range(0, number_stokes() - 1), Range::all()));
-      res.jacobian() = 
+      res.jacobian() =
 	sum(stk.jacobian()(i1, i3, i2) * stokes_coef_sub(i3), i3) +
 	sum(stk.value()(i1, i3) * stokes_coef_jac_sub(i3, i2), i3);
     } else
-      res.jacobian() = 
+      res.jacobian() =
 	sum(stk.jacobian()(i1, i3, i2) * stokes_coef_sub(i3), i3);
   } else if(!stokes_coef->stokes_coefficient().is_constant()) {
       Array<double, 2> stokes_coef_jac_sub(stokes_coef->stokes_coefficient().jacobian()(Spec_index, Range(0, number_stokes() - 1), Range::all()));
-      res.jacobian() = 
+      res.jacobian() =
 	sum(stk.value()(i1, i3) * stokes_coef_jac_sub(i3, i2), i3);
   }
-  return Spectrum(Spec_domain, SpectralRange(res, units::inv_sr));
+*/
+/*
+  double stokes_coeff_central_wl[4] = {0., 0., 0., 0.};
+*/
+  double stokes_coeff_central_wl[4] = {7.650e+02, 1.606e+03, 2.065e+03, 2.323e+03};
+
+  Array<double, 1> wl(Spec_domain.wavelength()(Range::all()));
+  Array<double, 1> HV(Spec_domain.wavelength()(Range::all()));
+  Array<double, 1> delta_wl(Spec_domain.wavelength()(Range::all()));
+/*
+  delta_wl =       wl - stokes_coeff_central_wl[Spec_index];
+*/
+  delta_wl = 1.0e3*wl - stokes_coeff_central_wl[Spec_index];
+
+  ArrayAd<double, 1> myres(res.copy());
+
+  for (int jj = 0; jj < stk.value().rows(); jj++) {
+    myres.value()(jj) = stk.value()(jj,0) * (stokes_coef_sub(0,0) + stokes_coef_sub(0,1) * delta_wl(jj)) +
+                        stk.value()(jj,1) * (stokes_coef_sub(1,0) + stokes_coef_sub(1,1) * delta_wl(jj)) +
+                        stk.value()(jj,2) * (stokes_coef_sub(2,0) + stokes_coef_sub(2,1) * delta_wl(jj));
+
+    myres.jacobian()(jj,Range::all()) =
+                        stk.jacobian()(jj,0,Range::all()) * (stokes_coef_sub(0,0) + stokes_coef_sub(0,1) * delta_wl(jj)) +
+                        stk.jacobian()(jj,1,Range::all()) * (stokes_coef_sub(1,0) + stokes_coef_sub(1,1) * delta_wl(jj)) +
+                        stk.jacobian()(jj,2,Range::all()) * (stokes_coef_sub(2,0) + stokes_coef_sub(2,1) * delta_wl(jj));
+  }
+
+  return Spectrum(Spec_domain, SpectralRange(myres, units::inv_sr));
 }
-
-

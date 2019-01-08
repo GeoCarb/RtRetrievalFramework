@@ -81,8 +81,8 @@ void Level1bAcos::initialize()
     hfile->read_field_with_unit<double, 4>("SoundingHeader/wavenumber_coefficients", units::inv_cm, TinyVector<int, 4>(sindex, 0, sounding_number, 0), TinyVector<int, 4>(1, sz2[1], 1, sz2[3]));
 
   TinyVector<int, 4> sz3 = hfile->read_shape<4>("FootprintGeometry/footprint_stokes_coefficients");
-  Array<double, 4> st =
-    hfile->read_field<double, 4>("FootprintGeometry/footprint_stokes_coefficients",  TinyVector<int, 4>(sindex, 0, sounding_number, 0), TinyVector<int, 4>(1, sz3[1], 1, sz3[3]));
+  Array<double, 5> st =
+    hfile->read_field<double, 5>("FootprintGeometry/footprint_stokes_coefficients",  TinyVector<int, 5>(sindex, 0, sounding_number, 0, 0), TinyVector<int, 5>(1, sz3[1], 1, sz3[3], sz3[4]));
   Array<double, 3> land_frac;
   // This field might be missing for older data, or for simulator data.
   try {
@@ -142,7 +142,7 @@ void Level1bAcos::initialize()
   sounding_zenith_.value.resize(altitude_.value.shape());
   sounding_azimuth_.value.resize(altitude_.value.shape());
   spectral_coefficient_.value.resize(wn_coeffs.value.extent(1), wn_coeffs.value.extent(3));
-  stokes_coef_.resize(altitude_.value.rows(), 4);
+  stokes_coef_.resize(altitude_.value.rows(), sz3[3], sz3[4]);
   land_fraction_.resize(altitude_.value.shape());
 
   altitude_.value = alt.value(0, ra, 0);
@@ -153,7 +153,7 @@ void Level1bAcos::initialize()
   sounding_zenith_.value = zen.value(0, ra, 0);
   sounding_azimuth_.value = azm.value(0, ra, 0);
   spectral_coefficient_.value = wn_coeffs.value(0, ra, 0, ra);
-  stokes_coef_ = st(0, ra, 0, ra);
+  stokes_coef_ = st(0, ra, 0, ra, ra);
   relative_velocity_ = relv(0);
   time_ = Time::time_pgs(tm(0,0,0)); // Use time of first band, first sounding.
   land_fraction_ = land_frac(0, ra, 0);

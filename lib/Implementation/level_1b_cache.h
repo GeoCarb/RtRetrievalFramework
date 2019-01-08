@@ -135,7 +135,7 @@ public:
     range_check(i, 0, number_spectrometer());
     rvel[i] = V;
   }
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const
+  virtual blitz::Array<double, 2> stokes_coefficient(int i) const
   {
     range_check(i, 0, number_spectrometer());
     return stk_coeff[i];
@@ -145,7 +145,7 @@ public:
 /// Change value.
 //-----------------------------------------------------------------------
 
-  void set_stokes_coefficient(int i, const blitz::Array<double, 1>& V)
+  void set_stokes_coefficient(int i, const blitz::Array<double, 2>& V)
   { 
     range_check(i, 0, number_spectrometer());
     stk_coeff[i].reference(V.copy());
@@ -235,7 +235,7 @@ public:
 private:
   std::vector<DoubleWithUnit> lat, lon, szen, sazm, solzen, solazm, alt,
 						    rvel;
-  std::vector<blitz::Array<double, 1> > stk_coeff;
+  std::vector<blitz::Array<double, 2> > stk_coeff;
   std::vector<ArrayWithUnit<double, 1> > spec_coeff;
   std::vector<Time> tm;
   std::vector<SpectralRange> rad;
