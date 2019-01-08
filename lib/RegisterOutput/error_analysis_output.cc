@@ -57,13 +57,19 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
       out->register_data_source("/RetrievalResults/xco2_correlation_interf",
 		       &ErrorAnalysis::xco2_correlation_interf, err);
       out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
-               &ErrorAnalysis::co2_averaging_kernel, err);
+                       &ErrorAnalysis::co2_averaging_kernel, err);
       out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
 		       &ErrorAnalysis::interference_smoothing_uncertainty, err);
       out->register_data_source("/RetrievalResults/xco2_gain_vector",
 		       &ErrorAnalysis::xco2_gain_vector, err);
   }
+/*
+  out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
+                   &ErrorAnalysis::ch4_averaging_kernel, err);
 
+  out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
+                   &ErrorAnalysis::co_averaging_kernel, err);
+*/
   out->register_data_source("/SpectralParameters/modeled_radiance",
 	   &ErrorAnalysis::modeled_radiance, err);
 }

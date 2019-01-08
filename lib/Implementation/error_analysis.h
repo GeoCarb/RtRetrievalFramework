@@ -224,6 +224,8 @@ public:
 
   blitz::Array<double, 1> xco2_avg_kernel() const;
   blitz::Array<double, 2> co2_averaging_kernel() const;
+  blitz::Array<double, 2> ch4_averaging_kernel() const;
+  blitz::Array<double, 2> co_averaging_kernel() const;
   blitz::Array<double, 1> xco2_avg_kernel_full() const;
   blitz::Array<double, 1> xco2_avg_kernel_norm() const;
   blitz::Array<double, 1> xco2_correlation_interf() const;
@@ -261,6 +263,10 @@ private:
   }
   blitz::Array<bool, 1> xco2_state_used() const 
   { return atm->absorber_ptr()->absorber_vmr("CO2")->state_used(); }
+  blitz::Array<bool, 1> xch4_state_used() const 
+  { return atm->absorber_ptr()->absorber_vmr("CH4")->state_used(); }
+  blitz::Array<bool, 1> xco_state_used() const 
+  { return atm->absorber_ptr()->absorber_vmr("CO")->state_used(); }
   AutoDerivative<double> xco2() const 
   { return atm->absorber_ptr()->xgas("CO2"); }
   blitz::Array<double, 1> dxco2_dstate() const;

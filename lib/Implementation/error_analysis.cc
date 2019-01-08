@@ -495,3 +495,47 @@ Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
     }
   return res;
 }
+
+
+Array<double, 2> ErrorAnalysis::ch4_averaging_kernel() const
+{
+  FeDisableException disable_fp;
+  Array<double, 2> ak(averaging_kernel());
+  Array<bool, 1> used(xch4_state_used());
+  int sz = count(used);
+  Array<double, 2> res(sz, sz);
+  int ind1 = 0;
+  for(int i = 0; i < used.rows(); ++i)
+    if(used(i)) {
+      int ind2 = 0;
+      for(int j = 0; j < used.rows(); ++j)
+	if(used(j)) {
+	  res(ind1, ind2) = ak(i, j);
+	  ++ind2;
+	}
+      ++ind1;
+    }
+  return res;
+}
+
+
+Array<double, 2> ErrorAnalysis::co_averaging_kernel() const
+{
+  FeDisableException disable_fp;
+  Array<double, 2> ak(averaging_kernel());
+  Array<bool, 1> used(xco_state_used());
+  int sz = count(used);
+  Array<double, 2> res(sz, sz);
+  int ind1 = 0;
+  for(int i = 0; i < used.rows(); ++i)
+    if(used(i)) {
+      int ind2 = 0;
+      for(int j = 0; j < used.rows(); ++j)
+	if(used(j)) {
+	  res(ind1, ind2) = ak(i, j);
+	  ++ind2;
+	}
+      ++ind1;
+    }
+  return res;
+}
