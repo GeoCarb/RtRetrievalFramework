@@ -820,6 +820,26 @@ function ConfigCommon.lua_to_blitz_double_2d(val)
 end
 
 ------------------------------------------------------------
+--- Create a blitz array from a lua array.
+------------------------------------------------------------
+
+function ConfigCommon.lua_to_blitz_double_3d(val)
+   local nrow = #val
+   local ncol = #val[1]
+   local n3   = #val[1][1]
+   local res = Blitz_double_array_3d(nrow, ncol, n3)
+   local i, j
+   for i=1,nrow do
+      for j=1,ncol do
+         for k=1,n3 do
+	    res:set(i-1,j-1,k-1,val[i][j][k])
+         end
+      end
+   end
+   return res
+end
+
+------------------------------------------------------------
 --- Create a new InitialGuess that has the same apriori and
 --- covariance as another one, but updates the first guess
 ------------------------------------------------------------
@@ -2532,7 +2552,7 @@ function ConfigCommon:albedo_from_signal_level(polynomial_degree)
      
         -- Account for stokes element for I
         local stokes_coef = self.config.l1b:stokes_coef()
-        solar_strength = solar_strength * stokes_coef(spec_idx, 0)
+        solar_strength = solar_strength * stokes_coef(spec_idx, 0, 0)
 
         local offset = math.pi * signal / (math.cos(sza_r) * solar_strength)
 
@@ -3351,7 +3371,7 @@ end
 
 function ConfigCommon.stokes_coefficient_value(val)
    return function(self)
-	     return ConfigCommon.lua_to_blitz_double_2d(val)
+	     return ConfigCommon.lua_to_blitz_double_3d(val)
 	  end
 end
 
@@ -3593,13 +3613,25 @@ function ConfigCommon:connor_solver(config)
    local cost_func = ForwardModelCostFunction(config.forward_model)
    local conv = ConnorConvergence(config.forward_model, 
                                   self.threshold, 
+                                  self.min_iteration, 
                                   self.max_iteration, 
                                   self.max_divergence, 
                                   self.max_chisq)
    local out = ConnorConvergenceOutput.create(conv)
    config.register_output:push_back(out)
-   config.conn_solver = ConnorSolver(cost_func, conv, 
-				     self.gamma_initial)
+   -- Luabind can only handle up to 10 arguments per function. As an easy
+   -- work around we put the various thresholds into an array.
+   local mq = Blitz_double_array_1d(6)
+   mq:set(0, self.h2o_scale_index)
+   mq:set(1, self.h2o_scale_cov_initial)
+   mq:set(2, self.ch4_scale_index)
+   mq:set(3, self.ch4_scale_cov_initial)
+   mq:set(4, self.co_scale_index)
+   mq:set(5, self.co_scale_cov_initial)
+   config.conn_solver = ConnorSolver.create(cost_func,
+                                            conv,
+				            self.gamma_initial,
+                                            mq)
    local iter_log = SolverIterationLog(config.state_vector)
    iter_log:add_as_observer(config.conn_solver)
    out = ConnorSolverOutput(config.conn_solver, config.write_jacobian)

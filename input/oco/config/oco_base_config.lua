@@ -53,10 +53,20 @@ OcoBaseConfig = OcoConfig:new {
 -- Connor solver
 ------------------------------------------------------------
 
-   solver = { max_iteration=7, max_divergence=2,
-              max_chisq=1.4, threshold=2.0, gamma_initial=10.0,
+   solver = { threshold=2.0,
+              min_iteration=1,
+              max_iteration=7,
+              max_divergence=2,
+              max_chisq=1.4,
+              gamma_initial=10.0,
+              h2o_scale_index=-20,
+              h2o_scale_cov_initial=0.001,
+              ch4_scale_index=-21,
+              ch4_scale_cov_initial=0.001,
+              co_scale_index=-22,
+              co_scale_cov_initial=0.0001,
               create = ConfigCommon.connor_solver,
-           },
+            },
 
 ------------------------------------------------------------
 -- Iterative solver
@@ -72,15 +82,14 @@ OcoBaseConfig = OcoConfig:new {
 ------------------------------------------------------------
 
    -- solver = 
-   not_used_solver = 
-      { max_cost_function_calls=20,
-        dx_tol_abs=1e-5, dx_tol_rel=1e-5, 
-        g_tol_abs=1e-5,
-        minimizer_size_tol=1e-5,
-        opt_problem = ConfigCommon.nlls_max_a_posteriori,
-        iter_solver = ConfigCommon.nlls_solver_gsl_lmsder,
-        create = ConfigCommon.iterative_solver,
-     },
+   not_used_solver = { max_cost_function_calls=20,
+                       dx_tol_abs=1e-5,
+                       dx_tol_rel=1e-5,
+                       g_tol_abs=1e-5,
+                       minimizer_size_tol=1e-5,
+                       opt_problem = ConfigCommon.nlls_max_a_posteriori,
+                       iter_solver = ConfigCommon.nlls_solver_gsl_lmsder,
+                       create = ConfigCommon.iterative_solver},
 
 ------------------------------------------------------------
 -- If true then launch solver, otherwise just do a 
@@ -367,6 +376,7 @@ OcoBaseConfig = OcoConfig:new {
          },
       },
       spec_samp = {
+--       creator = ConfigCommon.uniform_spectrum_sampling,
          creator = ConfigCommon.nonuniform_spectrum_sampling,
          high_resolution_spectrum_spacing = DoubleWithUnit(0.01, "cm^-1"),
          nonunif_rt_grid_files = { 
@@ -498,19 +508,19 @@ OcoBaseConfig = OcoConfig:new {
             CO2 = {
                apriori = ConfigCommon.reference_co2_apriori_met_apriori,
                covariance = ConfigCommon.hdf_covariance("Gas/CO2"),
-               absco = "v5.0.0/co2_devi2015_wco2scale-nist_sco2scale-unity.h5",
+               absco = "v5.0_alpha/raw/co2_devi2015_wco2scale=nist_sco2scale=unity.hdf",
                table_scale = {1.0, 1.0, 1.004},
                creator = ConfigCommon.vmr_level,
             },
             H2O = {
                scale_apriori = 1.0,
                scale_cov = 0.25,
-               absco = "v5.0.0/h2o_hitran12.h5",
+               absco = "v5.0_alpha/raw/h2o_hitran12.h5",
                creator = ConfigCommon.vmr_met,
             },
             O2 = {
                apriori = ConfigCommon.hdf_read_double_1d("Gas/O2/average_mole_fraction"),
-               absco = "v5.0.0/o2_v151005_cia_mlawer_v151005r1_narrow.h5",
+               absco = "v5.0_alpha/raw/o2_v151005_cia_mlawer_v151005r1_narrow.hdf",
                table_scale = 1.0,
                creator = ConfigCommon.vmr_level_constant_well_mixed,
             },
