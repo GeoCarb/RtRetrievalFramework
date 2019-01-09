@@ -81,7 +81,7 @@
 
 !  Number of computational streams in the half-space
 
-   INTEGER, PARAMETER :: MAXSTREAMS = 10
+   INTEGER, PARAMETER :: MAXSTREAMS = 12
 
 !  Maximum number of computational layers
 
