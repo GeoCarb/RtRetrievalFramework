@@ -54,6 +54,8 @@ public:
   bool has_attribute(const std::string& Aname) const;
 
   Unit read_units(const std::string& Dataname) const;
+  template<int D> int read_rank(
+         const std::string& Dataname) const;
   template<int D> blitz::TinyVector<int,D> read_shape(
          const std::string& Dataname) const;
   template<class T, int D> blitz::Array<T, D> read_field(
@@ -309,6 +311,25 @@ HdfFile::read_attribute<std::vector<std::string> >(const
 template<int D> class HdfFilePartialDimHelper {
 public:
 
+int read_rank(const HdfFile& hf,
+              const H5::H5File& h,
+              const std::string& Dataname) const
+{
+  try {
+    using namespace H5;
+    DataSet d = h.openDataSet(Dataname);
+    DataSpace ds = d.getSpace();
+    return ds.getSimpleExtentNdims();
+  } catch(const H5::Exception& e) {
+    Exception en;
+    en << "While reading rank " << Dataname
+       << " for the file '" << hf.file_name()
+       << "' a HDF 5 Exception thrown:\n"
+       << "  " << e.getDetailMsg();
+    throw en;
+  }
+}
+
 blitz::TinyVector<int,D> read_shape(const HdfFile& hf,
 				    const H5::H5File& h, 
 				    const std::string& Dataname) const
@@ -533,6 +554,16 @@ blitz::Array<std::string, D> read_field(const HdfFile& hf,
 
 /// @endcond
   
+
+//-----------------------------------------------------------------------
+/// Reads the rank of a dataset
+//-----------------------------------------------------------------------
+template<int D> inline int
+HdfFile::read_rank(const std::string& Dataname) const
+{
+  HdfFilePartialDimHelper<D> helper;
+  return helper.read_rank(*this, *h, Dataname);
+}
 
 //-----------------------------------------------------------------------
 /// Reads the shape of a dataset
