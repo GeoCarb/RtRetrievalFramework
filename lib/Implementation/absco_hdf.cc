@@ -196,7 +196,7 @@ int AbscoHdf::wn_index(double Wn_in) const
       << "Frac:      " << f << " (should be < 0.1 or > 0.9)\n"
       << "AbscoHdf:\n"
       << *this << "\n";
-    throw e;
+//  throw e;
   }
   if(f < 0.5)                        // First point is closest.
     --wnptr;
