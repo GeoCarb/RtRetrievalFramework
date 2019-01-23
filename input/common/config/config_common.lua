@@ -3621,13 +3621,16 @@ function ConfigCommon:connor_solver(config)
    config.register_output:push_back(out)
    -- Luabind can only handle up to 10 arguments per function. As an easy
    -- work around we put the various thresholds into an array.
-   local mq = Blitz_double_array_1d(6)
-   mq:set(0, self.h2o_scale_index)
-   mq:set(1, self.h2o_scale_cov_initial)
-   mq:set(2, self.ch4_scale_index)
-   mq:set(3, self.ch4_scale_cov_initial)
-   mq:set(4, self.co_scale_index)
-   mq:set(5, self.co_scale_cov_initial)
+   local mq = Blitz_double_array_1d(9)
+   mq:set(0, self.h2o_scale_index0)
+   mq:set(1, self.h2o_scale_index1)
+   mq:set(2, self.h2o_scale_cov_initial)
+   mq:set(3, self.ch4_scale_index0)
+   mq:set(4, self.ch4_scale_index1)
+   mq:set(5, self.ch4_scale_cov_initial)
+   mq:set(6, self.co_scale_index0)
+   mq:set(7, self.co_scale_index1)
+   mq:set(8, self.co_scale_cov_initial)
    config.conn_solver = ConnorSolver.create(cost_func,
                                             conv,
 				            self.gamma_initial,

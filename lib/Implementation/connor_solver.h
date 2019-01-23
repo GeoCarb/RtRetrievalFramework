@@ -68,22 +68,28 @@ public:
   ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
 	       const boost::shared_ptr<ConvergenceCheck>& Conv,
 	       double Gamma_initial,
-               int H2O_scale_index,
+               int H2O_scale_index0,
+               int H2O_scale_index1,
 	       double H2O_scale_cov_initial,
-	       int CH4_scale_index,
+	       int CH4_scale_index0,
+	       int CH4_scale_index1,
 	       double CH4_scale_cov_initial,
-	       int CO_scale_index,
+	       int CO_scale_index0,
+	       int CO_scale_index1,
 	       double CO_scale_cov_initial,
 	       const std::string& Save_test_data = "")
     : save_test_data_(Save_test_data),
       cost_function_(Cf),
       convergence_check_(Conv),
       gamma_initial(Gamma_initial),
-      h2o_scale_index(H2O_scale_index),
+      h2o_scale_index0(H2O_scale_index0),
+      h2o_scale_index1(H2O_scale_index1),
       h2o_scale_cov_initial(H2O_scale_cov_initial),
-      ch4_scale_index(CH4_scale_index),
+      ch4_scale_index0(CH4_scale_index0),
+      ch4_scale_index1(CH4_scale_index1),
       ch4_scale_cov_initial(CH4_scale_cov_initial),
-      co_scale_index(CO_scale_index),
+      co_scale_index0(CO_scale_index0),
+      co_scale_index1(CO_scale_index1),
       co_scale_cov_initial(CO_scale_cov_initial)
   { }
   virtual ~ConnorSolver() {}
@@ -345,11 +351,14 @@ protected:
   //-----------------------------------------------------------------------
   double gamma_initial;
 
-  int h2o_scale_index;
+  int h2o_scale_index0;
+  int h2o_scale_index1;
   double h2o_scale_cov_initial;
-  int ch4_scale_index;
+  int ch4_scale_index0;
+  int ch4_scale_index1;
   double ch4_scale_cov_initial;
-  int co_scale_index;
+  int co_scale_index0;
+  int co_scale_index1;
   double co_scale_cov_initial;
 
   static double rcond;
