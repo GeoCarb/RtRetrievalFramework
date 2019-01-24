@@ -15,7 +15,9 @@ class ErrorAnalysisOutput : public RegisterOutputBase {
 public:
   ErrorAnalysisOutput(const boost::shared_ptr<ErrorAnalysis>& E, 
 		      const blitz::Array<bool, 1>& Spec_flag,
-		      bool Have_co2 = false) 
+		      bool Have_co2 = false,
+		      bool ch4_profile = false,
+		      bool co_profile = false)
     : err(E), have_co2(Have_co2), spec_flag(Spec_flag) {}
 
   virtual ~ErrorAnalysisOutput() {}
@@ -23,6 +25,8 @@ public:
 private:
   mutable boost::shared_ptr<ErrorAnalysis> err;
   bool have_co2;
+  bool ch4_profile;
+  bool co_profile;
   const blitz::Array<bool, 1> spec_flag;
 };
 }

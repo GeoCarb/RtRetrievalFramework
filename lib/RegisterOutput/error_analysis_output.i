@@ -15,12 +15,12 @@ namespace FullPhysics {
 class ErrorAnalysisOutput : public RegisterOutputBase {
 public:
   ErrorAnalysisOutput(const boost::shared_ptr<ErrorAnalysis>& E, 
-		      const blitz::Array<bool, 1>& Spec_flag,
-		      bool Have_co2 = false);
+                      const blitz::Array<bool, 1>& Spec_flag,
+                      bool Have_co2 = false,
+                      bool ch4_profile = false,
+                      bool co_profile = false);
 
   virtual void register_output(const boost::shared_ptr<Output>& out) const;
   virtual void register_output_apriori(const boost::shared_ptr<Output>& out) const;
 };
 }
-
-

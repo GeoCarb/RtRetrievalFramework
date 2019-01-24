@@ -5,7 +5,7 @@ using namespace FullPhysics;
 #ifdef HAVE_LUA
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(ErrorAnalysisOutput, RegisterOutputBase)
-.def(luabind::constructor<const boost::shared_ptr<ErrorAnalysis>&, const blitz::Array<bool, 1>&, bool>())
+.def(luabind::constructor<const boost::shared_ptr<ErrorAnalysis>&, const blitz::Array<bool, 1>&, bool, bool, bool>())
 REGISTER_LUA_END()
 #endif
 
@@ -63,13 +63,17 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
       out->register_data_source("/RetrievalResults/xco2_gain_vector",
 		       &ErrorAnalysis::xco2_gain_vector, err);
   }
-/*
-  out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
-                   &ErrorAnalysis::ch4_averaging_kernel, err);
 
-  out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
-                   &ErrorAnalysis::co_averaging_kernel, err);
-*/
+  if(ch4_profile) {
+     out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
+                      &ErrorAnalysis::ch4_averaging_kernel, err);
+  }
+
+  if(co_profile) {
+      out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
+                       &ErrorAnalysis::co_averaging_kernel, err);
+  }
+
   out->register_data_source("/SpectralParameters/modeled_radiance",
 	   &ErrorAnalysis::modeled_radiance, err);
 }

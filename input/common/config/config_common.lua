@@ -3660,8 +3660,20 @@ function ConfigCommon:create_error_analysis()
 					  self.forward_model)
    end
    have_co2 = self.absorber:gas_index("CO2") ~= -1
+   if (self.fm.atmosphere.absorber.CH4 ~= nil and
+       self.fm.atmosphere.absorber.CH4.profile_retrieval == true) then
+      ch4_profile = true
+   else
+      ch4_profile = false
+   end
+   if (self.fm.atmosphere.absorber.CO ~= nil and
+       self.fm.atmosphere.absorber.CO.profile_retrieval == true) then
+      co_profile = true
+   else
+      co_profile = false
+   end
    local out = ErrorAnalysisOutput(self.error_analysis, self:spec_flag(), 
-				   have_co2)
+				   have_co2, ch4_profile, co_profile)
    self.register_output:push_back(out)
 end
 
