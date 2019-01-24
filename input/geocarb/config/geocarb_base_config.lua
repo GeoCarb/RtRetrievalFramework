@@ -387,8 +387,8 @@ GeocarbBaseConfig = GeocarbConfig:new {
          },
       },
       spec_samp = {
-         creator = ConfigCommon.uniform_spectrum_sampling,
---       creator = GeocarbConfig.nonuniform_spectrum_sampling,
+--       creator = ConfigCommon.uniform_spectrum_sampling,
+         creator = GeocarbConfig.nonuniform_spectrum_sampling,
          high_resolution_spectrum_spacing = DoubleWithUnit(0.01, "cm^-1"),
          nonunif_rt_grid_files = {
             o2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_1"),
