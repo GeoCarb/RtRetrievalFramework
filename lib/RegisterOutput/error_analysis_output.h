@@ -18,7 +18,8 @@ public:
 		      bool Have_co2 = false,
 		      bool ch4_profile = false,
 		      bool co_profile = false)
-    : err(E), have_co2(Have_co2), spec_flag(Spec_flag) {}
+    : err(E), spec_flag(Spec_flag), have_co2(Have_co2), ch4_profile(ch4_profile),
+      co_profile(co_profile) {}
 
   virtual ~ErrorAnalysisOutput() {}
   virtual void register_output(const boost::shared_ptr<Output>& out) const;
