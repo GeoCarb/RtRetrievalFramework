@@ -38,30 +38,30 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
   out->register_data_source("/RetrievalResults/last_step_levenberg_marquardt_parameter",
 			    &ErrorAnalysis::gamma_last_step, err);
   if (have_co2) {
+      out->register_data_source("/RetrievalResults/dof_full_vector",
+                               &ErrorAnalysis::degrees_of_freedom_full_vector, err);
+      out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
+                                &ErrorAnalysis::interference_smoothing_uncertainty, err);
+      out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
+                                &ErrorAnalysis::co2_averaging_kernel, err);
+      out->register_data_source("/RetrievalResults/xco2_gain_vector",
+                                &ErrorAnalysis::xco2_gain_vector, err);
       out->register_data_source("/RetrievalResults/xco2_uncert",
                                 &ErrorAnalysis::xco2_uncertainty, err);
-      out->register_data_source("/RetrievalResults/xco2_uncert_interf",
-		                &ErrorAnalysis::xco2_uncert_interf, err);
       out->register_data_source("/RetrievalResults/xco2_uncert_noise",
                                 &ErrorAnalysis::xco2_uncert_noise, err);
       out->register_data_source("/RetrievalResults/xco2_uncert_smooth",
                                 &ErrorAnalysis::xco2_uncert_smooth, err);
+      out->register_data_source("/RetrievalResults/xco2_uncert_interf",
+		                &ErrorAnalysis::xco2_uncert_interf, err);
       out->register_data_source("/RetrievalResults/dof_co2_profile",
-                                &ErrorAnalysis::degrees_of_freedom_xco2, err);
-      out->register_data_source("/RetrievalResults/dof_full_vector",
-                               &ErrorAnalysis::degrees_of_freedom_full_vector, err);
+                                &ErrorAnalysis::xco2_degrees_of_freedom, err);
       out->register_data_source("/RetrievalResults/xco2_avg_kernel",
                                 &ErrorAnalysis::xco2_avg_kernel, err);
       out->register_data_source("/RetrievalResults/xco2_avg_kernel_norm",
                                 &ErrorAnalysis::xco2_avg_kernel_norm, err);
       out->register_data_source("/RetrievalResults/xco2_correlation_interf",
                                 &ErrorAnalysis::xco2_correlation_interf, err);
-      out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
-                                &ErrorAnalysis::co2_averaging_kernel, err);
-      out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
-                                &ErrorAnalysis::interference_smoothing_uncertainty, err);
-      out->register_data_source("/RetrievalResults/xco2_gain_vector",
-                                &ErrorAnalysis::xco2_gain_vector, err);
   }
 
   if (ch4_profile) {

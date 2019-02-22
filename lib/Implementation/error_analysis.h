@@ -12,8 +12,8 @@ namespace FullPhysics {
   This calculates a variety of values to help with the error analysis
   of a Level 2 Full Physics Run.
 
-  We currently support both a ConnorSolver or the more general 
-  MaxAPosteriori. The error analysis is almost identical, we just 
+  We currently support both a ConnorSolver or the more general
+  MaxAPosteriori. The error analysis is almost identical, we just
   get parameters from one or the other source.
 
   Note that the current implementation of this class repeatedly
@@ -58,20 +58,23 @@ public:
 /// The HDF field name to use for a particular band (e.g., "weak_co2")
 //-----------------------------------------------------------------------
 
-  std::string hdf_band_name(int Spec_index) const 
-  {return fm->hdf_band_name(Spec_index); }
+  std::string hdf_band_name(int Spec_index) const
+  { return fm->hdf_band_name(Spec_index); }
 
 //-----------------------------------------------------------------------
 /// Modeled radiance.
 //-----------------------------------------------------------------------
 
-  blitz::Array<double, 1> modeled_radiance() const 
-  { 
+  blitz::Array<double, 1> modeled_radiance() const
+  {
     if(residual().rows() == 0)
       return blitz::Array<double, 1>(0);
     return blitz::Array<double, 1>
-      (residual() + fm->measured_radiance_all().spectral_range().data()); 
+      (residual() + fm->measured_radiance_all().spectral_range().data());
   }
+
+  double signal(int band) const;
+  double noise(int band) const;
 
 //-----------------------------------------------------------------------
 /// Return the sum of the squares of the residual for the given band.
@@ -101,33 +104,11 @@ public:
   }
 
 //-----------------------------------------------------------------------
-/// Return the reduced chisq for band
-//-----------------------------------------------------------------------
-
-  double reduced_chisq(int Band) const
-  { 
-    FeDisableException disable_fp;
-    boost::optional<blitz::Range> pr = fm->pixel_range(Band);
-    if(!pr)
-      return 0;
-    if(solver) {
-      if(solver->residual().rows() == 0)
-	return 0;
-      return chisq_measure_norm(solver->residual()(*pr), 
-				solver->residual_covariance_diagonal()(*pr));
-    } else {
-      blitz::Array<double, 1> res(max_a_posteriori->uncert_weighted_model_measure_diff());
-      if(!res.rows()) return 0;
-      return sum(res(*pr)*res(*pr))/pr->length();
-    }
-  }
-
-//-----------------------------------------------------------------------
 /// Return the relative residual mean square for the given band.
 //-----------------------------------------------------------------------
 
-  double relative_residual_mean_sq(int Band) const 
-  { 
+  double relative_residual_mean_sq(int Band) const
+  {
     FeDisableException disable_fp;
     boost::optional<blitz::Range> pr = fm->pixel_range(Band);
     if(!pr)
@@ -137,40 +118,76 @@ public:
   }
 
 //-----------------------------------------------------------------------
+/// Levenberg-Marquardt parameter for last step we processed.
+//-----------------------------------------------------------------------
+
+  double gamma_last_step() const
+  { return (solver ? solver->gamma_last_step() : -1); }
+
+//-----------------------------------------------------------------------
+/// Return the reduced chisq for band
+//-----------------------------------------------------------------------
+
+  double reduced_chisq(int Band) const
+  {
+    FeDisableException disable_fp;
+    boost::optional<blitz::Range> pr = fm->pixel_range(Band);
+    if(!pr)
+      return 0;
+    if(solver) {
+      if(solver->residual().rows() == 0)
+	return 0;
+      return chisq_measure_norm(solver->residual()(*pr),
+				solver->residual_covariance_diagonal()(*pr));
+    } else {
+      blitz::Array<double, 1> res(max_a_posteriori->uncert_weighted_model_measure_diff());
+      if(!res.rows()) return 0;
+      return sum(res(*pr)*res(*pr))/pr->length();
+    }
+  }
+
+//-----------------------------------------------------------------------
 /// return chisq_measure_norm for the given data.
 //-----------------------------------------------------------------------
 
   double chisq_measure_norm(const blitz::Array<double, 1>& Residual,
 	    const blitz::Array<double, 1>& Residual_cov_diag) const
-  { 
+  {
     FeDisableException disable_fp;
     if (residual().rows() == 0)
       return 0;
-    return sum(Residual * Residual / Residual_cov_diag) / Residual.rows(); 
+    return sum(Residual * Residual / Residual_cov_diag) / Residual.rows();
   }
 
-  double signal(int band) const;
-  double noise(int band) const;
+//-----------------------------------------------------------------------
+/// Calculate the degrees of freedom for the full state vector. This
+/// is just the trace of the averaging kernel.
+///
+/// \todo ATB reference?
+//-----------------------------------------------------------------------
 
-  double xco2_measurement_error() const; 
-  double xco2_smoothing_error() const;
-  double xco2_uncertainty() const;
-  double xco2_interference_error() const;
+  double degrees_of_freedom_full_vector() const
+  {
+      FeDisableException disable_fp;
+      return sum(averaging_kernel()(i1, i1));
+  }
+
+  blitz::Array<double, 1> interference_smoothing_uncertainty() const;
+
+  blitz::Array<double, 2> co2_averaging_kernel() const;
+
   blitz::Array<double, 1> xco2_gain_vector() const;
-
-//-----------------------------------------------------------------------
-/// Levenberg-Marquardt parameter for last step we processed.
-//-----------------------------------------------------------------------
-
-  double gamma_last_step() const 
-  { return (solver ? solver->gamma_last_step() : -1); }
+  double xco2_measurement_error() const;
+  double xco2_smoothing_error() const;
+  double xco2_interference_error() const;
+  double xco2_uncertainty() const;
 
 //-----------------------------------------------------------------------
 /// Calculate xco2_uncert_noise
 //-----------------------------------------------------------------------
 
   double xco2_uncert_noise() const
-  { 
+  {
       FeDisableException disable_fp;
       return sqrt(xco2_measurement_error());
   }
@@ -180,7 +197,7 @@ public:
 //-----------------------------------------------------------------------
 
   double xco2_uncert_smooth() const
-  { 
+  {
       FeDisableException disable_fp;
       return sqrt(xco2_smoothing_error());
   }
@@ -196,42 +213,30 @@ public:
   }
 
 //-----------------------------------------------------------------------
-/// Calculate the degrees of freedom for the full state vector. This
-/// is just the trace of the averaging kernel.
-///
-/// \todo ATB reference?
-//-----------------------------------------------------------------------
-
-  double degrees_of_freedom_full_vector() const
-  { 
-      FeDisableException disable_fp;
-      return sum(averaging_kernel()(i1, i1));
-  }
-
-//-----------------------------------------------------------------------
 /// Calculate the degrees of freedom for the portion of the state
 /// vector used to determine xco2.
 ///
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
 
-  double degrees_of_freedom_xco2() const 
-  { 
+  double xco2_degrees_of_freedom() const
+  {
       FeDisableException disable_fp;
       return sum(where(xco2_state_used(),
 		     averaging_kernel()(i1, i1), 0));
   }
 
   blitz::Array<double, 1> xco2_avg_kernel() const;
-  blitz::Array<double, 2> co2_averaging_kernel() const;
-  blitz::Array<double, 2> ch4_averaging_kernel() const;
-  blitz::Array<double, 2> co_averaging_kernel() const;
   blitz::Array<double, 1> xco2_avg_kernel_full() const;
   blitz::Array<double, 1> xco2_avg_kernel_norm() const;
   blitz::Array<double, 1> xco2_correlation_interf() const;
-  blitz::Array<double, 1> interference_smoothing_uncertainty() const;
+
+  blitz::Array<double, 2> ch4_averaging_kernel() const;
+
+  blitz::Array<double, 2> co_averaging_kernel() const;
 
   void print(std::ostream& Os) const { Os << "ErrorAnalysis";}
+
 private:
   blitz::Array<double, 1> residual() const
   {
@@ -261,13 +266,13 @@ private:
     else
       return max_a_posteriori->a_priori_cov();
   }
-  blitz::Array<bool, 1> xco2_state_used() const 
+  blitz::Array<bool, 1> xco2_state_used() const
   { return atm->absorber_ptr()->absorber_vmr("CO2")->state_used(); }
-  blitz::Array<bool, 1> xch4_state_used() const 
+  blitz::Array<bool, 1> xch4_state_used() const
   { return atm->absorber_ptr()->absorber_vmr("CH4")->state_used(); }
-  blitz::Array<bool, 1> xco_state_used() const 
+  blitz::Array<bool, 1> xco_state_used() const
   { return atm->absorber_ptr()->absorber_vmr("CO")->state_used(); }
-  AutoDerivative<double> xco2() const 
+  AutoDerivative<double> xco2() const
   { return atm->absorber_ptr()->xgas("CO2"); }
   blitz::Array<double, 1> dxco2_dstate() const;
   // Only one of solver or max_a_posteriori will be nonnull.
@@ -278,7 +283,7 @@ private:
   blitz::Array<double, 2> hmat() const;
   blitz::Array<double, 2> ht_c_h() const;
   // Used in a lot of places, so define once here.
-  blitz::firstIndex i1; blitz::secondIndex i2; blitz::thirdIndex i3; 
+  blitz::firstIndex i1; blitz::secondIndex i2; blitz::thirdIndex i3;
   blitz::fourthIndex i4;
 };
 }
