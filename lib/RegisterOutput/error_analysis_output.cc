@@ -5,7 +5,7 @@ using namespace FullPhysics;
 #ifdef HAVE_LUA
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(ErrorAnalysisOutput, RegisterOutputBase)
-.def(luabind::constructor<const boost::shared_ptr<ErrorAnalysis>&, const blitz::Array<bool, 1>&, bool, bool, bool>())
+.def(luabind::constructor<const boost::shared_ptr<ErrorAnalysis>&, const blitz::Array<bool, 1>&, bool, bool, bool, bool, bool>())
 REGISTER_LUA_END()
 #endif
 
@@ -37,9 +37,11 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
 
   out->register_data_source("/RetrievalResults/last_step_levenberg_marquardt_parameter",
 			    &ErrorAnalysis::gamma_last_step, err);
+
+  out->register_data_source("/RetrievalResults/dof_full_vector",
+                            &ErrorAnalysis::degrees_of_freedom_full_vector, err);
+
   if (have_co2) {
-      out->register_data_source("/RetrievalResults/dof_full_vector",
-                               &ErrorAnalysis::degrees_of_freedom_full_vector, err);
       out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
                                 &ErrorAnalysis::interference_smoothing_uncertainty, err);
       out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
@@ -64,14 +66,23 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
                                 &ErrorAnalysis::xco2_correlation_interf, err);
   }
 
-  if (ch4_profile) {
-     out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
-                               &ErrorAnalysis::ch4_averaging_kernel, err);
+  if (have_ch4) {
+      if (! ch4_profile) {
+         ;
+      }
+      else {
+         out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
+                                   &ErrorAnalysis::ch4_averaging_kernel, err);
+      }
   }
 
-  if (co_profile) {
-      out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
-                                &ErrorAnalysis::co_averaging_kernel, err);
+  if (have_co) {
+      if (! co_profile) {
+          ;
+      }
+      else
+          out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
+                                    &ErrorAnalysis::co_averaging_kernel, err);
   }
 
   out->register_data_source("/SpectralParameters/modeled_radiance",

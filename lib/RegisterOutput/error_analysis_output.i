@@ -17,7 +17,9 @@ public:
   ErrorAnalysisOutput(const boost::shared_ptr<ErrorAnalysis>& E, 
                       const blitz::Array<bool, 1>& Spec_flag,
                       bool Have_co2 = false,
+                      bool Have_ch4 = false,
                       bool ch4_profile = false,
+                      bool Have_co = false,
                       bool co_profile = false);
 
   virtual void register_output(const boost::shared_ptr<Output>& out) const;
