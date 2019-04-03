@@ -226,14 +226,77 @@ public:
 		     averaging_kernel()(i1, i1), 0));
   }
 
+
   blitz::Array<double, 1> xco2_avg_kernel() const;
   blitz::Array<double, 1> xco2_avg_kernel_full() const;
   blitz::Array<double, 1> xco2_avg_kernel_norm() const;
   blitz::Array<double, 1> xco2_correlation_interf() const;
 
+  blitz::Array<double, 1> xch4_avg_kernel() const;
+  blitz::Array<double, 1> xch4_avg_kernel_full() const;
+  blitz::Array<double, 1> xch4_avg_kernel_norm() const;
   blitz::Array<double, 2> ch4_averaging_kernel() const;
+  blitz::Array<double, 1> xch4_gain_vector() const;
+  double xch4_measurement_error() const;
+  double xch4_smoothing_error() const;
+  double xch4_interference_error() const;
+  double xch4_uncertainty() const;
 
+  double xch4_uncert_noise() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xch4_measurement_error());
+  }
+  double xch4_uncert_smooth() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xch4_smoothing_error());
+  }
+  double xch4_uncert_interf() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xch4_interference_error());
+  }
+  double xch4_degrees_of_freedom() const
+  {
+      FeDisableException disable_fp;
+      return sum(where(xch4_state_used(),
+		     averaging_kernel()(i1, i1), 0));
+  }
+
+
+  blitz::Array<double, 1> xco_avg_kernel() const;
+  blitz::Array<double, 1> xco_avg_kernel_full() const;
+  blitz::Array<double, 1> xco_avg_kernel_norm() const;
   blitz::Array<double, 2> co_averaging_kernel() const;
+  blitz::Array<double, 1> xco_gain_vector() const;
+  double xco_measurement_error() const;
+  double xco_smoothing_error() const;
+  double xco_interference_error() const;
+  double xco_uncertainty() const;
+
+  double xco_uncert_noise() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xco_measurement_error());
+  }
+  double xco_uncert_smooth() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xco_smoothing_error());
+  }
+  double xco_uncert_interf() const
+  {
+      FeDisableException disable_fp;
+      return sqrt(xco_interference_error());
+  }
+  double xco_degrees_of_freedom() const
+  {
+      FeDisableException disable_fp;
+      return sum(where(xco_state_used(),
+		     averaging_kernel()(i1, i1), 0));
+  }
+
 
   void print(std::ostream& Os) const { Os << "ErrorAnalysis";}
 
@@ -274,7 +337,13 @@ private:
   { return atm->absorber_ptr()->absorber_vmr("CO")->state_used(); }
   AutoDerivative<double> xco2() const
   { return atm->absorber_ptr()->xgas("CO2"); }
+  AutoDerivative<double> xch4() const
+  { return atm->absorber_ptr()->xgas("CH4"); }
+  AutoDerivative<double> xco() const
+  { return atm->absorber_ptr()->xgas("CO"); }
   blitz::Array<double, 1> dxco2_dstate() const;
+  blitz::Array<double, 1> dxch4_dstate() const;
+  blitz::Array<double, 1> dxco_dstate() const;
   // Only one of solver or max_a_posteriori will be nonnull.
   boost::shared_ptr<ConnorSolver> solver;
   boost::shared_ptr<MaxAPosteriori> max_a_posteriori;

@@ -67,19 +67,48 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
   }
 
   if (have_ch4) {
-      if (! ch4_profile) {
-         ;
-      }
-      else {
-         out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
-                                   &ErrorAnalysis::ch4_averaging_kernel, err);
-      }
+      out->register_data_source("/RetrievalResults/xch4_gain_vector",
+                                &ErrorAnalysis::xch4_gain_vector, err);
+      out->register_data_source("/RetrievalResults/xch4_uncert",
+                                &ErrorAnalysis::xch4_uncertainty, err);
+      out->register_data_source("/RetrievalResults/xch4_uncert_noise",
+                                &ErrorAnalysis::xch4_uncert_noise, err);
+      out->register_data_source("/RetrievalResults/xch4_uncert_smooth",
+                                &ErrorAnalysis::xch4_uncert_smooth, err);
+      out->register_data_source("/RetrievalResults/xch4_uncert_interf",
+                                &ErrorAnalysis::xch4_uncert_interf, err);
+      out->register_data_source("/RetrievalResults/dof_ch4_profile",
+                                &ErrorAnalysis::xch4_degrees_of_freedom, err);
+      out->register_data_source("/RetrievalResults/xch4_avg_kernel",
+                                &ErrorAnalysis::xch4_avg_kernel, err);
+      out->register_data_source("/RetrievalResults/xch4_avg_kernel_norm",
+                                &ErrorAnalysis::xch4_avg_kernel_norm, err);
+      if (! ch4_profile)
+          ;
+      else
+          out->register_data_source("/RetrievalResults/ch4_profile_averaging_kernel_matrix",
+                                    &ErrorAnalysis::ch4_averaging_kernel, err);
   }
 
   if (have_co) {
-      if (! co_profile) {
+      out->register_data_source("/RetrievalResults/xco_gain_vector",
+                                &ErrorAnalysis::xco_gain_vector, err);
+      out->register_data_source("/RetrievalResults/xco_uncert",
+                                &ErrorAnalysis::xco_uncertainty, err);
+      out->register_data_source("/RetrievalResults/xco_uncert_noise",
+                                &ErrorAnalysis::xco_uncert_noise, err);
+      out->register_data_source("/RetrievalResults/xco_uncert_smooth",
+                                &ErrorAnalysis::xco_uncert_smooth, err);
+      out->register_data_source("/RetrievalResults/xco_uncert_interf",
+                                &ErrorAnalysis::xco_uncert_interf, err);
+      out->register_data_source("/RetrievalResults/dof_co_profile",
+                                &ErrorAnalysis::xco_degrees_of_freedom, err);
+      out->register_data_source("/RetrievalResults/xco_avg_kernel",
+                                &ErrorAnalysis::xco_avg_kernel, err);
+      out->register_data_source("/RetrievalResults/xco_avg_kernel_norm",
+                                &ErrorAnalysis::xco_avg_kernel_norm, err);
+      if (! co_profile)
           ;
-      }
       else
           out->register_data_source("/RetrievalResults/co_profile_averaging_kernel_matrix",
                                     &ErrorAnalysis::co_averaging_kernel, err);

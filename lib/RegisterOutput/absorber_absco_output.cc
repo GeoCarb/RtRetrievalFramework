@@ -60,8 +60,12 @@ public:
   AbsorberAbscoOutputHelper(const boost::shared_ptr<AbsorberAbsco>& Abs)
     : abs(Abs) {}
   double xco2_value() const { return abs->xgas("CO2").value(); }
+  double xch4_value() const { return abs->xgas("CH4").value(); }
+  double xco_value() const { return abs->xgas("CO").value(); }
   double total_column_thickness_o2_value() const { return abs->gas_total_column_thickness("O2").convert(Unit("m^-2")).value.value(); }
   double total_column_thickness_co2_value() const { return abs->gas_total_column_thickness("CO2").convert(Unit("m^-2")).value.value(); }
+  double total_column_thickness_ch4_value() const { return abs->gas_total_column_thickness("CH4").convert(Unit("m^-2")).value.value(); }
+  double total_column_thickness_co_value() const { return abs->gas_total_column_thickness("CO").convert(Unit("m^-2")).value.value(); }
   double total_column_thickness_h2o_value() const { return abs->gas_total_column_thickness("H2O").convert(Unit("m^-2")).value.value(); }
   blitz::Array<double, 1>layer_column_thickness_h2o_value() const { return abs->gas_column_thickness_layer("H2O").convert(Unit("m^-2")).value.value(); }
   double average_vmr_o2_value() const { return abs->average_vmr("O2").value(); }
@@ -81,12 +85,20 @@ private:
 void AbsorberAbscoOutput::register_output_apriori(const boost::shared_ptr<Output>& out) const
 {
   // Freeze the pressure state
-  boost::shared_ptr<AbsorberAbsco> afreeze = 
+  boost::shared_ptr<AbsorberAbsco> afreeze =
     boost::dynamic_pointer_cast<AbsorberAbsco>(a->clone());
   boost::shared_ptr<AbsorberAbscoOutputHelper> h(new AbsorberAbscoOutputHelper(afreeze));
   if(afreeze->gas_index("CO2") != -1)
     out->register_data_source("/RetrievalResults/xco2_apriori",
 			     &AbsorberAbscoOutputHelper::xco2_value, h);
+
+  if(afreeze->gas_index("CH4") != -1)
+    out->register_data_source("/RetrievalResults/xch4_apriori",
+			     &AbsorberAbscoOutputHelper::xch4_value, h);
+
+  if(afreeze->gas_index("CO") != -1)
+    out->register_data_source("/RetrievalResults/xco_apriori",
+			     &AbsorberAbscoOutputHelper::xco_value, h);
 
   if(afreeze->gas_index("O2") != -1)
     out->register_data_source("/RetrievalResults/apriori_o2_column",
@@ -97,27 +109,41 @@ void AbsorberAbscoOutput::register_output_apriori(const boost::shared_ptr<Output
 void AbsorberAbscoOutput::register_output(const boost::shared_ptr<Output>& out) const
 {
   boost::shared_ptr<AbsorberAbscoOutputHelper> h(new AbsorberAbscoOutputHelper(a));
-  if(a->gas_index("CO2") != -1) {
+  if (a->gas_index("CO2") != -1) {
     out->register_data_source("/RetrievalResults/xco2",
 			     &AbsorberAbscoOutputHelper::xco2_value, h);
     out->register_data_source_pad
       ("/RetrievalResults/xco2_pressure_weighting_function",
-       &AbsorberAbscoOutputHelper::pressure_weighting_function_grid_value, h, 
+       &AbsorberAbscoOutputHelper::pressure_weighting_function_grid_value, h,
        num_level, fill_value<double>());
 
     out->register_data_source("/RetrievalResults/retrieved_co2_column",
 			     &AbsorberAbscoOutputHelper::total_column_thickness_co2_value, h);
   }
 
-  if(a->gas_index("O2") != -1) {
+  if (a->gas_index("CH4") != -1) {
+    out->register_data_source("/RetrievalResults/xch4",
+			     &AbsorberAbscoOutputHelper::xch4_value, h);
+    out->register_data_source("/RetrievalResults/retrieved_ch4_column",
+			     &AbsorberAbscoOutputHelper::total_column_thickness_ch4_value, h);
+  }
+
+  if (a->gas_index("CO") != -1) {
+    out->register_data_source("/RetrievalResults/xco",
+			     &AbsorberAbscoOutputHelper::xco_value, h);
+    out->register_data_source("/RetrievalResults/retrieved_co_column",
+			     &AbsorberAbscoOutputHelper::total_column_thickness_co_value, h);
+  }
+
+  if (a->gas_index("O2") != -1) {
     out->register_data_source("/RetrievalResults/retrieved_o2_column",
 			     &AbsorberAbscoOutputHelper::total_column_thickness_o2_value, h);
- 
-    out->register_data_source("/Metadata/VMRO2", 
+
+    out->register_data_source("/Metadata/VMRO2",
 			     &AbsorberAbscoOutputHelper::average_vmr_o2_value, h);
   }
 
-  if(a->gas_index("H2O") != -1) {
+  if (a->gas_index("H2O") != -1) {
     out->register_data_source("/RetrievalResults/retrieved_h2o_column",
 			     &AbsorberAbscoOutputHelper::total_column_thickness_h2o_value, h);
 
@@ -128,7 +154,7 @@ void AbsorberAbscoOutput::register_output(const boost::shared_ptr<Output>& out) 
   // Wet and dry air mass, H2O used in calculation of results
   out->register_data_source_pad("/RetrievalResults/retrieved_dry_air_column_layer_thickness",
 			       &AbsorberAbscoOutputHelper::dry_air_column_thickness_value, h, num_level - 1 , fill_value<double>());
-    
+
   out->register_data_source_pad("/RetrievalResults/retrieved_wet_air_column_layer_thickness",
 			       &AbsorberAbscoOutputHelper::wet_air_column_thickness_value, h, num_level - 1, fill_value<double>());
   for(int i = 0; i < a->number_species(); ++i) {
@@ -136,9 +162,9 @@ void AbsorberAbscoOutput::register_output(const boost::shared_ptr<Output>& out) 
     boost::shared_ptr<Absco> ab =
       boost::dynamic_pointer_cast<Absco>(a->gas_absorption_ptr(gas_name));
     if(ab) {
-      boost::shared_ptr<GasAbscoOutputHelper> 
+      boost::shared_ptr<GasAbscoOutputHelper>
 	h2(new GasAbscoOutputHelper(ab, sb));
-      out->register_data_source("/Metadata/Absco" + gas_name + "Scale", 
+      out->register_data_source("/Metadata/Absco" + gas_name + "Scale",
 				&GasAbscoOutputHelper::absco_scale, h2);
     }
   }
