@@ -26,7 +26,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
    --- run. So for a real data, this will be a empty string, and will
    --- in fact be ignored.
    scene_file = os.getenv("scene_file"),
-   static_file = geocarb_base_config_dir .. "/../input/l2_oco_static_input.h5",
+   static_file = geocarb_base_config_dir .. "/../input/l2_geocarb_static_input.h5",
    static_eof_file = geocarb_base_config_dir .. "/../input/l2_oco_eof.h5",
    static_solar_file = config_common_dir .. "/../input/l2_solar_model.h5",
    static_aerosol_file = config_common_dir .. "/../input/l2_aerosol_combined.h5",
