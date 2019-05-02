@@ -31,6 +31,7 @@ public:
   virtual DoubleWithUnit sounding_zenith(int i) const;
   virtual DoubleWithUnit sounding_azimuth(int i) const;
   virtual blitz::Array<double, 2> stokes_coefficient(int i) const;
+  virtual double stokes_coefficient_central_wl(int i) const;
   virtual DoubleWithUnit solar_zenith(int i) const;
   virtual DoubleWithUnit solar_azimuth(int i) const;
   virtual DoubleWithUnit altitude(int i) const;

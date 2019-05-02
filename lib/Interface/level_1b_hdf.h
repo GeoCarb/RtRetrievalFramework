@@ -64,6 +64,10 @@ public:
     range_check(i, 0, number_spectrometer());
     return stokes_coef_(i, blitz::Range::all(), blitz::Range::all());
   }
+  virtual double stokes_coefficient_central_wl(int i) const
+  {
+    return stokes_coef_central_wl_(i);
+  }
   virtual DoubleWithUnit relative_velocity(int i) const 
   { return relative_velocity_; }
   virtual ArrayWithUnit<double, 1> spectral_coefficient(int Spec_index) const
@@ -117,6 +121,7 @@ protected:
   ArrayWithUnit<double, 1> altitude_, latitude_, longitude_,
     solar_azimuth_, solar_zenith_, sounding_zenith_, sounding_azimuth_;
   blitz::Array<double, 3> stokes_coef_;
+  blitz::Array<double, 1> stokes_coef_central_wl_;
   DoubleWithUnit relative_velocity_;
   ArrayWithUnit<double, 2> spectral_coefficient_;
   Time time_;

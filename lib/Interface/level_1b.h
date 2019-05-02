@@ -65,6 +65,7 @@ public:
 //-----------------------------------------------------------------------
 
   virtual blitz::Array<double, 2> stokes_coefficient(int i) const = 0;
+  virtual double stokes_coefficient_central_wl(int i) const = 0;
 
 //-----------------------------------------------------------------------
 /// Solar zenith

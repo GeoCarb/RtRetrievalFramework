@@ -57,6 +57,14 @@ blitz::Array<double, 3> level_1b_stokes(const Level1b& Lev1)
   return res;
 }
 
+blitz::Array<double, 1> level_1b_stokes_central_wl(const Level1b& Lev1)
+{
+  blitz::Array<double, 1> res(Lev1.number_spectrometer());
+  for(int i = 0; i < res.rows(); ++i)
+    res(i) = Lev1.stokes_coefficient_central_wl(i);
+  return res;
+}
+
 blitz::Array<double, 2> level_1b_s_coeffs(const Level1b& Lev1)
 {
   int nparam = Lev1.spectral_coefficient(0).value.rows();
@@ -171,6 +179,7 @@ REGISTER_LUA_CLASS(Level1b)
 .def("zen", &level_1b_zen_i)
 .def("zen_with_unit", &Level1b::sounding_zenith)
 .def("stokes_coef", &level_1b_stokes)
+.def("stokes_coef_central_wl", &level_1b_stokes_central_wl)
 .def("spectral_coefficient", &level_1b_s_coeffs)
 .def("spectral_coefficient_with_unit", &Level1b::spectral_coefficient)
 .def("spectral_coefficient_with_unit", &level_1b_s_coeffs_with_unit)

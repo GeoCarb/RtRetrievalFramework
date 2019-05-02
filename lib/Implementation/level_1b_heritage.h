@@ -54,6 +54,10 @@ public:
     res(blitz::Range::all(),1) = 0.;
     return res;
   }
+  virtual double stokes_coefficient_central_wl(int i) const
+  {
+    return 0.;
+  }
   virtual DoubleWithUnit solar_azimuth(int i) const
   {
     range_check(i, 0, number_spectrometer());

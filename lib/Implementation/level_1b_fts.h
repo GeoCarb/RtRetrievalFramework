@@ -68,6 +68,10 @@ public:
     dummy = 0;
     return dummy;
     }
+  double stokes_coefficient_central_wl(int i) const {
+    range_check(i, 0, number_spectrometer());
+    return 0.;
+    }
   virtual DoubleWithUnit solar_azimuth(int i) const {
     range_check(i, 0, number_spectrometer());
     return DoubleWithUnit(run_log_[i].solar_azimuth, units::deg);

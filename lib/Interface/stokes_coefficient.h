@@ -29,6 +29,7 @@ public:
 //-----------------------------------------------------------------------
 
   virtual ArrayAd<double, 3> stokes_coefficient() const = 0;
+  virtual ArrayAd<double, 1> stokes_coefficient_central_wl() const = 0;
 
 //-----------------------------------------------------------------------
 /// Clone a StokesCoefficient object. Note that the cloned version will *not*

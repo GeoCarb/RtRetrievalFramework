@@ -143,6 +143,7 @@ void Level1bAcos::initialize()
   sounding_azimuth_.value.resize(altitude_.value.shape());
   spectral_coefficient_.value.resize(wn_coeffs.value.extent(1), wn_coeffs.value.extent(3));
   stokes_coef_.resize(altitude_.value.rows(), sz3[3], sz3[4]);
+  stokes_coef_central_wl_.resize(altitude_.value.rows());
   land_fraction_.resize(altitude_.value.shape());
 
   altitude_.value = alt.value(0, ra, 0);

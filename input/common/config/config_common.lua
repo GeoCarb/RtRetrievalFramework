@@ -3329,7 +3329,11 @@ end
 ConfigCommon.stokes_coefficient_constant = Creator:new {}
 
 function ConfigCommon.stokes_coefficient_constant:create()
-   return StokesCoefficientConstant(self:value())
+   if (self.central_wl == nil) then
+      return StokesCoefficientConstant(self:value())
+   else
+      return StokesCoefficientConstant(self:value(), self:central_wl())
+   end
 end
 
 ------------------------------------------------------------
@@ -3362,6 +3366,10 @@ end
 
 function ConfigCommon.stokes_coefficient_l1b(self)
    return self.config.l1b:stokes_coef()
+end
+
+function ConfigCommon.stokes_coefficient_central_wl_l1b(self)
+   return self.config.l1b:stokes_coef_central_wl()
 end
 
 ------------------------------------------------------------

@@ -160,6 +160,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
       stokes_coefficient = {
          creator = ConfigCommon.stokes_coefficient_constant,
          value = ConfigCommon.stokes_coefficient_l1b,
+         central_wl = ConfigCommon.stokes_coefficient_central_wl_l1b,
          -- Hard code value rather than reading from l1b
 --       value = ConfigCommon.stokes_coefficient_value({{{1,0}, {2,0}, {3,0}, {4,0}},
 --                                                      {{5,0}, {6,0}, {7,0}, {8,0}},

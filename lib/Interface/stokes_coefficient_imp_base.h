@@ -28,6 +28,8 @@ public:
   virtual ~StokesCoefficientImpBase() {}
   virtual ArrayAd<double, 3> stokes_coefficient() const
   { fill_cache(); return stokes_coeff; }
+  virtual ArrayAd<double, 1> stokes_coefficient_central_wl() const
+  { fill_cache(); return stokes_coeff_central_wl; }
   virtual boost::shared_ptr<StokesCoefficient> clone() const = 0;
   virtual void update_sub_state_hook() 
   { cache_stale = true; }
@@ -57,6 +59,7 @@ protected:
 /// classes when calc_stokes_coeff() is called.
 //-----------------------------------------------------------------------
   mutable ArrayAd<double, 3> stokes_coeff;
+  mutable ArrayAd<double, 1> stokes_coeff_central_wl;
 
 //-----------------------------------------------------------------------
 /// Derived classes should provide a function to fill in pgrid when this is 

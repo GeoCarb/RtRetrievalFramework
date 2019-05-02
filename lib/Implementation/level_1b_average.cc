@@ -53,6 +53,11 @@ Array<double, 2> Level1bAverage::stokes_coefficient(int i) const
   return res;
 }
 
+double Level1bAverage::stokes_coefficient_central_wl(int i) const
+{
+  return 0.;
+}
+
 DoubleWithUnit Level1bAverage::solar_zenith(int i) const
 {
   DoubleWithUnit sum(0, l1b[0]->solar_zenith(i).units);

@@ -46,6 +46,8 @@ public:
 
     virtual blitz::Array<double, 2> stokes_coefficient(int i) const
     { return l1b->stokes_coefficient(i); }
+    virtual double stokes_coefficient_central_wl(int i) const
+    { return l1b->stokes_coefficient_central_wl(i); }
 
     virtual DoubleWithUnit solar_zenith(int i) const
     { return l1b->solar_zenith(i); }

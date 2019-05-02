@@ -158,8 +158,8 @@ void Level1bOco::initialize()
   std::string pol_ang_dataset = "FootprintGeometry/footprint_polarization_angle";
 
   // Determine if we can read from the stokes dataset
-  if (hfile->has_object(stokes_dataset)) {
-    if (hfile->read_rank<4>(stokes_dataset) == 4) {
+  if(hfile->has_object(stokes_dataset)) {
+    if(hfile->read_rank<4>(stokes_dataset) == 4) {
         TinyVector<int,4> stokes_shape = hfile->read_shape<4>(stokes_dataset);
         TinyVector<int,4> stokes_start, stokes_size;
         stokes_start = frame_index, sounding_index, 0, 0;
@@ -178,6 +178,7 @@ void Level1bOco::initialize()
 
         Array<double, 5> st =
           hfile->read_field<double, 5>(stokes_dataset, stokes_start, stokes_size);
+        stokes_coef_ = 0.;
         stokes_coef_ = st(0, 0, ra, ra, ra);
     }
   } else if(hfile->has_object(pol_ang_dataset)) {
@@ -204,6 +205,21 @@ void Level1bOco::initialize()
     stokes_coef_(ra, 1) = -0.5;
     stokes_coef_(ra, Range(2, toEnd)) = 0.0;
   }
+
+  // Read the stokes coefficient central wavelength from the appropriate dataset
+  stokes_coef_central_wl_.resize(altitude_.value.rows(), 4, 2);
+
+  std::string stokes_central_wl_dataset = "InstrumentHeader/stokes_coeff_central_wl";
+
+  if(hfile->has_object(stokes_central_wl_dataset)) {
+    TinyVector<int,1> stokes_shape = hfile->read_shape<1>(stokes_central_wl_dataset);
+    TinyVector<int,1> stokes_start = 0;
+    stokes_coef_central_wl_ =
+      hfile->read_field<double, 1>(stokes_central_wl_dataset, stokes_start, stokes_shape);
+  } else {
+    stokes_coef_central_wl_ = 0.;
+  }
+
   if(hfile->has_object("SoundingGeometry/sounding_land_fraction")) {
     TinyVector<int,2> land_start, land_size;
     land_start = frame_index, sounding_index;
