@@ -47,6 +47,18 @@ public:
 		 const blitz::Array<int, 1>& Sindex);
 
 //-----------------------------------------------------------------------
+/// Assignment operator so internals are correctly set 
+//-----------------------------------------------------------------------
+  
+  SpectralDomain& operator=(const SpectralDomain& V)
+  { 
+    data_.reference(V.data_ad().copy());
+    sindex_.reference(V.sample_index().copy());
+    units_ = V.units();
+    return *this;
+  }
+
+//-----------------------------------------------------------------------
 /// Return data. This is either wavenumber or wavelength. This member
 /// function is intended for classes that don't care which one we are
 /// using. If you do care, then you should call either wavenumber or
