@@ -608,7 +608,7 @@ double ErrorAnalysis::xch4_uncertainty() const
   Array<double, 2> cov(aposteriori_covariance());
   if(cov.rows() == 0)
     return 0.0;
-  return sqrt(sum(dxch4_dstate()(i1) * cov * dxco2_dstate()(i2)));
+  return sqrt(sum(dxch4_dstate()(i1) * cov * dxch4_dstate()(i2)));
 }
 
 double ErrorAnalysis::xco_uncertainty() const
@@ -620,7 +620,7 @@ double ErrorAnalysis::xco_uncertainty() const
   Array<double, 2> cov(aposteriori_covariance());
   if(cov.rows() == 0)
     return 0.0;
-  return sqrt(sum(dxco_dstate()(i1) * cov * dxco2_dstate()(i2)));
+  return sqrt(sum(dxco_dstate()(i1) * cov * dxco_dstate()(i2)));
 }
 
 //-----------------------------------------------------------------------
