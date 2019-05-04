@@ -172,7 +172,7 @@ public:
       return sum(averaging_kernel()(i1, i1));
   }
 
-  blitz::Array<double, 1> interference_smoothing_uncertainty() const;
+  blitz::Array<double, 1> xco2_interference_smoothing_uncertainty() const;
 
   blitz::Array<double, 2> co2_averaging_kernel() const;
 
@@ -232,6 +232,7 @@ public:
   blitz::Array<double, 1> xco2_avg_kernel_norm() const;
   blitz::Array<double, 1> xco2_correlation_interf() const;
 
+  blitz::Array<double, 1> xch4_interference_smoothing_uncertainty() const;
   blitz::Array<double, 1> xch4_avg_kernel() const;
   blitz::Array<double, 1> xch4_avg_kernel_full() const;
   blitz::Array<double, 1> xch4_avg_kernel_norm() const;
@@ -266,6 +267,7 @@ public:
   }
 
 
+  blitz::Array<double, 1> xco_interference_smoothing_uncertainty() const;
   blitz::Array<double, 1> xco_avg_kernel() const;
   blitz::Array<double, 1> xco_avg_kernel_full() const;
   blitz::Array<double, 1> xco_avg_kernel_norm() const;
@@ -347,6 +349,9 @@ private:
   blitz::Array<double, 1> dxch4_dstate() const;
   blitz::Array<double, 1> dxco_dstate() const;
 
+  blitz::Array<double, 1> xgas_interference_smoothing_uncertainty
+                                (blitz::Array<double, 1> full_ak,
+                                 blitz::Array<double, 1> dxgas_dstatev) const;
   blitz::Array<double, 2> gas_averaging_kernel
                                 (blitz::Array<bool, 1> xgas_state_usedv) const;
   blitz::Array<double, 1> xgas_gain_vector(const std::string& gas_name,

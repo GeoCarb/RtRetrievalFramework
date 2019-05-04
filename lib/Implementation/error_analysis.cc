@@ -145,17 +145,32 @@ double ErrorAnalysis::noise(int band) const
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::interference_smoothing_uncertainty() const
+Array<double, 1> ErrorAnalysis::xgas_interference_smoothing_uncertainty
+                                  (Array<double, 1> full_ak,
+                                   Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
-  Array<double, 1> full_ak(xco2_avg_kernel_full());
-
   Array<double, 1> res(full_ak.shape());
   Array<double, 2> cov(aposteriori_covariance());
   // Allow cov to be slightly negative, e.g., due to round off error.
-  res = (full_ak - dxco2_dstate()) *
+  res = (full_ak - dxgas_dstatev) *
     where(cov(i1, i1) > 0, sqrt(cov(i1, i1)), 0);
   return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xco2_avg_kernel_full(), dxco2_dstate());
+}
+
+Array<double, 1> ErrorAnalysis::xch4_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xch4_avg_kernel_full(), dxch4_dstate());
+}
+
+Array<double, 1> ErrorAnalysis::xco_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xco_avg_kernel_full(), dxco_dstate());
 }
 
 //-----------------------------------------------------------------------

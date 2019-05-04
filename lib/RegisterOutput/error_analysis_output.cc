@@ -43,7 +43,7 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
 
   if (have_co2) {
       out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
-                                &ErrorAnalysis::interference_smoothing_uncertainty, err);
+                                &ErrorAnalysis::xco2_interference_smoothing_uncertainty, err);
       out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
                                 &ErrorAnalysis::co2_averaging_kernel, err);
       out->register_data_source("/RetrievalResults/xco2_gain_vector",
@@ -67,6 +67,8 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
   }
 
   if (have_ch4) {
+      out->register_data_source("/RetrievalResults/xch4_interference_smoothing_uncert",
+                                &ErrorAnalysis::xch4_interference_smoothing_uncertainty, err);
       out->register_data_source("/RetrievalResults/xch4_gain_vector",
                                 &ErrorAnalysis::xch4_gain_vector, err);
       out->register_data_source("/RetrievalResults/xch4_uncert",
@@ -93,6 +95,8 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
   }
 
   if (have_co) {
+      out->register_data_source("/RetrievalResults/xco_interference_smoothing_uncert",
+                                &ErrorAnalysis::xco_interference_smoothing_uncertainty, err);
       out->register_data_source("/RetrievalResults/xco_gain_vector",
                                 &ErrorAnalysis::xco_gain_vector, err);
       out->register_data_source("/RetrievalResults/xco_uncert",
