@@ -344,6 +344,26 @@ private:
   blitz::Array<double, 1> dxco2_dstate() const;
   blitz::Array<double, 1> dxch4_dstate() const;
   blitz::Array<double, 1> dxco_dstate() const;
+
+  blitz::Array<double, 2> gas_averaging_kernel
+                                (blitz::Array<bool, 1> xgas_state_usedv) const;
+  blitz::Array<double, 1> xgas_gain_vector(const std::string& gas_name,
+                                 blitz::Array<bool, 1> xgas_state_usedv) const;
+  double xgas_measurement_error (blitz::Array<double, 1> dxgas_dstatev) const;
+  double xgas_smoothing_error   (blitz::Array<bool, 1> xgas_state_usedv,
+                                 blitz::Array<double, 1> dxgas_dstatev) const;
+  double xgas_interference_error(blitz::Array<bool, 1> xgas_state_usedv,
+                                 blitz::Array<double, 1> dxgas_dstatev) const;
+  double xgas_uncertainty       (blitz::Array<double, 1> dxgas_dstatev) const;
+  blitz::Array<double, 1> xgas_avg_kernel
+                                (blitz::Array<bool, 1> xgas_state_usedv,
+                                 blitz::Array<double, 1> xgas_avg_kernel_fullv) const;
+  blitz::Array<double, 1> xgas_avg_kernel_full
+                                (blitz::Array<double, 1> dxgas_dstatev) const;
+  blitz::Array<double, 1> xgas_avg_kernel_norm
+                                (blitz::Array<bool, 1> xgas_state_usedv,
+                                 blitz::Array<double, 1> dxgas_dstatev) const;
+
   // Only one of solver or max_a_posteriori will be nonnull.
   boost::shared_ptr<ConnorSolver> solver;
   boost::shared_ptr<MaxAPosteriori> max_a_posteriori;

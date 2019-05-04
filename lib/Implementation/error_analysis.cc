@@ -160,14 +160,14 @@ Array<double, 1> ErrorAnalysis::interference_smoothing_uncertainty() const
 
 //-----------------------------------------------------------------------
 /// Portion of averaging kernel that relates the part of the state vector
-/// that is used by the CO2 VMR calculation.
+/// that is used by the gas VMR calculation.
 //-----------------------------------------------------------------------
 
-Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
+Array<double, 2> ErrorAnalysis::gas_averaging_kernel(Array<bool, 1> xgas_state_usedv) const
 {
   FeDisableException disable_fp;
   Array<double, 2> ak(averaging_kernel());
-  Array<bool, 1> used(xco2_state_used());
+  Array<bool, 1> used(xgas_state_usedv);
   int sz = count(used);
   Array<double, 2> res(sz, sz);
   int ind1 = 0;
@@ -184,9 +184,14 @@ Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
   return res;
 }
 
+Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
+{
+  return gas_averaging_kernel(xco2_state_used());
+}
+
 //-----------------------------------------------------------------------
-/// This calculates xco2_gain_vector. It is formally the partial
-/// derivative of retrieved XCO2 with respect to input radiance. It has
+/// This calculates x<gas>_gain_vector. It is formally the partial
+/// derivative of retrieved Xgas with respect to input radiance. It has
 /// the same size & shape as SpectralParameters/measured_radiance.  That
 /// is, one entry per sounding, and each sounding has a vector of
 /// length m, which is the total # of channels across the 3 bands.
@@ -201,14 +206,15 @@ Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
 /// the front in parentheses is a row vector of length n, where n is the
 /// number of state vector elements; it has h for its first 20 elements,
 /// and 0 after that.  Is is formally the object that transforms the
-/// retrieved state vector into XCO2.  Sy^-1 is calculated internally
+/// retrieved state vector into Xgas.  Sy^-1 is calculated internally
 /// in the code, but it is also easy to construct. It is a diagonal (m,m)
 /// matrix with 1/sigma^2 down the diagonal, where sigma is the 1-sigma
 /// prior radiance uncertainty for each channel.  K is the (n,m) matrix
 /// of jacobians, and S is the (n,n) posterior error covariance matrix.
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
+Array<double, 1> ErrorAnalysis::xgas_gain_vector(const std::string& gas_name,
+                                                 Array<bool, 1> xgas_state_usedv) const
 {
     FeDisableException disable_fp;
     Array<double, 1> result(fm->measured_radiance_all().spectral_range().data().shape());
@@ -216,27 +222,29 @@ Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
 
     // Temporary, we need to add handling for a iterative_solver.
     if(!solver) {
-      Logger::warning() << "Can not calculate xco2_gain_vector since solver is non ConnorSolver" << '\n';
+      Logger::warning() << "Can not calculate x" << gas_name <<
+        "_gain_vector since solver is non ConnorSolver" << '\n';
       return result;
     }
 
-    // Make sure the AbsorberVMR for CO2 is a Absorber Hdf so we can use the
+    // Make sure the AbsorberVMR for gas is a Absorber Hdf so we can use the
     // pressure weighting function method
-    boost::shared_ptr<AbsorberAbsco> absorber = boost::dynamic_pointer_cast<AbsorberAbsco>(atm->absorber_ptr());
+    boost::shared_ptr<AbsorberAbsco> absorber =
+      boost::dynamic_pointer_cast<AbsorberAbsco>(atm->absorber_ptr());
     if(absorber != 0) {
         // n = # sv items
         // m = # of radiance points
 
-        Array<bool, 1> xco2_state_usedv = xco2_state_used();
-        Array<double, 1> sv_press_weighting(xco2_state_usedv.shape());
+        Array<double, 1> sv_press_weighting(xgas_state_usedv.shape());
         sv_press_weighting = 0;
         //
-        // Copy pressure weighting values where CO2 is located in the statevector
+        // Copy pressure weighting values where gas is located in the statevector
         // Shape: n
         Array<double, 1> press_wgt_grid(absorber->pressure_weighting_function_grid().value());
         int p_wgt_idx = 0;
-        for(int sv_idx = 0; sv_idx < xco2_state_usedv.rows() && p_wgt_idx < press_wgt_grid.rows(); sv_idx++) {
-            if(xco2_state_usedv(sv_idx)) {
+        for(int sv_idx = 0; sv_idx < xgas_state_usedv.rows() &&
+                            p_wgt_idx < press_wgt_grid.rows(); sv_idx++) {
+            if(xgas_state_usedv(sv_idx)) {
                 sv_press_weighting(sv_idx) = press_wgt_grid(p_wgt_idx);
                 p_wgt_idx++;
             }
@@ -255,7 +263,8 @@ Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
 	// suck up all the memory of a large system. This threshold is
 	// arbitrary, and we can change this in the future if needed.
 	if(Se.rows() > 20000) {
-	  Logger::error() << "Se is too big for calculating xco2_gain_vector. Se.rows() = " << Se.rows() << '\n';
+	  Logger::error() << "Se is too big for calculating x" << gas_name <<
+            "_gain_vector. Se.rows() = " << Se.rows() << '\n';
 	  return result;
 	}
         try {
@@ -263,7 +272,8 @@ Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
         } catch (std::bad_alloc& ba) {
             // If Se is too big then we won't be able to allocated the memory
             // for this operation and we should fail and return an empty result
-            Logger::error() << "Se is too big for calculating xco2_gain_vector. Se.rows() = " << Se.rows() << '\n';
+            Logger::error() << "Se is too big for calculating x" << gas_name <<
+              "_gain_vector. Se.rows() = " << Se.rows() << '\n';
             return result;
         }
 
@@ -280,170 +290,30 @@ Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
         result = sum(res2(i2) * Sy_m1(i2, i1), i2);
 
     } else {
-        Logger::warning() << "Can not calculate xco2_gain_vector since atmosphere->absorber() is not of type AbscoAbsorber" << '\n';
+        Logger::warning() << "Can not calculate x" << gas_name <<
+          "_gain_vector since atmosphere->absorber() is not of type AbscoAbsorber" << '\n';
     }
 
     return result;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_gain_vector() const
+{
+    return xgas_gain_vector("co2", xco2_state_used());
 }
 
 Array<double, 1> ErrorAnalysis::xch4_gain_vector() const
 {
-    FeDisableException disable_fp;
-    Array<double, 1> result(fm->measured_radiance_all().spectral_range().data().shape());
-    result = 0;
-
-    // Temporary, we need to add handling for a iterative_solver.
-    if(!solver) {
-      Logger::warning() << "Can not calculate xch4_gain_vector since solver is non ConnorSolver" << '\n';
-      return result;
-    }
-
-    // Make sure the AbsorberVMR for CO2 is a Absorber Hdf so we can use the
-    // pressure weighting function method
-    boost::shared_ptr<AbsorberAbsco> absorber = boost::dynamic_pointer_cast<AbsorberAbsco>(atm->absorber_ptr());
-    if(absorber != 0) {
-        // n = # sv items
-        // m = # of radiance points
-
-        Array<bool, 1> xch4_state_usedv = xch4_state_used();
-        Array<double, 1> sv_press_weighting(xch4_state_usedv.shape());
-        sv_press_weighting = 0;
-        //
-        // Copy pressure weighting values where CO2 is located in the statevector
-        // Shape: n
-        Array<double, 1> press_wgt_grid(absorber->pressure_weighting_function_grid().value());
-        int p_wgt_idx = 0;
-        for(int sv_idx = 0; sv_idx < xch4_state_usedv.rows() && p_wgt_idx < press_wgt_grid.rows(); sv_idx++) {
-            if(xch4_state_usedv(sv_idx)) {
-                sv_press_weighting(sv_idx) = press_wgt_grid(p_wgt_idx);
-                p_wgt_idx++;
-            }
-        }
-
-        // Shape: n x n
-        Array<double, 2> S(aposteriori_covariance());
-
-        // Shape: m
-        Array<double, 1> Se(solver->residual_covariance_diagonal());
-
-        // Compute Sy_m1 with 1/sqrt(Se) on the diagonal
-        // Shape: m x m
-        Array<double, 2> Sy_m1;
-	// Don't even try for larger sizes, since we don't want to
-	// suck up all the memory of a large system. This threshold is
-	// arbitrary, and we can change this in the future if needed.
-	if(Se.rows() > 20000) {
-	  Logger::error() << "Se is too big for calculating xch4_gain_vector. Se.rows() = " << Se.rows() << '\n';
-	  return result;
-	}
-        try {
-            Sy_m1.resize(Se.rows(), Se.rows());
-        } catch (std::bad_alloc& ba) {
-            // If Se is too big then we won't be able to allocated the memory
-            // for this operation and we should fail and return an empty result
-            Logger::error() << "Se is too big for calculating xch4_gain_vector. Se.rows() = " << Se.rows() << '\n';
-            return result;
-        }
-
-        Sy_m1 = 0;
-        for(int r_idx = 0; r_idx < Se.rows(); r_idx++) {
-            Sy_m1(r_idx, r_idx) = 1 / Se(r_idx);
-        }
-
-        // Shape: n x m
-        Array<double, 2> Kt(solver->jacobian().transpose(secondDim, firstDim));
-
-        Array<double, 1> res1( sum(sv_press_weighting(i2) * S(i2, i1), i2) );
-        Array<double, 1> res2( sum(res1(i2) * Kt(i2, i1), i2) );
-        result = sum(res2(i2) * Sy_m1(i2, i1), i2);
-
-    } else {
-        Logger::warning() << "Can not calculate xch4_gain_vector since atmosphere->absorber() is not of type AbscoAbsorber" << '\n';
-    }
-
-    return result;
+    return xgas_gain_vector("ch4", xch4_state_used());
 }
 
 Array<double, 1> ErrorAnalysis::xco_gain_vector() const
 {
-    FeDisableException disable_fp;
-    Array<double, 1> result(fm->measured_radiance_all().spectral_range().data().shape());
-    result = 0;
-
-    // Temporary, we need to add handling for a iterative_solver.
-    if(!solver) {
-      Logger::warning() << "Can not calculate xco_gain_vector since solver is non ConnorSolver" << '\n';
-      return result;
-    }
-
-    // Make sure the AbsorberVMR for CO2 is a Absorber Hdf so we can use the
-    // pressure weighting function method
-    boost::shared_ptr<AbsorberAbsco> absorber = boost::dynamic_pointer_cast<AbsorberAbsco>(atm->absorber_ptr());
-    if(absorber != 0) {
-        // n = # sv items
-        // m = # of radiance points
-
-        Array<bool, 1> xco_state_usedv = xco_state_used();
-        Array<double, 1> sv_press_weighting(xco_state_usedv.shape());
-        sv_press_weighting = 0;
-        //
-        // Copy pressure weighting values where CO2 is located in the statevector
-        // Shape: n
-        Array<double, 1> press_wgt_grid(absorber->pressure_weighting_function_grid().value());
-        int p_wgt_idx = 0;
-        for(int sv_idx = 0; sv_idx < xco_state_usedv.rows() && p_wgt_idx < press_wgt_grid.rows(); sv_idx++) {
-            if(xco_state_usedv(sv_idx)) {
-                sv_press_weighting(sv_idx) = press_wgt_grid(p_wgt_idx);
-                p_wgt_idx++;
-            }
-        }
-
-        // Shape: n x n
-        Array<double, 2> S(aposteriori_covariance());
-
-        // Shape: m
-        Array<double, 1> Se(solver->residual_covariance_diagonal());
-
-        // Compute Sy_m1 with 1/sqrt(Se) on the diagonal
-        // Shape: m x m
-        Array<double, 2> Sy_m1;
-	// Don't even try for larger sizes, since we don't want to
-	// suck up all the memory of a large system. This threshold is
-	// arbitrary, and we can change this in the future if needed.
-	if(Se.rows() > 20000) {
-	  Logger::error() << "Se is too big for calculating xco_gain_vector. Se.rows() = " << Se.rows() << '\n';
-	  return result;
-	}
-        try {
-            Sy_m1.resize(Se.rows(), Se.rows());
-        } catch (std::bad_alloc& ba) {
-            // If Se is too big then we won't be able to allocated the memory
-            // for this operation and we should fail and return an empty result
-            Logger::error() << "Se is too big for calculating xco_gain_vector. Se.rows() = " << Se.rows() << '\n';
-            return result;
-        }
-
-        Sy_m1 = 0;
-        for(int r_idx = 0; r_idx < Se.rows(); r_idx++) {
-            Sy_m1(r_idx, r_idx) = 1 / Se(r_idx);
-        }
-
-        // Shape: n x m
-        Array<double, 2> Kt(solver->jacobian().transpose(secondDim, firstDim));
-
-        Array<double, 1> res1( sum(sv_press_weighting(i2) * S(i2, i1), i2) );
-        Array<double, 1> res2( sum(res1(i2) * Kt(i2, i1), i2) );
-        result = sum(res2(i2) * Sy_m1(i2, i1), i2);
-
-    } else {
-        Logger::warning() << "Can not calculate xco_gain_vector since atmosphere->absorber() is not of type AbscoAbsorber" << '\n';
-    }
-
-    return result;
+    return xgas_gain_vector("co", xco_state_used());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate XCO2 measurement error
+/// Calculate Xgas measurement error
 ///
 /// This is equation 3-106 in the ATB
 ///
@@ -451,29 +321,30 @@ Array<double, 1> ErrorAnalysis::xco_gain_vector() const
 /// the right reference.
 //-----------------------------------------------------------------------
 
-double ErrorAnalysis::xco2_measurement_error() const
+double ErrorAnalysis::xgas_measurement_error(Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
-  return sum(dxco2_dstate()(i1) * averaging_kernel()(i1, i3) *
-	     aposteriori_covariance()(i3, i2) * dxco2_dstate()(i2));
+  return sum(dxgas_dstatev(i1) * averaging_kernel()(i1, i3) *
+	     aposteriori_covariance()(i3, i2) * dxgas_dstatev(i2));
+}
+
+double ErrorAnalysis::xco2_measurement_error() const
+{
+  return xgas_measurement_error(dxco2_dstate());
 }
 
 double ErrorAnalysis::xch4_measurement_error() const
 {
-  FeDisableException disable_fp;
-  return sum(dxch4_dstate()(i1) * averaging_kernel()(i1, i3) *
-	     aposteriori_covariance()(i3, i2) * dxch4_dstate()(i2));
+  return xgas_measurement_error(dxch4_dstate());
 }
 
 double ErrorAnalysis::xco_measurement_error() const
 {
-  FeDisableException disable_fp;
-  return sum(dxco_dstate()(i1) * averaging_kernel()(i1, i3) *
-	     aposteriori_covariance()(i3, i2) * dxco_dstate()(i2));
+  return xgas_measurement_error(dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate XCO2 smoothing error
+/// Calculate Xgas smoothing error
 ///
 /// This is equation 3-107 in the ATB
 ///
@@ -481,59 +352,40 @@ double ErrorAnalysis::xco_measurement_error() const
 /// the right reference.
 //-----------------------------------------------------------------------
 
-double ErrorAnalysis::xco2_smoothing_error() const
+double ErrorAnalysis::xgas_smoothing_error(Array<bool, 1> xgas_state_usedv,
+                                           Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
-  Array<bool, 1> xco2_state_usedv = xco2_state_used();
   // t is a multiplier that turns S into S_a,CO2 as described in the ATB.
-  Array<double, 1> t(xco2_state_usedv.shape());
-  t = where(xco2_state_usedv, 1, 0);
+  Array<double, 1> t(xgas_state_usedv.shape());
+  t = where(xgas_state_usedv, 1, 0);
   Array<double, 2> ak(averaging_kernel());
   Array<double, 2> ak_minus_i(ak.shape());
   ak_minus_i = ak;
   for(int i = 0; i < ak_minus_i.rows(); ++i)
     ak_minus_i(i, i) -= 1;
   Array<double, 2> s(apriori_covariance());
-  return sum(dxco2_dstate()(i1) * ak_minus_i(i1, i3) * t(i3) * s(i3, i4) *
-	     t(i4) * ak_minus_i(i2, i4) * dxco2_dstate()(i2));
+  return sum(dxgas_dstatev(i1) * ak_minus_i(i1, i3) * t(i3) * s(i3, i4) *
+	     t(i4) * ak_minus_i(i2, i4) * dxgas_dstatev(i2));
+}
+
+double ErrorAnalysis::xco2_smoothing_error() const
+{
+  return xgas_smoothing_error(xco2_state_used(), dxco2_dstate());
 }
 
 double ErrorAnalysis::xch4_smoothing_error() const
 {
-  FeDisableException disable_fp;
-  Array<bool, 1> xch4_state_usedv = xch4_state_used();
-  // t is a multiplier that turns S into S_a,CO2 as described in the ATB.
-  Array<double, 1> t(xch4_state_usedv.shape());
-  t = where(xch4_state_usedv, 1, 0);
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 2> ak_minus_i(ak.shape());
-  ak_minus_i = ak;
-  for(int i = 0; i < ak_minus_i.rows(); ++i)
-    ak_minus_i(i, i) -= 1;
-  Array<double, 2> s(apriori_covariance());
-  return sum(dxch4_dstate()(i1) * ak_minus_i(i1, i3) * t(i3) * s(i3, i4) *
-	     t(i4) * ak_minus_i(i2, i4) * dxch4_dstate()(i2));
+  return xgas_smoothing_error(xch4_state_used(), dxch4_dstate());
 }
 
 double ErrorAnalysis::xco_smoothing_error() const
 {
-  FeDisableException disable_fp;
-  Array<bool, 1> xco_state_usedv = xco_state_used();
-  // t is a multiplier that turns S into S_a,CO2 as described in the ATB.
-  Array<double, 1> t(xco_state_usedv.shape());
-  t = where(xco_state_usedv, 1, 0);
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 2> ak_minus_i(ak.shape());
-  ak_minus_i = ak;
-  for(int i = 0; i < ak_minus_i.rows(); ++i)
-    ak_minus_i(i, i) -= 1;
-  Array<double, 2> s(apriori_covariance());
-  return sum(dxco_dstate()(i1) * ak_minus_i(i1, i3) * t(i3) * s(i3, i4) *
-	     t(i4) * ak_minus_i(i2, i4) * dxco_dstate()(i2));
+  return xgas_smoothing_error(xco_state_used(), dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate XCO2 interference error
+/// Calculate Xgas interference error
 ///
 /// This is equation 3-108 in the ATB
 ///
@@ -541,53 +393,40 @@ double ErrorAnalysis::xco_smoothing_error() const
 /// the right reference.
 //-----------------------------------------------------------------------
 
-double ErrorAnalysis::xco2_interference_error() const
+double ErrorAnalysis::xgas_interference_error(Array<bool, 1> xgas_state_usedv,
+                                              Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
-  Array<bool, 1> xco2_state_usedv = xco2_state_used();
   // t is a multiplier that turns S into S_ae as described in the ATB.
-  Array<double, 1> t(xco2_state_usedv.shape());
-  t = where(xco2_state_usedv, 0, 1);
+  Array<double, 1> t(xgas_state_usedv.shape());
+  t = where(xgas_state_usedv, 0, 1);
   Array<double, 2> ak(averaging_kernel());
   Array<double, 2> s(apriori_covariance());
-  return sum(dxco2_dstate()(i1) * ak(i1, i3) * t(i3) * s(i3, i4) * t(i4) *
-	     ak(i2, i4) * dxco2_dstate()(i2));
+  return sum(dxgas_dstatev(i1) * ak(i1, i3) * t(i3) * s(i3, i4) * t(i4) *
+	     ak(i2, i4) * dxgas_dstatev(i2));
   return 0;
+}
+
+double ErrorAnalysis::xco2_interference_error() const
+{
+  return xgas_interference_error(xco2_state_used(), dxco2_dstate());
 }
 
 double ErrorAnalysis::xch4_interference_error() const
 {
-  FeDisableException disable_fp;
-  Array<bool, 1> xch4_state_usedv = xch4_state_used();
-  // t is a multiplier that turns S into S_ae as described in the ATB.
-  Array<double, 1> t(xch4_state_usedv.shape());
-  t = where(xch4_state_usedv, 0, 1);
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 2> s(apriori_covariance());
-  return sum(dxch4_dstate()(i1) * ak(i1, i3) * t(i3) * s(i3, i4) * t(i4) *
-	     ak(i2, i4) * dxch4_dstate()(i2));
-  return 0;
+  return xgas_interference_error(xch4_state_used(), dxch4_dstate());
 }
 
 double ErrorAnalysis::xco_interference_error() const
 {
-  FeDisableException disable_fp;
-  Array<bool, 1> xco_state_usedv = xco_state_used();
-  // t is a multiplier that turns S into S_ae as described in the ATB.
-  Array<double, 1> t(xco_state_usedv.shape());
-  t = where(xco_state_usedv, 0, 1);
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 2> s(apriori_covariance());
-  return sum(dxco_dstate()(i1) * ak(i1, i3) * t(i3) * s(i3, i4) * t(i4) *
-	     ak(i2, i4) * dxco_dstate()(i2));
-  return 0;
+  return xgas_interference_error(xco_state_used(), dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// XCO2 uncertainty.
+/// Xgas uncertainty.
 //-----------------------------------------------------------------------
 
-double ErrorAnalysis::xco2_uncertainty() const
+double ErrorAnalysis::xgas_uncertainty(Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
   firstIndex i1; secondIndex i2;
@@ -596,165 +435,124 @@ double ErrorAnalysis::xco2_uncertainty() const
   Array<double, 2> cov(aposteriori_covariance());
   if(cov.rows() == 0)
     return 0.0;
-  return sqrt(sum(dxco2_dstate()(i1) * cov * dxco2_dstate()(i2)));
+  return sqrt(sum(dxgas_dstatev(i1) * cov * dxgas_dstatev(i2)));
+}
+
+double ErrorAnalysis::xco2_uncertainty() const
+{
+  return xgas_uncertainty(dxco2_dstate());
 }
 
 double ErrorAnalysis::xch4_uncertainty() const
 {
-  FeDisableException disable_fp;
-  firstIndex i1; secondIndex i2;
-  // Special handling if state vector hasn't been set to anything
-  // yet. Return a reasonable value.
-  Array<double, 2> cov(aposteriori_covariance());
-  if(cov.rows() == 0)
-    return 0.0;
-  return sqrt(sum(dxch4_dstate()(i1) * cov * dxch4_dstate()(i2)));
+  return xgas_uncertainty(dxch4_dstate());
 }
 
 double ErrorAnalysis::xco_uncertainty() const
 {
-  FeDisableException disable_fp;
-  firstIndex i1; secondIndex i2;
-  // Special handling if state vector hasn't been set to anything
-  // yet. Return a reasonable value.
-  Array<double, 2> cov(aposteriori_covariance());
-  if(cov.rows() == 0)
-    return 0.0;
-  return sqrt(sum(dxco_dstate()(i1) * cov * dxco_dstate()(i2)));
+  return xgas_uncertainty(dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate the XCO2 averaging kernel
+/// Calculate the Xgas averaging kernel
 ///
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::xco2_avg_kernel() const
+Array<double, 1> ErrorAnalysis::xgas_avg_kernel(Array<bool, 1> xgas_state_usedv,
+                                                Array<double, 1> xgas_avg_kernel_fullv) const
 {
   FeDisableException disable_fp;
-  Array<double, 1> full_ak(xco2_avg_kernel_full());
-  Array<bool, 1> xco2_state_usedv = xco2_state_used();
-  Array<double, 1> res(count(xco2_state_usedv));
+  Array<double, 1> res(count(xgas_state_usedv));
   int ind = 0;
-  for(int i = 0; i < xco2_state_usedv.rows(); ++i)
-    if(xco2_state_usedv(i))
-      res(ind++) = full_ak(i);
+  for(int i = 0; i < xgas_state_usedv.rows(); ++i)
+    if(xgas_state_usedv(i))
+      res(ind++) = xgas_avg_kernel_fullv(i);
   return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_avg_kernel() const
+{
+  return xgas_avg_kernel(xco2_state_used(), xco2_avg_kernel_full());
 }
 
 Array<double, 1> ErrorAnalysis::xch4_avg_kernel() const
 {
-  FeDisableException disable_fp;
-  Array<double, 1> full_ak(xch4_avg_kernel_full());
-  Array<bool, 1> xch4_state_usedv = xch4_state_used();
-  Array<double, 1> res(count(xch4_state_usedv));
-  int ind = 0;
-  for(int i = 0; i < xch4_state_usedv.rows(); ++i)
-    if(xch4_state_usedv(i))
-      res(ind++) = full_ak(i);
-  return res;
+  return xgas_avg_kernel(xch4_state_used(), xch4_avg_kernel_full());
 }
 
 Array<double, 1> ErrorAnalysis::xco_avg_kernel() const
 {
-  FeDisableException disable_fp;
-  Array<double, 1> full_ak(xco_avg_kernel_full());
-  Array<bool, 1> xco_state_usedv = xco_state_used();
-  Array<double, 1> res(count(xco_state_usedv));
-  int ind = 0;
-  for(int i = 0; i < xco_state_usedv.rows(); ++i)
-    if(xco_state_usedv(i))
-      res(ind++) = full_ak(i);
-  return res;
+  return xgas_avg_kernel(xco_state_used(), xco_avg_kernel_full());
 }
 
 //-----------------------------------------------------------------------
-/// This the XCO2 averaging kernel for the full state vector.
+/// This the Xgas averaging kernel for the full state vector.
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::xco2_avg_kernel_full() const
+Array<double, 1> ErrorAnalysis::xgas_avg_kernel_full(Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
   Array<double, 2> ak(averaging_kernel());
   Array<double, 1> res(ak.cols());
-  res = sum(dxco2_dstate()(i2) * ak(i2, i1), i2);
+  res = sum(dxgas_dstatev(i2) * ak(i2, i1), i2);
   return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_avg_kernel_full() const
+{
+  return xgas_avg_kernel_full(dxco2_dstate());
 }
 
 Array<double, 1> ErrorAnalysis::xch4_avg_kernel_full() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 1> res(ak.cols());
-  res = sum(dxch4_dstate()(i2) * ak(i2, i1), i2);
-  return res;
+  return xgas_avg_kernel_full(dxch4_dstate());
 }
 
 Array<double, 1> ErrorAnalysis::xco_avg_kernel_full() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 1> res(ak.cols());
-  res = sum(dxco_dstate()(i2) * ak(i2, i1), i2);
-  return res;
+  return xgas_avg_kernel_full(dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate the normalized XCO2 averaging kernel
+/// Calculate the normalized Xgas averaging kernel
 ///
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::xco2_avg_kernel_norm() const
+Array<double, 1> ErrorAnalysis::xgas_avg_kernel_norm(Array<bool, 1> xgas_state_usedv,
+                                                     Array<double, 1> dxgas_dstatev) const
 {
   FeDisableException disable_fp;
   Array<double, 2> ak(averaging_kernel());
   Array<double, 1> full(ak.cols());
-  full = sum(dxco2_dstate()(i2) * ak(i2, i1), i2);
-  full = where(abs(dxco2_dstate()) > 1e-20, full / dxco2_dstate(), 0);
-  Array<bool, 1> xco2_state_usedv = xco2_state_used();
-  Array<double, 1> res(count(xco2_state_usedv));
+  full = sum(dxgas_dstatev(i2) * ak(i2, i1), i2);
+  full = where(abs(dxgas_dstatev) > 1e-20, full / dxgas_dstatev, 0);
+  Array<double, 1> res(count(xgas_state_usedv));
   int ind = 0;
-  for(int i = 0; i < xco2_state_usedv.rows(); ++i)
-    if(xco2_state_usedv(i))
+  for(int i = 0; i < xgas_state_usedv.rows(); ++i)
+    if(xgas_state_usedv(i))
       res(ind++) = full(i);
   return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_avg_kernel_norm() const
+{
+  return xgas_avg_kernel_norm(xco2_state_used(), dxco2_dstate());
 }
 
 Array<double, 1> ErrorAnalysis::xch4_avg_kernel_norm() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 1> full(ak.cols());
-  full = sum(dxch4_dstate()(i2) * ak(i2, i1), i2);
-  full = where(abs(dxch4_dstate()) > 1e-20, full / dxch4_dstate(), 0);
-  Array<bool, 1> xch4_state_usedv = xch4_state_used();
-  Array<double, 1> res(count(xch4_state_usedv));
-  int ind = 0;
-  for(int i = 0; i < xch4_state_usedv.rows(); ++i)
-    if(xch4_state_usedv(i))
-      res(ind++) = full(i);
-  return res;
+  return xgas_avg_kernel_norm(xch4_state_used(), dxch4_dstate());
 }
 
 Array<double, 1> ErrorAnalysis::xco_avg_kernel_norm() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<double, 1> full(ak.cols());
-  full = sum(dxco_dstate()(i2) * ak(i2, i1), i2);
-  full = where(abs(dxco_dstate()) > 1e-20, full / dxco_dstate(), 0);
-  Array<bool, 1> xco_state_usedv = xco_state_used();
-  Array<double, 1> res(count(xco_state_usedv));
-  int ind = 0;
-  for(int i = 0; i < xco_state_usedv.rows(); ++i)
-    if(xco_state_usedv(i))
-      res(ind++) = full(i);
-  return res;
+  return xgas_avg_kernel_norm(xco_state_used(), dxco_dstate());
 }
 
 //-----------------------------------------------------------------------
-/// Calculate xco2_correlation_interf
+/// Calculate x<gas>_correlation_interf
 ///
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
@@ -773,51 +571,19 @@ Array<double, 1> ErrorAnalysis::xco2_correlation_interf() const
 
 Array<double, 2> ErrorAnalysis::ch4_averaging_kernel() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<bool, 1> used(xch4_state_used());
-  int sz = count(used);
-  Array<double, 2> res(sz, sz);
-  int ind1 = 0;
-  for(int i = 0; i < used.rows(); ++i)
-    if(used(i)) {
-      int ind2 = 0;
-      for(int j = 0; j < used.rows(); ++j)
-	if(used(j)) {
-	  res(ind1, ind2) = ak(i, j);
-	  ++ind2;
-	}
-      ++ind1;
-    }
-  return res;
+  return gas_averaging_kernel(xch4_state_used());
 }
 
 Array<double, 2> ErrorAnalysis::co_averaging_kernel() const
 {
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<bool, 1> used(xco_state_used());
-  int sz = count(used);
-  Array<double, 2> res(sz, sz);
-  int ind1 = 0;
-  for(int i = 0; i < used.rows(); ++i)
-    if(used(i)) {
-      int ind2 = 0;
-      for(int j = 0; j < used.rows(); ++j)
-	if(used(j)) {
-	  res(ind1, ind2) = ak(i, j);
-	  ++ind2;
-	}
-      ++ind1;
-    }
-  return res;
+  return gas_averaging_kernel(xco_state_used());
 }
 
 //-----------------------------------------------------------------------
 /// In order to match error analysis stuff calculated in the old code,
-/// we need to zero out any portion of xco2.gradient() that doesn't
+/// we need to zero out any portion of x<gas>.gradient() that doesn't
 /// directly depend on the portion of the state that explicitly comes
-/// from the CO2 parts (e.g., indirect effect of surface pressure, or
+/// from the gas parts (e.g., indirect effect of surface pressure, or
 /// other parameters). I don't know if this is actually what we want or
 /// not, we'll need to sort this out.
 ///
