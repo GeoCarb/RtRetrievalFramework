@@ -83,6 +83,8 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
                                 &ErrorAnalysis::xch4_avg_kernel, err);
       out->register_data_source("/RetrievalResults/xch4_avg_kernel_norm",
                                 &ErrorAnalysis::xch4_avg_kernel_norm, err);
+      out->register_data_source("/RetrievalResults/xch4_correlation_interf",
+                                &ErrorAnalysis::xch4_correlation_interf, err);
       if (! ch4_profile)
           ;
       else
@@ -107,6 +109,8 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
                                 &ErrorAnalysis::xco_avg_kernel, err);
       out->register_data_source("/RetrievalResults/xco_avg_kernel_norm",
                                 &ErrorAnalysis::xco_avg_kernel_norm, err);
+      out->register_data_source("/RetrievalResults/xco_correlation_interf",
+                                &ErrorAnalysis::xco_correlation_interf, err);
       if (! co_profile)
           ;
       else

@@ -557,16 +557,30 @@ Array<double, 1> ErrorAnalysis::xco_avg_kernel_norm() const
 /// \todo ATB reference?
 //-----------------------------------------------------------------------
 
-Array<double, 1> ErrorAnalysis::xco2_correlation_interf() const
+Array<double, 1> ErrorAnalysis::xgas_correlation_interf(Array<double, 2> ht_c_h_v) const
 {
   FeDisableException disable_fp;
-  Array<double, 2> ht_c_h_v(ht_c_h());
   Array<double, 1> res(ht_c_h_v.rows() - 1);
   Range r(1, ht_c_h_v.rows() - 1);
   double t = ht_c_h_v(0,0);
   res = where(t * ht_c_h_v(r, r)(i1, i1) > 0,
 	      ht_c_h_v(0, r) / sqrt(t * ht_c_h_v(r, r)(i1, i1)), 0);
   return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_correlation_interf() const
+{
+  return xgas_correlation_interf(co2_ht_c_h());
+}
+
+Array<double, 1> ErrorAnalysis::xch4_correlation_interf() const
+{
+  return xgas_correlation_interf(ch4_ht_c_h());
+}
+
+Array<double, 1> ErrorAnalysis::xco_correlation_interf() const
+{
+  return xgas_correlation_interf(co_ht_c_h());
 }
 
 Array<double, 2> ErrorAnalysis::ch4_averaging_kernel() const
@@ -622,7 +636,7 @@ Array<double, 1> ErrorAnalysis::dxco_dstate() const
 /// the right reference.
 //-----------------------------------------------------------------------
 
-Array<double, 2> ErrorAnalysis::hmat() const
+Array<double, 2> ErrorAnalysis::co2_hmat() const
 {
   FeDisableException disable_fp;
   int n = (solver ? solver->x_solution().rows() :
@@ -630,6 +644,32 @@ Array<double, 2> ErrorAnalysis::hmat() const
   Array<double, 2> res(n, n + 1);
   res = 0;
   res(Range::all(), 0) = dxco2_dstate();
+  for(int i = 0; i < n; ++i)
+    res(i, i + 1) = 1;
+  return res;
+}
+
+Array<double, 2> ErrorAnalysis::ch4_hmat() const
+{
+  FeDisableException disable_fp;
+  int n = (solver ? solver->x_solution().rows() :
+	   max_a_posteriori->parameters().rows());
+  Array<double, 2> res(n, n + 1);
+  res = 0;
+  res(Range::all(), 0) = dxch4_dstate();
+  for(int i = 0; i < n; ++i)
+    res(i, i + 1) = 1;
+  return res;
+}
+
+Array<double, 2> ErrorAnalysis::co_hmat() const
+{
+  FeDisableException disable_fp;
+  int n = (solver ? solver->x_solution().rows() :
+	   max_a_posteriori->parameters().rows());
+  Array<double, 2> res(n, n + 1);
+  res = 0;
+  res(Range::all(), 0) = dxco_dstate();
   for(int i = 0; i < n; ++i)
     res(i, i + 1) = 1;
   return res;
@@ -643,10 +683,30 @@ Array<double, 2> ErrorAnalysis::hmat() const
 /// the right reference.
 //-----------------------------------------------------------------------
 
-Array<double, 2> ErrorAnalysis::ht_c_h() const
+Array<double, 2> ErrorAnalysis::co2_ht_c_h() const
 {
   FeDisableException disable_fp;
-  Array<double, 2> h(hmat());
+  Array<double, 2> h(co2_hmat());
+  Array<double, 2> res(h.cols(), h.cols());
+  res = sum(sum(h(i3, i1) * aposteriori_covariance()(i3, i4) *
+		h(i4, i2), i4), i3);
+  return res;
+}
+
+Array<double, 2> ErrorAnalysis::ch4_ht_c_h() const
+{
+  FeDisableException disable_fp;
+  Array<double, 2> h(ch4_hmat());
+  Array<double, 2> res(h.cols(), h.cols());
+  res = sum(sum(h(i3, i1) * aposteriori_covariance()(i3, i4) *
+		h(i4, i2), i4), i3);
+  return res;
+}
+
+Array<double, 2> ErrorAnalysis::co_ht_c_h() const
+{
+  FeDisableException disable_fp;
+  Array<double, 2> h(co_hmat());
   Array<double, 2> res(h.cols(), h.cols());
   res = sum(sum(h(i3, i1) * aposteriori_covariance()(i3, i4) *
 		h(i4, i2), i4), i3);

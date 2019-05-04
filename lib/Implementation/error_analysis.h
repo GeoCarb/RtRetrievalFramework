@@ -237,6 +237,7 @@ public:
   blitz::Array<double, 1> xch4_avg_kernel_norm() const;
   blitz::Array<double, 2> ch4_averaging_kernel() const;
   blitz::Array<double, 1> xch4_gain_vector() const;
+  blitz::Array<double, 1> xch4_correlation_interf() const;
   double xch4_measurement_error() const;
   double xch4_smoothing_error() const;
   double xch4_interference_error() const;
@@ -270,6 +271,7 @@ public:
   blitz::Array<double, 1> xco_avg_kernel_norm() const;
   blitz::Array<double, 2> co_averaging_kernel() const;
   blitz::Array<double, 1> xco_gain_vector() const;
+  blitz::Array<double, 1> xco_correlation_interf() const;
   double xco_measurement_error() const;
   double xco_smoothing_error() const;
   double xco_interference_error() const;
@@ -363,14 +365,20 @@ private:
   blitz::Array<double, 1> xgas_avg_kernel_norm
                                 (blitz::Array<bool, 1> xgas_state_usedv,
                                  blitz::Array<double, 1> dxgas_dstatev) const;
+  blitz::Array<double, 1> xgas_correlation_interf
+                                (blitz::Array<double, 2> ht_c_h_v) const;
 
   // Only one of solver or max_a_posteriori will be nonnull.
   boost::shared_ptr<ConnorSolver> solver;
   boost::shared_ptr<MaxAPosteriori> max_a_posteriori;
   boost::shared_ptr<AtmosphereOco> atm;
   boost::shared_ptr<ForwardModel> fm;
-  blitz::Array<double, 2> hmat() const;
-  blitz::Array<double, 2> ht_c_h() const;
+  blitz::Array<double, 2> co2_hmat() const;
+  blitz::Array<double, 2> ch4_hmat() const;
+  blitz::Array<double, 2> co_hmat() const;
+  blitz::Array<double, 2> co2_ht_c_h() const;
+  blitz::Array<double, 2> ch4_ht_c_h() const;
+  blitz::Array<double, 2> co_ht_c_h() const;
   // Used in a lot of places, so define once here.
   blitz::firstIndex i1; blitz::secondIndex i2; blitz::thirdIndex i3;
   blitz::fourthIndex i4;
