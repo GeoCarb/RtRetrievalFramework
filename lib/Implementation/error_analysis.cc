@@ -140,71 +140,6 @@ double ErrorAnalysis::noise(int band) const
 }
 
 //-----------------------------------------------------------------------
-/// Calculate the interference smoothing uncertainty
-///
-/// \todo ATB reference?
-//-----------------------------------------------------------------------
-
-Array<double, 1> ErrorAnalysis::xgas_interference_smoothing_uncertainty
-                                  (Array<double, 1> full_ak,
-                                   Array<double, 1> dxgas_dstatev) const
-{
-  FeDisableException disable_fp;
-  Array<double, 1> res(full_ak.shape());
-  Array<double, 2> cov(aposteriori_covariance());
-  // Allow cov to be slightly negative, e.g., due to round off error.
-  res = (full_ak - dxgas_dstatev) *
-    where(cov(i1, i1) > 0, sqrt(cov(i1, i1)), 0);
-  return res;
-}
-
-Array<double, 1> ErrorAnalysis::xco2_interference_smoothing_uncertainty() const
-{
-  return xgas_interference_smoothing_uncertainty(xco2_avg_kernel_full(), dxco2_dstate());
-}
-
-Array<double, 1> ErrorAnalysis::xch4_interference_smoothing_uncertainty() const
-{
-  return xgas_interference_smoothing_uncertainty(xch4_avg_kernel_full(), dxch4_dstate());
-}
-
-Array<double, 1> ErrorAnalysis::xco_interference_smoothing_uncertainty() const
-{
-  return xgas_interference_smoothing_uncertainty(xco_avg_kernel_full(), dxco_dstate());
-}
-
-//-----------------------------------------------------------------------
-/// Portion of averaging kernel that relates the part of the state vector
-/// that is used by the gas VMR calculation.
-//-----------------------------------------------------------------------
-
-Array<double, 2> ErrorAnalysis::gas_averaging_kernel(Array<bool, 1> xgas_state_usedv) const
-{
-  FeDisableException disable_fp;
-  Array<double, 2> ak(averaging_kernel());
-  Array<bool, 1> used(xgas_state_usedv);
-  int sz = count(used);
-  Array<double, 2> res(sz, sz);
-  int ind1 = 0;
-  for(int i = 0; i < used.rows(); ++i)
-    if(used(i)) {
-      int ind2 = 0;
-      for(int j = 0; j < used.rows(); ++j)
-	if(used(j)) {
-	  res(ind1, ind2) = ak(i, j);
-	  ++ind2;
-	}
-      ++ind1;
-    }
-  return res;
-}
-
-Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
-{
-  return gas_averaging_kernel(xco2_state_used());
-}
-
-//-----------------------------------------------------------------------
 /// This calculates x<gas>_gain_vector. It is formally the partial
 /// derivative of retrieved Xgas with respect to input radiance. It has
 /// the same size & shape as SpectralParameters/measured_radiance.  That
@@ -328,6 +263,37 @@ Array<double, 1> ErrorAnalysis::xco_gain_vector() const
 }
 
 //-----------------------------------------------------------------------
+/// Xgas uncertainty.
+//-----------------------------------------------------------------------
+
+double ErrorAnalysis::xgas_uncertainty(Array<double, 1> dxgas_dstatev) const
+{
+  FeDisableException disable_fp;
+  firstIndex i1; secondIndex i2;
+  // Special handling if state vector hasn't been set to anything
+  // yet. Return a reasonable value.
+  Array<double, 2> cov(aposteriori_covariance());
+  if(cov.rows() == 0)
+    return 0.0;
+  return sqrt(sum(dxgas_dstatev(i1) * cov * dxgas_dstatev(i2)));
+}
+
+double ErrorAnalysis::xco2_uncertainty() const
+{
+  return xgas_uncertainty(dxco2_dstate());
+}
+
+double ErrorAnalysis::xch4_uncertainty() const
+{
+  return xgas_uncertainty(dxch4_dstate());
+}
+
+double ErrorAnalysis::xco_uncertainty() const
+{
+  return xgas_uncertainty(dxco_dstate());
+}
+
+//-----------------------------------------------------------------------
 /// Calculate Xgas measurement error
 ///
 /// This is equation 3-106 in the ATB
@@ -438,37 +404,6 @@ double ErrorAnalysis::xco_interference_error() const
 }
 
 //-----------------------------------------------------------------------
-/// Xgas uncertainty.
-//-----------------------------------------------------------------------
-
-double ErrorAnalysis::xgas_uncertainty(Array<double, 1> dxgas_dstatev) const
-{
-  FeDisableException disable_fp;
-  firstIndex i1; secondIndex i2;
-  // Special handling if state vector hasn't been set to anything
-  // yet. Return a reasonable value.
-  Array<double, 2> cov(aposteriori_covariance());
-  if(cov.rows() == 0)
-    return 0.0;
-  return sqrt(sum(dxgas_dstatev(i1) * cov * dxgas_dstatev(i2)));
-}
-
-double ErrorAnalysis::xco2_uncertainty() const
-{
-  return xgas_uncertainty(dxco2_dstate());
-}
-
-double ErrorAnalysis::xch4_uncertainty() const
-{
-  return xgas_uncertainty(dxch4_dstate());
-}
-
-double ErrorAnalysis::xco_uncertainty() const
-{
-  return xgas_uncertainty(dxco_dstate());
-}
-
-//-----------------------------------------------------------------------
 /// Calculate the Xgas averaging kernel
 ///
 /// \todo ATB reference?
@@ -565,7 +500,6 @@ Array<double, 1> ErrorAnalysis::xco_avg_kernel_norm() const
 {
   return xgas_avg_kernel_norm(xco_state_used(), dxco_dstate());
 }
-
 //-----------------------------------------------------------------------
 /// Calculate x<gas>_correlation_interf
 ///
@@ -596,6 +530,71 @@ Array<double, 1> ErrorAnalysis::xch4_correlation_interf() const
 Array<double, 1> ErrorAnalysis::xco_correlation_interf() const
 {
   return xgas_correlation_interf(co_ht_c_h());
+}
+
+//-----------------------------------------------------------------------
+/// Calculate the interference smoothing uncertainty
+///
+/// \todo ATB reference?
+//-----------------------------------------------------------------------
+
+Array<double, 1> ErrorAnalysis::xgas_interference_smoothing_uncertainty
+                                  (Array<double, 1> full_ak,
+                                   Array<double, 1> dxgas_dstatev) const
+{
+  FeDisableException disable_fp;
+  Array<double, 1> res(full_ak.shape());
+  Array<double, 2> cov(aposteriori_covariance());
+  // Allow cov to be slightly negative, e.g., due to round off error.
+  res = (full_ak - dxgas_dstatev) *
+    where(cov(i1, i1) > 0, sqrt(cov(i1, i1)), 0);
+  return res;
+}
+
+Array<double, 1> ErrorAnalysis::xco2_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xco2_avg_kernel_full(), dxco2_dstate());
+}
+
+Array<double, 1> ErrorAnalysis::xch4_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xch4_avg_kernel_full(), dxch4_dstate());
+}
+
+Array<double, 1> ErrorAnalysis::xco_interference_smoothing_uncertainty() const
+{
+  return xgas_interference_smoothing_uncertainty(xco_avg_kernel_full(), dxco_dstate());
+}
+
+//-----------------------------------------------------------------------
+/// Portion of averaging kernel that relates the part of the state vector
+/// that is used by the gas VMR calculation.
+//-----------------------------------------------------------------------
+
+Array<double, 2> ErrorAnalysis::gas_averaging_kernel(Array<bool, 1> xgas_state_usedv) const
+{
+  FeDisableException disable_fp;
+  Array<double, 2> ak(averaging_kernel());
+  Array<bool, 1> used(xgas_state_usedv);
+  int sz = count(used);
+  Array<double, 2> res(sz, sz);
+  int ind1 = 0;
+  for(int i = 0; i < used.rows(); ++i)
+    if(used(i)) {
+      int ind2 = 0;
+      for(int j = 0; j < used.rows(); ++j)
+	if(used(j)) {
+	  res(ind1, ind2) = ak(i, j);
+	  ++ind2;
+	}
+      ++ind1;
+    }
+  return res;
+}
+
+Array<double, 2> ErrorAnalysis::co2_averaging_kernel() const
+{
+  return gas_averaging_kernel(xco2_state_used());
 }
 
 Array<double, 2> ErrorAnalysis::ch4_averaging_kernel() const

@@ -73,6 +73,9 @@ public:
       (residual() + fm->measured_radiance_all().spectral_range().data());
   }
 
+//-----------------------------------------------------------------------
+///
+//-----------------------------------------------------------------------
   double signal(int band) const;
   double noise(int band) const;
 
@@ -172,15 +175,30 @@ public:
       return sum(averaging_kernel()(i1, i1));
   }
 
-  blitz::Array<double, 1> xco2_interference_smoothing_uncertainty() const;
 
-  blitz::Array<double, 2> co2_averaging_kernel() const;
+
+
+//-----------------------------------------------------------------------
+/// Calculate the degrees of freedom for the portion of the state
+/// vector used to determine xco2.
+///
+/// \todo ATB reference?
+//-----------------------------------------------------------------------
+
+  double xco2_degrees_of_freedom() const
+  {
+      FeDisableException disable_fp;
+      return sum(where(xco2_state_used(),
+		     averaging_kernel()(i1, i1), 0));
+  }
 
   blitz::Array<double, 1> xco2_gain_vector() const;
+
+  double xco2_uncertainty() const;
+
   double xco2_measurement_error() const;
   double xco2_smoothing_error() const;
   double xco2_interference_error() const;
-  double xco2_uncertainty() const;
 
 //-----------------------------------------------------------------------
 /// Calculate xco2_uncert_noise
@@ -212,37 +230,30 @@ public:
       return sqrt(xco2_interference_error());
   }
 
-//-----------------------------------------------------------------------
-/// Calculate the degrees of freedom for the portion of the state
-/// vector used to determine xco2.
-///
-/// \todo ATB reference?
-//-----------------------------------------------------------------------
-
-  double xco2_degrees_of_freedom() const
-  {
-      FeDisableException disable_fp;
-      return sum(where(xco2_state_used(),
-		     averaging_kernel()(i1, i1), 0));
-  }
-
-
   blitz::Array<double, 1> xco2_avg_kernel() const;
   blitz::Array<double, 1> xco2_avg_kernel_full() const;
   blitz::Array<double, 1> xco2_avg_kernel_norm() const;
   blitz::Array<double, 1> xco2_correlation_interf() const;
+  blitz::Array<double, 1> xco2_interference_smoothing_uncertainty() const;
 
-  blitz::Array<double, 1> xch4_interference_smoothing_uncertainty() const;
-  blitz::Array<double, 1> xch4_avg_kernel() const;
-  blitz::Array<double, 1> xch4_avg_kernel_full() const;
-  blitz::Array<double, 1> xch4_avg_kernel_norm() const;
-  blitz::Array<double, 2> ch4_averaging_kernel() const;
+  blitz::Array<double, 2> co2_averaging_kernel() const;
+
+
+
+
+
+  double xch4_degrees_of_freedom() const
+  {
+      FeDisableException disable_fp;
+      return sum(where(xch4_state_used(),
+		     averaging_kernel()(i1, i1), 0));
+  }
+
   blitz::Array<double, 1> xch4_gain_vector() const;
-  blitz::Array<double, 1> xch4_correlation_interf() const;
+  double xch4_uncertainty() const;
   double xch4_measurement_error() const;
   double xch4_smoothing_error() const;
   double xch4_interference_error() const;
-  double xch4_uncertainty() const;
 
   double xch4_uncert_noise() const
   {
@@ -259,25 +270,31 @@ public:
       FeDisableException disable_fp;
       return sqrt(xch4_interference_error());
   }
-  double xch4_degrees_of_freedom() const
+
+  blitz::Array<double, 1> xch4_avg_kernel() const;
+  blitz::Array<double, 1> xch4_avg_kernel_full() const;
+  blitz::Array<double, 1> xch4_avg_kernel_norm() const;
+  blitz::Array<double, 1> xch4_correlation_interf() const;
+  blitz::Array<double, 1> xch4_interference_smoothing_uncertainty() const;
+
+  blitz::Array<double, 2> ch4_averaging_kernel() const;
+
+
+
+
+
+  double xco_degrees_of_freedom() const
   {
       FeDisableException disable_fp;
-      return sum(where(xch4_state_used(),
+      return sum(where(xco_state_used(),
 		     averaging_kernel()(i1, i1), 0));
   }
 
-
-  blitz::Array<double, 1> xco_interference_smoothing_uncertainty() const;
-  blitz::Array<double, 1> xco_avg_kernel() const;
-  blitz::Array<double, 1> xco_avg_kernel_full() const;
-  blitz::Array<double, 1> xco_avg_kernel_norm() const;
-  blitz::Array<double, 2> co_averaging_kernel() const;
   blitz::Array<double, 1> xco_gain_vector() const;
-  blitz::Array<double, 1> xco_correlation_interf() const;
+  double xco_uncertainty() const;
   double xco_measurement_error() const;
   double xco_smoothing_error() const;
   double xco_interference_error() const;
-  double xco_uncertainty() const;
 
   double xco_uncert_noise() const
   {
@@ -294,12 +311,17 @@ public:
       FeDisableException disable_fp;
       return sqrt(xco_interference_error());
   }
-  double xco_degrees_of_freedom() const
-  {
-      FeDisableException disable_fp;
-      return sum(where(xco_state_used(),
-		     averaging_kernel()(i1, i1), 0));
-  }
+
+  blitz::Array<double, 1> xco_avg_kernel() const;
+  blitz::Array<double, 1> xco_avg_kernel_full() const;
+  blitz::Array<double, 1> xco_avg_kernel_norm() const;
+  blitz::Array<double, 1> xco_correlation_interf() const;
+  blitz::Array<double, 1> xco_interference_smoothing_uncertainty() const;
+
+  blitz::Array<double, 2> co_averaging_kernel() const;
+
+
+
 
 
   void print(std::ostream& Os) const { Os << "ErrorAnalysis";}
@@ -348,20 +370,21 @@ private:
   blitz::Array<double, 1> dxco2_dstate() const;
   blitz::Array<double, 1> dxch4_dstate() const;
   blitz::Array<double, 1> dxco_dstate() const;
+  blitz::Array<double, 2> co2_hmat() const;
+  blitz::Array<double, 2> ch4_hmat() const;
+  blitz::Array<double, 2> co_hmat() const;
+  blitz::Array<double, 2> co2_ht_c_h() const;
+  blitz::Array<double, 2> ch4_ht_c_h() const;
+  blitz::Array<double, 2> co_ht_c_h() const;
 
-  blitz::Array<double, 1> xgas_interference_smoothing_uncertainty
-                                (blitz::Array<double, 1> full_ak,
-                                 blitz::Array<double, 1> dxgas_dstatev) const;
-  blitz::Array<double, 2> gas_averaging_kernel
-                                (blitz::Array<bool, 1> xgas_state_usedv) const;
   blitz::Array<double, 1> xgas_gain_vector(const std::string& gas_name,
                                  blitz::Array<bool, 1> xgas_state_usedv) const;
+  double xgas_uncertainty       (blitz::Array<double, 1> dxgas_dstatev) const;
   double xgas_measurement_error (blitz::Array<double, 1> dxgas_dstatev) const;
   double xgas_smoothing_error   (blitz::Array<bool, 1> xgas_state_usedv,
                                  blitz::Array<double, 1> dxgas_dstatev) const;
   double xgas_interference_error(blitz::Array<bool, 1> xgas_state_usedv,
                                  blitz::Array<double, 1> dxgas_dstatev) const;
-  double xgas_uncertainty       (blitz::Array<double, 1> dxgas_dstatev) const;
   blitz::Array<double, 1> xgas_avg_kernel
                                 (blitz::Array<bool, 1> xgas_state_usedv,
                                  blitz::Array<double, 1> xgas_avg_kernel_fullv) const;
@@ -372,18 +395,17 @@ private:
                                  blitz::Array<double, 1> dxgas_dstatev) const;
   blitz::Array<double, 1> xgas_correlation_interf
                                 (blitz::Array<double, 2> ht_c_h_v) const;
+  blitz::Array<double, 1> xgas_interference_smoothing_uncertainty
+                                (blitz::Array<double, 1> full_ak,
+                                 blitz::Array<double, 1> dxgas_dstatev) const;
+  blitz::Array<double, 2> gas_averaging_kernel
+                                (blitz::Array<bool, 1> xgas_state_usedv) const;
 
   // Only one of solver or max_a_posteriori will be nonnull.
   boost::shared_ptr<ConnorSolver> solver;
   boost::shared_ptr<MaxAPosteriori> max_a_posteriori;
   boost::shared_ptr<AtmosphereOco> atm;
   boost::shared_ptr<ForwardModel> fm;
-  blitz::Array<double, 2> co2_hmat() const;
-  blitz::Array<double, 2> ch4_hmat() const;
-  blitz::Array<double, 2> co_hmat() const;
-  blitz::Array<double, 2> co2_ht_c_h() const;
-  blitz::Array<double, 2> ch4_ht_c_h() const;
-  blitz::Array<double, 2> co_ht_c_h() const;
   // Used in a lot of places, so define once here.
   blitz::firstIndex i1; blitz::secondIndex i2; blitz::thirdIndex i3;
   blitz::fourthIndex i4;
