@@ -379,7 +379,7 @@ function OcoConfig.oco_albedo_from_radiance(polynomial_degree)
          solar_strength[idx] = solar_strength[idx] / solar_dist^2
  
          -- Account for stokes element for I
-         solar_strength[idx] = solar_strength[idx] * stokes_coef(idx-1, 0)
+         solar_strength[idx] = solar_strength[idx] * stokes_coef(idx-1, 0, 0)
       end
 
       local continuum_points = {
