@@ -365,7 +365,7 @@ end
 function GeocarbConfig.oco_albedo_from_radiance(polynomial_degree)
    return function(self, band_idx)
 
-      error("GeocarbConfig.oco_albedo_from_radiance(), is set up for OCO only")
+--    error("GeocarbConfig.oco_albedo_from_radiance(), is set up for OCO only")
 
       -- Fsun0 - Roughly at 1 AU
       local stokes_coef = self.config.l1b:stokes_coef()
@@ -386,15 +386,15 @@ function GeocarbConfig.oco_albedo_from_radiance(polynomial_degree)
 
       local continuum_points = {
          -- ABO2
-         { { Range(20,31) }, { Range(912,923) } },
+         {{0}, {946}},
          -- WCO2
-         { { 56, Range(85,88), Range(99,104), 145, Range(151,158) },
-           { Range(766,770), 892, 893, Range(957,963), Range(967,969), Range(1000,1002) } },
+         {{0}, {946}},
          -- SCO2
-         { { 10, 11, 12, 25, 26, 86, 87, 95, 105, 127, 128, 129 },
-           { 949, 950, Range(973,976), 992, 993, 997, 998, 1008, 1009 } },
+         {{0}, {946}},
+         -- CH4
+         {{0}, {946}},
       }
-      local use_range_max = { false, false, false }
+      local use_range_max = { false, false, false, false }
 
       return ConfigCommon.albedo_from_radiance(self, band_idx, solar_strength, continuum_points, use_range_max, polynomial_degree)
    end

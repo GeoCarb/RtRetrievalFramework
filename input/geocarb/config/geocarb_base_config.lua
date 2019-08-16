@@ -443,10 +443,10 @@ GeocarbBaseConfig = GeocarbConfig:new {
 
             -- Pure lambertian
             lambertian = {
-               albedo_coeffs = {{0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}},
+--             albedo_coeffs = {{0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}},
 --             albedo_coeffs = {{0.25, 0.0}, {0.30, 0.0}, {0.15, 0.0}, {0.066, 0.0}},
-               apriori = GeocarbConfig.albedo_from_constants,
---             apriori = GeocarbConfig.oco_albedo_from_radiance(1),
+--             apriori = GeocarbConfig.albedo_from_constants,
+               apriori = GeocarbConfig.oco_albedo_from_radiance(1),
                covariance = ConfigCommon.hdf_covariance_i("Ground/Albedo"),
                retrieve_bands = {true, true, true, true},
                creator = ConfigCommon.lambertian_retrieval,
