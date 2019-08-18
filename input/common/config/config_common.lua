@@ -2321,9 +2321,9 @@ end
 ConfigCommon.brdf_retrieval = CreatorMultiSpec:new {}
 
 function ConfigCommon.brdf_retrieval:retrieval_flag(i)
-   local flag = Blitz_bool_array_1d(self:apriori_v(i - 1):rows())
+   local n_coefs = self:apriori_v(i - 1):rows()
 
-   n_coefs = self:apriori_v(0):rows()
+   local flag = Blitz_bool_array_1d(n_coefs)
 
    if self.retrieve_bands ~= nil and self.retrieve_bands[i] then
        flag:set(Range.all(), false)
@@ -2344,8 +2344,7 @@ ConfigCommon.brdf_veg_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_veg_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-
-   n_coefs = self:apriori_v(0):rows()
+   local n_coefs  = self:apriori_v(0):rows()
 
    local ap = Blitz_double_array_2d(num_spec, n_coefs)
    local flag = Blitz_bool_array_2d(num_spec, n_coefs)
@@ -2383,8 +2382,7 @@ ConfigCommon.brdf_soil_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_soil_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-
-   n_coefs = self:apriori_v(0):rows()
+   local n_coefs  = self:apriori_v(0):rows()
 
    local ap = Blitz_double_array_2d(num_spec, n_coefs)
    local flag = Blitz_bool_array_2d(num_spec, n_coefs)
