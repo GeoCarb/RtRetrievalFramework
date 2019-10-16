@@ -64,7 +64,7 @@ void ErrorAnalysisOutput::register_output(const boost::shared_ptr<Output>& out) 
                                 &ErrorAnalysis::xco2_avg_kernel_norm, err);
       out->register_data_source("/RetrievalResults/xco2_correlation_interf",
                                 &ErrorAnalysis::xco2_correlation_interf, err);
-      out->register_data_source("/RetrievalResults/interference_smoothing_uncert",
+      out->register_data_source("/RetrievalResults/xco2_interference_smoothing_uncert",
                                 &ErrorAnalysis::xco2_interference_smoothing_uncertainty, err);
       if (1)
           out->register_data_source("/RetrievalResults/co2_profile_averaging_kernel_matrix",
