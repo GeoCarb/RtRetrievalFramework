@@ -36,7 +36,7 @@ public:
 /// this originally came from Chris O'Dell's bias term
 //-----------------------------------------------------------------------
 
-  double co2_grad_del() const
+  double gas_grad_del() const
   {
     blitz::Array<double, 1> p = a_->vmr_profile();
     blitz::Array<double, 1> ap = afreeze_->vmr_profile();
@@ -62,12 +62,10 @@ void AbsorberVmrLevelOutput::register_output_apriori(const boost::shared_ptr<Out
   out->register_data_source
     ("/RetrievalResults/" + gname + "_profile_apriori", 
      &AbsorberVmrLevel::vmr_profile, afreeze);
-  if(gname == "co2") {
-    boost::shared_ptr<AbsorberVmrLevelHelper> h(new AbsorberVmrLevelHelper(a, afreeze));
-    out->register_data_source
-      ("/RetrievalResults/co2_vertical_gradient_delta",
-       &AbsorberVmrLevelHelper::co2_grad_del, h);
-  }
+  boost::shared_ptr<AbsorberVmrLevelHelper> h(new AbsorberVmrLevelHelper(a, afreeze));
+  out->register_data_source
+    ("/RetrievalResults/" + gname + "_vertical_gradient_delta",
+     &AbsorberVmrLevelHelper::gas_grad_del, h);
 }
 
 void AbsorberVmrLevelOutput::register_output(const boost::shared_ptr<Output>& out) const
