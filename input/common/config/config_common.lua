@@ -2894,18 +2894,24 @@ end
 ------------------------------------------------------------
 
 function ConfigCommon.open_absco(self, fname, table_scale)
+   use_cache = self.fm.atmosphere.absorber.use_cache
+   if(use_cache == nil) then
+      use_cache = true
+   end
    if(os.getenv("abscodir")) then
-      return AbscoHdf(os.getenv("abscodir") .. "/" .. fname, table_scale)
+      return AbscoHdf(os.getenv("abscodir") .. "/" .. fname, table_scale,
+                      use_cache)
    end
    local absco
    if(self.absco_local_path and
-      pcall(function() absco = 
-               AbscoHdf(self.absco_local_path .. "/" .. fname, 
-			table_scale) end)) then
+      pcall(function() absco =
+               AbscoHdf(self.absco_local_path .. "/" .. fname, table_scale,
+                        use_cache) end)) then
       return absco
    end
    if(self.absco_path) then
-      return AbscoHdf(self.absco_path .. "/" .. fname, table_scale)
+      return AbscoHdf(self.absco_path .. "/" .. fname, table_scale,
+                      use_cache)
    end
    error({code=-1})
 end
@@ -2915,19 +2921,25 @@ end
 ------------------------------------------------------------
 
 function ConfigCommon.open_absco_byspecindex(self, fname, sb, table_scale)
+   use_cache = self.fm.atmosphere.absorber.use_cache
+   if(use_cache == nil) then
+      use_cache = true
+   end
    local tsc = ConfigCommon.to_VectorDouble(table_scale)
    if(os.getenv("abscodir")) then
-      return AbscoHdf(os.getenv("abscodir") .. "/" .. fname, sb, tsc)
+      return AbscoHdf(os.getenv("abscodir") .. "/" .. fname, sb, tsc,
+                      use_cache)
    end
    local absco
    if(self.absco_local_path and
       pcall(function() absco = 
-               AbscoHdf(self.absco_local_path .. "/" .. fname, sb, tsc) end)) then
+               AbscoHdf(self.absco_local_path .. "/" .. fname, sb, tsc,
+                        use_cache) end)) then
       return absco
    end
    if(self.absco_path) then
-      return AbscoHdf(self.absco_path .. "/" .. fname, sb, 
-		      tsc)
+      return AbscoHdf(self.absco_path .. "/" .. fname, sb, tsc,
+                      use_cache)
    end
    error({code=-1})
 end

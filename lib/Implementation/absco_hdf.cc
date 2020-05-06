@@ -10,10 +10,10 @@ void register_lua_AbscoHdf(lua_State *ls) { \
 luabind::module(ls) [ 
 luabind::class_<AbscoHdf,Absco,boost::shared_ptr<GasAbsorption> >
 ("AbscoHdf")
-.def(luabind::constructor<const std::string&>())
-.def(luabind::constructor<const std::string&,double>())
-.def(luabind::constructor<const std::string&,const SpectralBound&, 
-     const std::vector<double>&>())
+.def(luabind::constructor<const std::string&, bool>())
+.def(luabind::constructor<const std::string&, double, bool>())
+.def(luabind::constructor<const std::string&, const SpectralBound&, 
+     const std::vector<double>&, bool>())
 ];}
 }
 #endif
@@ -25,9 +25,9 @@ luabind::class_<AbscoHdf,Absco,boost::shared_ptr<GasAbsorption> >
 //-----------------------------------------------------------------------
 
 AbscoHdf::AbscoHdf(const std::string& Fname, double Table_scale,
-		   int Cache_nline)
+                   bool Use_cache, int Cache_nline)
 {
-  load_file(Fname, Table_scale, Cache_nline);
+  load_file(Fname, Table_scale, Use_cache, Cache_nline);
 }
 
 //-----------------------------------------------------------------------
@@ -39,9 +39,9 @@ AbscoHdf::AbscoHdf(const std::string& Fname, double Table_scale,
 AbscoHdf::AbscoHdf(const std::string& Fname, 
 		   const SpectralBound& Spectral_bound,
 		   const std::vector<double>& Table_scale,
-		   int Cache_nline)
+                   bool Use_cache, int Cache_nline)
 {
-  load_file(Fname, Spectral_bound, Table_scale, Cache_nline);
+  load_file(Fname, Spectral_bound, Table_scale, Use_cache, Cache_nline);
 }
 
 //-----------------------------------------------------------------------
@@ -54,7 +54,7 @@ AbscoHdf::AbscoHdf(const std::string& Fname,
 
 void AbscoHdf::load_file(const std::string& Fname)
 {
-  load_file(Fname, sb, table_scale_, cache_nline);
+  load_file(Fname, sb, table_scale_, use_cache, cache_nline);
 }
 
 //-----------------------------------------------------------------------
@@ -65,12 +65,12 @@ void AbscoHdf::load_file(const std::string& Fname)
 //-----------------------------------------------------------------------
 
 void AbscoHdf::load_file(const std::string& Fname, double Table_scale, 
-			 int Cache_nline)
+			 bool Use_cache, int Cache_nline)
 {
   SpectralBound empty;
   std::vector<double> tscale;
   tscale.push_back(Table_scale);
-  load_file(Fname, empty, tscale, Cache_nline);
+  load_file(Fname, empty, tscale, Use_cache, Cache_nline);
 }
 
 //-----------------------------------------------------------------------
@@ -83,7 +83,7 @@ void AbscoHdf::load_file(const std::string& Fname, double Table_scale,
 void AbscoHdf::load_file(const std::string& Fname, 
 			 const SpectralBound& Spectral_bound,
 			 const std::vector<double>& Table_scale,
-			 int Cache_nline)
+                         bool Use_cache, int Cache_nline)
 {
   sb = Spectral_bound;
   std::vector<double> tcopy(Table_scale);
@@ -102,15 +102,6 @@ void AbscoHdf::load_file(const std::string& Fname,
       << "  Table_scale size: " << table_scale_.size() << "\n";
     throw e;
   }
-  cache_nline = Cache_nline;
-  cache_double_lbound = 0;
-  cache_double_ubound = 0;
-  cache_float_lbound = 0;
-  cache_float_ubound = 0;
-
-  // Reset caches
-  read_cache_float.resize(0,0,0,0);
-  read_cache_double.resize(0,0,0,0);
 
   hfile.reset(new HdfFile(Fname));
   pgrid.reference(hfile->read_field<double, 1>("Pressure"));
@@ -154,6 +145,38 @@ void AbscoHdf::load_file(const std::string& Fname,
 
   if(bname != "")
     bvmr.reference(hfile->read_field<double, 1>("Broadener_" + bindex + "_VMR"));
+
+  use_cache = Use_cache;
+
+  if (use_cache) {
+    cache_nline = Cache_nline;
+    cache_double_lbound = 0;
+    cache_double_ubound = 0;
+    cache_float_lbound = 0;
+    cache_float_ubound = 0;
+
+    // Reset caches
+    read_cache_float.resize(0,0,0,0);
+    read_cache_double.resize(0,0,0,0);
+  }
+  else {
+    read_cache_float.resize(64,17,3,wn.rows());
+
+    if(number_broadener_vmr() > 0) {
+      TinyVector<int, 4> start, size;
+      start = 0, 0, 0, 0;
+      size = tgrid.rows(), tgrid.cols(), 3, wn.rows();
+      read_cache_float(Range::all(), Range::all(), Range::all(), Range::all()) =
+        hfile->read_field<float, 4>(field_name, start, size);
+    }
+    else {
+      TinyVector<int, 3> start, size;
+      start = 0, 0, 0;
+      size = tgrid.rows(), tgrid.cols(),    wn.rows();
+      read_cache_float(Range::all(), Range::all(), 0,            Range::all()) =
+        hfile->read_field<float, 3>(field_name, start, size);
+    }
+  }
 }
 
 // See base class for description
@@ -207,22 +230,32 @@ int AbscoHdf::wn_index(double Wn_in) const
 Array<double, 3> AbscoHdf::read_double(double Wn_in) const
 {
   int wi = wn_index(Wn_in);
-  if(wi < cache_double_lbound ||
-     wi >= cache_double_ubound)
-    swap<double>(wi);
-  return read_cache<double>()(Range::all(), Range::all(), Range::all(), 
-                              wi - cache_double_lbound);
+  if (! use_cache) {
+    return read_cache_double(Range::all(), Range::all(), Range::all(), wi);
+  }
+  else {
+    if(wi < cache_double_lbound ||
+       wi >= cache_double_ubound)
+      swap<double>(wi);
+    return read_cache<double>()(Range::all(), Range::all(), Range::all(), 
+                                wi - cache_double_lbound);
+  }
 }
 
 // See base class for description
 Array<float, 3> AbscoHdf::read_float(double Wn_in) const
 {
   int wi = wn_index(Wn_in);
-  if(wi < cache_float_lbound ||
-     wi >= cache_float_ubound)
-    swap<float>(wi);
-  return read_cache<float>()(Range::all(), Range::all(), Range::all(), 
-                             wi - cache_float_lbound);
+  if (! use_cache) {
+    return read_cache_float(Range::all(), Range::all(), Range::all(), wi);
+  }
+  else {
+    if(wi < cache_float_lbound ||
+       wi >= cache_float_ubound)
+      swap<float>(wi);
+    return read_cache<float>()(Range::all(), Range::all(), Range::all(), 
+                               wi - cache_float_lbound);
+  }
 }
 
 //-----------------------------------------------------------------------

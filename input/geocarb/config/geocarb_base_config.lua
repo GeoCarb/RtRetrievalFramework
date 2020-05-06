@@ -529,6 +529,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
          },
          absorber = {
             creator = ConfigCommon.absorber_creator,
+            use_cache = true,
             number_sub_layers = 10,
             gases = {"CO2", "H2O", "O2", "CH4", "CO"},
             CO2 = {

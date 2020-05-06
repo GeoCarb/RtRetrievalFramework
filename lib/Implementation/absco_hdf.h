@@ -19,19 +19,19 @@ namespace FullPhysics {
 *******************************************************************/
 class AbscoHdf: public Absco {
 public:
-  AbscoHdf(const std::string& Fname, double Table_scale = 1.0, 
-	   int Cache_nline = 5000);
+  AbscoHdf(const std::string& Fname, double Table_scale = 1.0,
+	   bool Use_cache = true, int Cache_nline = 5000);
   AbscoHdf(const std::string& Fname, 
 	   const SpectralBound& Spectral_bound,
 	   const std::vector<double>& Table_scale,
-	   int Cache_nline = 5000);
+           bool Use_cache = true, int Cache_nline = 5000);
   void load_file(const std::string& Fname);
   void load_file(const std::string& Fname, double Table_scale,
-		 int Cache_nline = 5000);
+		 bool Use_cache = true, int Cache_nline = 5000);
   void load_file(const std::string& Fname, 
 		 const SpectralBound& Spectral_bound,
 		 const std::vector<double>& Table_scale,
-		 int Cache_nline = 5000);
+		 bool Use_cache = true, int Cache_nline = 5000);
   virtual ~AbscoHdf() {}
   virtual std::string broadener_name() const { return bname; }
   virtual blitz::Array<double, 1> broadener_vmr_grid() const
@@ -48,6 +48,7 @@ protected:
   virtual blitz::Array<float, 3> read_float(double wn) const;
 private:
   bool is_float_;
+  bool use_cache;
   int cache_nline;
   blitz::Array<double, 1> bvmr;
   boost::shared_ptr<HdfFile> hfile;
