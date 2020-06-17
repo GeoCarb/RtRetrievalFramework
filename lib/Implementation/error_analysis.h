@@ -176,8 +176,6 @@ public:
   }
 
 
-
-
 //-----------------------------------------------------------------------
 /// Calculate the degrees of freedom for the portion of the state
 /// vector used to determine xco2.
@@ -239,9 +237,6 @@ public:
   blitz::Array<double, 2> co2_averaging_kernel() const;
 
 
-
-
-
   double xch4_degrees_of_freedom() const
   {
       FeDisableException disable_fp;
@@ -280,9 +275,6 @@ public:
   blitz::Array<double, 2> ch4_averaging_kernel() const;
 
 
-
-
-
   double xco_degrees_of_freedom() const
   {
       FeDisableException disable_fp;
@@ -319,9 +311,6 @@ public:
   blitz::Array<double, 1> xco_interference_smoothing_uncertainty() const;
 
   blitz::Array<double, 2> co_averaging_kernel() const;
-
-
-
 
 
   void print(std::ostream& Os) const { Os << "ErrorAnalysis";}

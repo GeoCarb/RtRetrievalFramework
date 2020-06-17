@@ -184,6 +184,9 @@ GeocarbBaseConfig = GeocarbConfig:new {
          },
          ils_func = {
             creator = GeocarbConfig.ils_table_l1b,
+            scale_apriori = {1.0, 1.0, 1.0, 1.0},
+            scale_cov = {0.001, 0.001, 0.001, 0.001},
+            retrieve_bands = {false, false, false, false},
          },
          instrument_correction = {
             creator = GeocarbConfig.instrument_correction_list_acquisition_mode,
@@ -379,10 +382,10 @@ GeocarbBaseConfig = GeocarbConfig:new {
             retrieved = false,
          },
          fluorescence = {
+            creator = GeocarbConfig.fluorescence_effect_land_only,
             apriori = ConfigCommon.fluorescence_apriori("Fluorescence"),
             sif_sigma_scale = 1.0 / 3,
             covariance = ConfigCommon.fluorescence_covariance("Fluorescence"),
-            creator = GeocarbConfig.fluorescence_effect_land_only,
             reference_point = ConfigCommon.hdf_read_double_with_unit("Fluorescence/reference_point"),
             retrieved = true,
          },
