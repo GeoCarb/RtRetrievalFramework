@@ -97,7 +97,7 @@ public:
     blitz::Array<std::string, 1> all_aerosol_names() const { 
         // Convert to blitz array for output
         blitz::Array<std::string, 1> out_aer_names(all_aer_names.size());
-        for(int i; i < all_aer_names.size(); i++)
+        for(int i = 0; i < all_aer_names.size(); i++)
             out_aer_names(i) = all_aer_names[i];
         return out_aer_names;
     }
