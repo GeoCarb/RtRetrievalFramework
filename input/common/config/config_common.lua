@@ -3690,20 +3690,22 @@ function ConfigCommon:connor_solver(config)
    config.register_output:push_back(out)
    -- Luabind can only handle up to 10 arguments per function. As an easy
    -- work around we put the various thresholds into an array.
-   local mq = Blitz_double_array_1d(9)
-   mq:set(0, self.h2o_scale_index0)
-   mq:set(1, self.h2o_scale_index1)
-   mq:set(2, self.h2o_scale_cov_initial)
-   mq:set(3, self.ch4_scale_index0)
-   mq:set(4, self.ch4_scale_index1)
-   mq:set(5, self.ch4_scale_cov_initial)
-   mq:set(6, self.co_scale_index0)
-   mq:set(7, self.co_scale_index1)
-   mq:set(8, self.co_scale_cov_initial)
-   config.conn_solver = ConnorSolver.create(cost_func,
-                                            conv,
+   local index0 = Blitz_int_array_1d(3)
+   index0:set(0, self.h2o_scale_index0)
+   index0:set(1, self.ch4_scale_index0)
+   index0:set(2, self.co_scale_index0)
+   local index1 = Blitz_int_array_1d(3)
+   index1:set(0, self.h2o_scale_index1)
+   index1:set(1, self.ch4_scale_index1)
+   index1:set(2, self.co_scale_index1)
+   local cov_initial = Blitz_double_array_1d(3)
+   cov_initial:set(0, self.h2o_scale_cov_initial)
+   cov_initial:set(1, self.ch4_scale_cov_initial)
+   cov_initial:set(2, self.co_scale_cov_initial)
+   config.conn_solver = ConnorSolver.create(cost_func, conv,
                                             self.gamma_initial,
-                                            mq)
+                                            config.atmosphere,
+                                            index0, index1, cov_initial)
    local iter_log = SolverIterationLog(config.state_vector)
    iter_log:add_as_observer(config.conn_solver)
    out = ConnorSolverOutput(config.conn_solver, config.write_jacobian)

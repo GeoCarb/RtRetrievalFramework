@@ -17,26 +17,28 @@ boost::shared_ptr<ConnorSolver> connor_solver_create(
   const boost::shared_ptr<CostFunction>& Cf,
   const boost::shared_ptr<ConvergenceCheck>& Conv,
   double Gamma_initial,
-  const blitz::Array<double, 1>& val)
+  const boost::shared_ptr<RtAtmosphere>& atm,
+  const blitz::Array<int, 1>& index0,
+  const blitz::Array<int, 1>& index1,
+  const blitz::Array<double, 1>& cov_initial)
 {
   return boost::shared_ptr<ConnorSolver>
     (new ConnorSolver(Cf, Conv, Gamma_initial,
-                      val(0), val(1), val(2),
-                      val(3), val(4), val(5),
-                      val(6), val(7), val(8)));
+                      atm, index0, index1, cov_initial));
 }
 boost::shared_ptr<ConnorSolver> connor_solver_create2(
   const boost::shared_ptr<CostFunction>& Cf,
   const boost::shared_ptr<ConvergenceCheck>& Conv,
   double Gamma_initial,
-  const blitz::Array<double, 1>& val,
+  const boost::shared_ptr<RtAtmosphere>& atm,
+  const blitz::Array<int, 1>& index0,
+  const blitz::Array<int, 1>& index1,
+  const blitz::Array<double, 1>& cov_initial,
   const std::string& Save_test_data = "")
 {
   return boost::shared_ptr<ConnorSolver>
     (new ConnorSolver(Cf, Conv, Gamma_initial,
-                      val(0), val(1), val(2),
-                      val(3), val(4), val(5),
-                      val(6), val(7), val(8),
+                      atm, index0, index1, cov_initial,
                       Save_test_data));
 }
 REGISTER_LUA_CLASS(ConnorSolver)
@@ -198,43 +200,43 @@ bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
   sigma_ap = sqrt(Apriori_cov(i1, i1));
   gamma = gamma_initial;
 
-  Range ra_h2o(h2o_scale_index0, h2o_scale_index1);
-  Range ra_ch4(ch4_scale_index0, ch4_scale_index1);
-  Range ra_co(co_scale_index0, co_scale_index1);
+  Range ra_h2o(index0(0), index1(0));
+  Range ra_ch4(index0(1), index1(1));
+  Range ra_co(index0(2), index1(2));
 
   int n;
 
-  blitz::Array<double, 2> h2o_scale_cov_save;
-  blitz::Array<double, 2> h2o_scale_cov_initial2;
-  if (h2o_scale_index0 >= 0) {
-    n = h2o_scale_index1 - h2o_scale_index0 + 1;
-    h2o_scale_cov_save.resize(n,n);
-    h2o_scale_cov_initial2.resize(n,n);
-    h2o_scale_cov_initial2 = 0.;
-    for (int i = 0; i < h2o_scale_cov_initial2.rows(); ++i)
-      h2o_scale_cov_initial2(i,i) = h2o_scale_cov_initial;
+  blitz::Array<double, 2> h2o_cov_save;
+  blitz::Array<double, 2> h2o_cov_initial2;
+  if (index0(0) >= 0) {
+    n = index1(0) - index0(0) + 1;
+    h2o_cov_save.resize(n,n);
+    h2o_cov_initial2.resize(n,n);
+    h2o_cov_initial2 = 0.;
+    for (int i = 0; i < h2o_cov_initial2.rows(); ++i)
+      h2o_cov_initial2(i,i) = cov_initial(0);
   }
 
-  blitz::Array<double, 2> ch4_scale_cov_save;
-  blitz::Array<double, 2> ch4_scale_cov_initial2;
-  if (ch4_scale_index0 >= 0) {
-    n = ch4_scale_index1 - ch4_scale_index0 + 1;
-    ch4_scale_cov_save.resize(n,n);
-    ch4_scale_cov_initial2.resize(n,n);
-    ch4_scale_cov_initial2 = 0.;
-    for (int i = 0; i < ch4_scale_cov_initial2.rows(); ++i)
-      ch4_scale_cov_initial2(i,i) = ch4_scale_cov_initial;
+  blitz::Array<double, 2> ch4_cov_save;
+  blitz::Array<double, 2> ch4_cov_initial2;
+  if (index0(1) >= 0) {
+    n = index1(1) - index0(1) + 1;
+    ch4_cov_save.resize(n,n);
+    ch4_cov_initial2.resize(n,n);
+    ch4_cov_initial2 = 0.;
+    for (int i = 0; i < ch4_cov_initial2.rows(); ++i)
+      ch4_cov_initial2(i,i) = cov_initial(1);
   }
 
-  blitz::Array<double, 2> co_scale_cov_save;
-  blitz::Array<double, 2> co_scale_cov_initial2;
-  if (co_scale_index0 >= 0) {
-    n = co_scale_index1 - co_scale_index0 + 1;
-    co_scale_cov_save.resize(n,n);
-    co_scale_cov_initial2.resize(n,n);
-    co_scale_cov_initial2 = 0.;
-    for (int i = 0; i < co_scale_cov_initial2.rows(); ++i)
-      co_scale_cov_initial2(i,i) = co_scale_cov_initial;
+  blitz::Array<double, 2> co_cov_save;
+  blitz::Array<double, 2> co_cov_initial2;
+  if (index0(2) >= 0) {
+    n = index1(2) - index0(2) + 1;
+    co_cov_save.resize(n,n);
+    co_cov_initial2.resize(n,n);
+    co_cov_initial2 = 0.;
+    for (int i = 0; i < co_cov_initial2.rows(); ++i)
+      co_cov_initial2(i,i) = cov_initial(2);
   }
 
   apriori_cov_scaled.resize(Apriori_cov.shape());
@@ -243,12 +245,12 @@ bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
   apriori_cov_copy.resize(Apriori_cov.rows(),Apriori_cov.rows());
   apriori_cov_copy.reference(Apriori_cov.copy());
 
-  if (h2o_scale_index0 >= 0)
-    h2o_scale_cov_save = Apriori_cov(ra_h2o,ra_h2o);
-  if (ch4_scale_index0 >= 0)
-    ch4_scale_cov_save = Apriori_cov(ra_ch4,ra_ch4);
-  if (co_scale_index0 >= 0)
-    co_scale_cov_save = Apriori_cov(ra_co,ra_co);
+  if (index0(0) >= 0)
+    h2o_cov_save = Apriori_cov(ra_h2o,ra_h2o);
+  if (index0(1) >= 0)
+    ch4_cov_save = Apriori_cov(ra_ch4,ra_ch4);
+  if (index0(2) >= 0)
+    co_cov_save = Apriori_cov(ra_co,ra_co);
 
 // Do Levenberg-Marquardt solution.
 
@@ -262,23 +264,23 @@ bool ConnorSolver::solve(const blitz::Array<double, 1>& Initial_guess,
   bool first = true;
 
   while (! has_converged) {
-    if (h2o_scale_index0 >= 0) {
+    if (index0(0) >= 0) {
       if (fstat.number_iteration == 0)
-        apriori_cov_copy(ra_h2o,ra_h2o) = h2o_scale_cov_initial2;
+        apriori_cov_copy(ra_h2o,ra_h2o) = h2o_cov_initial2;
       else
-        apriori_cov_copy(ra_h2o,ra_h2o) = h2o_scale_cov_save;
+        apriori_cov_copy(ra_h2o,ra_h2o) = h2o_cov_save;
     }
-    if (ch4_scale_index0 >= 0) {
+    if (index0(1) >= 0) {
       if (fstat.number_iteration == 0)
-        apriori_cov_copy(ra_ch4,ra_ch4) = ch4_scale_cov_initial2;
+        apriori_cov_copy(ra_ch4,ra_ch4) = ch4_cov_initial2;
       else
-        apriori_cov_copy(ra_ch4,ra_ch4) = ch4_scale_cov_save;
+        apriori_cov_copy(ra_ch4,ra_ch4) = ch4_cov_save;
     }
-    if (co_scale_index0 >= 0) {
+    if (index0(2) >= 0) {
       if (fstat.number_iteration == 0 || fstat.number_iteration == 1)
-        apriori_cov_copy(ra_co,ra_co) = co_scale_cov_initial2;
+        apriori_cov_copy(ra_co,ra_co) = co_cov_initial2;
       else
-        apriori_cov_copy(ra_co,ra_co) = co_scale_cov_save;
+        apriori_cov_copy(ra_co,ra_co) = co_cov_save;
     }
 
     sigma_ap = sqrt(apriori_cov_copy(i1, i1));
