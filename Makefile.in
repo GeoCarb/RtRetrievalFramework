@@ -2474,7 +2474,6 @@ pythonlibsrc = @pythonlibsrc@
 pythonsrc = @pythonsrc@
 pythontemplatesrc = @pythontemplatesrc@
 rubygemdir = @rubygemdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
