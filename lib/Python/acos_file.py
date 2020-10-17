@@ -25,7 +25,7 @@ import logging
 
 import numpy
 import h5py
-from . import tai64n
+import tai64n
 import six
 
 logger = logging.getLogger()
@@ -35,7 +35,7 @@ if h5py.version.version_tuple < (1,2,0):
     raise ImportError('At least version 1.2.0 of h5py is required, you have: %s' % h5py.version.version)
 
 
-from .surface_prop import ModisEcoMap
+from surface_prop import ModisEcoMap
 
 GOSAT_INST_NAME = 'gosat'
 OCO_INST_NAME   = 'oco'
@@ -721,7 +721,7 @@ class L1B(SoundingDataFile):
 
         disp_eval = []
         for band_coefs, band_len in zip(dispersion_coefs, channel_counts):
-            band_poly = numpy.lib.polynomial.poly1d(band_coefs[::-1])
+            band_poly = numpy.lib.polynomial.poly1d(band_coefs[0][::-1])
             disp_eval.append( band_poly(numpy.arange(1,band_len+1)) )
 
         return tuple(disp_eval)
