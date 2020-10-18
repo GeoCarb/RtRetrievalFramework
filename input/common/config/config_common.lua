@@ -2401,6 +2401,8 @@ function ConfigCommon.brdf_retrieval:retrieval_flag(i)
 
    n_coefs = self:apriori_v(0):rows()
 
+   n_coefs = self:apriori_v(0):rows()
+
    if self.retrieve_bands ~= nil and self.retrieve_bands[i] then
        flag:set(Range.all(), false)
        for i = 5, n_coefs - 1 do
