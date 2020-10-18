@@ -512,7 +512,7 @@ OcoBaseConfig = OcoConfig:new {
             creator = ConfigCommon.absorber_creator,
             gases = {"CO2", "H2O", "O2"},
             CO2 = {
-               apriori = ConfigCommon.reference_co2_apriori_met_apriori,
+               apriori = ConfigCommon.co2_profile_file_apriori,
                covariance = ConfigCommon.hdf_covariance("Gas/CO2"),
                absco = "v5.0_alpha/raw/co2_devi2015_wco2scale=nist_sco2scale=unity.hdf",
                table_scale = {1.0, 1.0, 1.004},
