@@ -2032,7 +2032,7 @@ SUBROUTINE LIDORT_master ( THREAD, &
 
 !  Parameter types
 
-   USE LIDORT_PARS, only : fpk
+!  USE LIDORT_PARS, only : fpk
    USE LIDORT_pars
 
 !  Implicit none
