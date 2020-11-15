@@ -26,6 +26,8 @@ LidortBrdfDriver::LidortBrdfDriver(int nstream, int nmoment) : nmoment_(nmoment)
 
   Brdf_Sup_Inputs& brdf_inputs = brdf_interface_->brdf_sup_in();
 
+  brdf_inputs.bs_do_solar_sources(true);
+
   // Only use 1 beam meaning only one set of sza, azm
   brdf_inputs.bs_nbeams(1);
   brdf_inputs.bs_n_user_streams(1);
