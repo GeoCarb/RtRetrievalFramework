@@ -224,8 +224,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  Zero all Fourier components - New rule, better for safety
 !    Only did this for components close to zenith (formerly)
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, K_PARAMETERS
+        DO UM = 1, N_USER_STREAMS
           ATMOSWF_F_UP(UM,IPARTIC,K,Q) = 0.0d0
         ENDDO
       ENDDO
@@ -236,8 +236,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  initialise boa source terms
 !    MS mode only, do not require direct beam source terms
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, K_PARAMETERS
+        DO UM = 1, N_USER_STREAMS
           L_BOA_MSSOURCE(UM,Q) = 0.0d0
         ENDDO
       ENDDO
@@ -311,8 +311,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !     No Direct-beam contribution, MS-mode only
 
       NC = 0
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, K_PARAMETERS
+        DO UM = 1, N_USER_STREAMS
           L_CUMULSOURCE(UM,Q) = L_BOA_MSSOURCE(UM,Q) 
         ENDDO
       ENDDO
@@ -343,8 +343,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.NE.K .AND. K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, K_PARAMETERS
+            DO UM = 1, N_USER_STREAMS
               NCON_UXVEC = NCON(N,Q) * U_XPOS(UM,N)
               PCON_UXVEC = PCON(N,Q) * U_XNEG(UM,N)
               H2 = NCON_UXVEC * HMULT_2(UM,N)
@@ -361,8 +361,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
       IF ( DO_INCLUDE_THERMEMISS ) THEN
         TM = 1.0_dp ; IF ( DO_SOLAR_SOURCES ) TM = 1.0_dp/PI4
         IF ( N.EQ.K .OR. K.EQ.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, K_PARAMETERS
+            DO UM = 1, N_USER_STREAMS
               L_LAYERSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q) + L_LAYER_TSUP_UP(UM,N,Q)*TM
             ENDDO
           ENDDO
@@ -386,8 +386,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.GT.K .AND. K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, K_PARAMETERS
+            DO UM = 1, N_USER_STREAMS
               SFOR2 = L_EMULT_UP(UM,N,IB,K,Q) *   U_WPOS2(UM,N) &
                       + EMULT_UP(UM,N,IB)     * L_U_WPOS2(UM,N,K,Q)
               L_LAYERSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q) + SFOR2 
@@ -431,8 +431,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.NE.K.AND.K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, K_PARAMETERS
+            DO UM = 1, N_USER_STREAMS
               L_CUMULSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q)  + &
                    T_DELT_USERM(N,UM)*L_CUMULSOURCE(UM,Q)
             ENDDO
@@ -445,8 +445,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 
 !  User-defined stream output, just set to the cumulative source term
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, K_PARAMETERS
+        DO UM = 1, N_USER_STREAMS
           ATMOSWF_F_UP(UM,IPARTIC,K,Q) = FLUX_MULTIPLIER * L_CUMULSOURCE(UM,Q)
         ENDDO
       ENDDO

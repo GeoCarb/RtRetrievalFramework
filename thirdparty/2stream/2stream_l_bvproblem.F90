@@ -204,7 +204,7 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 !  ---------------
 
       INTEGER       :: N, N1, I, C0, Q
-      REAL(kind=dp) :: A, B, DEN, TERM1, TERM2
+      REAL(kind=dp) :: A, B, DEN, TERM1, TERM2, T1(3:NTOTAL), T2(3:NTOTAL)
       LOGICAL       :: MBCL3, MBCL4
 
 !  Linearization of the regular BVP case
@@ -265,6 +265,8 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 !  -----------------------------------------------------
 
       IF ( NLAYERS .GT. 1 ) THEN
+      !print*,'TWOSTREAM_BVP: ',N_WEIGHTFUNCS,NTOTAL,NLAYERS
+      ! 7          38          19
 
 !  For each weighting function
 
@@ -280,6 +282,17 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
             TERM2 = ELM(I,3) * COL2_WF(I-1,Q) - COL2_WF(I,Q)
             COL2_WF(I,Q) = ( TERM1 + TERM2 ) * DEN
           ENDDO
+
+          !!DIR$ vector unaligned
+          !DO I = 3, NTOTAL
+          !  T1(I) = MAT(I,1)*ELM(I,4)
+          !  T2(I) = ELM(I,3)*ELM(I,4)
+          !ENDDO
+          !!DIR$ NOFUSION
+          !!DIR$ vector unaligned
+          !DO I = 3, NTOTAL
+          !  COL2_WF(I,Q) = T1(I)*COL2_WF(I-2,Q) + T2(I)*COL2_WF(I-1,Q) - COL2_WF(I,Q)*ELM(I,4)
+          !ENDDO
 
 !  back-substitution 
 
@@ -472,8 +485,8 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
 
 !  zero the results vectors
 
-      DO I = 1, NTOTAL
-        DO Q = 1, NPARS
+      DO Q = 1, NPARS
+        DO I = 1, NTOTAL
           COL2_WF(I,Q) = 0.0d0
         ENDDO
       ENDDO
@@ -485,9 +498,9 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
 
 !    This is a very important zeroing.................!!!!!
 
-      DO I = 1, 2
-        DO Q = 1, N_LAYER_WFS
-          DO N = 1, NLAYERS
+      DO Q = 1, N_LAYER_WFS
+        DO N = 1, NLAYERS
+          DO I = 1, 2
             L_WUPPER(I,N,Q) = 0.0d0
             L_WLOWER(I,N,Q) = 0.0d0
           ENDDO
@@ -497,8 +510,8 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
 !  Copy already existing thermal solution linearization
 
       IF ( DO_INCLUDE_THERMEMISS ) THEN
-        DO I = 1, 2
-          DO Q = 1, N_LAYER_WFS
+        DO Q = 1, N_LAYER_WFS
+          DO I = 1, 2
             L_WUPPER(I,K,Q) = L_T_WUPPER(I,K,Q)
             L_WLOWER(I,K,Q) = L_T_WLOWER(I,K,Q)
           ENDDO

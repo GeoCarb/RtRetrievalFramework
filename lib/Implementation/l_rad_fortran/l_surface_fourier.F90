@@ -633,8 +633,9 @@ contains
 
 !  Outputs
 
-      double precision R1cscal(2,nmug)
-      double precision R1c(2,nmug,4,4),R1s(2,nmug,4,4)
+      double precision R1cscal(nmug,2)
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
 
 !  Local variables
 
@@ -683,31 +684,30 @@ contains
              xmu(nmug+2),sxi,xmu(j),sxj, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m)
-          R1cscal(1,j) = R1cscal(1,j)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
+          R1cscal(j,1) = R1cscal(j,1)+mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
           do k1 = 1,2
             do k2 = 1,2
-              R1c(1,j,k1,k2) = R1c(1,j,k1,k2)+mcx_brdf(k)*w_brdf(k)* &
+              R1c(k1,k2,j,1) = R1c(k1,k2,j,1)+mcx_brdf(k)*w_brdf(k)* &
                                R1m(k1,k2)*fac
             enddo
             do k2 = 3,4
-              R1s(1,j,k1,k2) = R1s(1,j,k1,k2)+msx_brdf(k)*w_brdf(k)* &
+              R1s(k1,k2,j,1) = R1s(k1,k2,j,1)+msx_brdf(k)*w_brdf(k)* &
                                R1m(k1,k2)*fac
             enddo
           enddo
         enddo
-        R1cscal(1,j) = R1cscal(1,j)*shadij
+        R1cscal(j,1) = R1cscal(j,1)*shadij
         do k1 = 1,2
           do k2 = 1,2
-            R1c(1,j,k1,k2) = R1c(1,j,k1,k2)*shadij
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*shadij
           enddo
           do k2 = 3,4
-            R1s(1,j,k1,k2) = R1s(1,j,k1,k2)*shadij
+            R1s(k1,k2,j,1) = R1s(k1,k2,j,1)*shadij
           enddo
         enddo
         if (m .eq. 0) then
-          R1cscal(1,j) = R1cscal(1,j)+pars_giss(3) ! V. Natraj, 8/17/2010
-          R1c(1,j,1,1) = R1c(1,j,1,1)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1cscal(j,1) = R1cscal(j,1)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1c(1,1,j,1) = R1c(1,1,j,1)+pars_giss(3) ! V. Natraj, 8/17/2010
         endif
       enddo
 
@@ -721,27 +721,26 @@ contains
              xmu(i),sxi,xmu(nmug+1),sxj, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m)
-          R1cscal(2,i) = R1cscal(2,i)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
+          R1cscal(i,2) = R1cscal(i,2)+mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
           do k1 = 1,2
-            R1c(2,i,k1,1) = R1c(2,i,k1,1)+mcx_brdf(k)*w_brdf(k)* &
+            R1c(k1,1,i,2) = R1c(k1,1,i,2)+mcx_brdf(k)*w_brdf(k)* &
                             R1m(k1,1)*fac
           enddo
           do k1 = 3,4
-            R1s(2,i,k1,1) = R1s(2,i,k1,1)+msx_brdf(k)*w_brdf(k)* &
+            R1s(k1,1,i,2) = R1s(k1,1,i,2)+msx_brdf(k)*w_brdf(k)* &
                             R1m(k1,1)*fac
           enddo
         enddo
-        R1cscal(2,i) = R1cscal(2,i)*shadij
+        R1cscal(i,2) = R1cscal(i,2)*shadij
         do k1 = 1,2
-          R1c(2,i,k1,1) = R1c(2,i,k1,1)*shadij
+          R1c(k1,1,i,2) = R1c(k1,1,i,2)*shadij
         enddo
         do k1 = 3,4
-          R1s(2,i,k1,1) = R1s(2,i,k1,1)*shadij
+          R1s(k1,1,i,2) = R1s(k1,1,i,2)*shadij
         enddo
         if (m .eq. 0) then
-          R1cscal(2,i) = R1cscal(2,i)+pars_giss(3) ! V. Natraj, 8/17/2010
-          R1c(2,i,1,1) = R1c(2,i,1,1)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1cscal(i,2) = R1cscal(i,2)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1c(1,1,i,2) = R1c(1,1,i,2)+pars_giss(3) ! V. Natraj, 8/17/2010
         endif
       enddo
 
@@ -768,15 +767,14 @@ contains
              xmu(j),sxj, xmu(nmug+2),sxi, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m)
-          R1cscal(1,j) = R1cscal(1,j)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
+          R1cscal(j,1) = R1cscal(j,1)+mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
           do k1 = 1,2
             do k2 = 1,2
-              R1c(1,j,k1,k2) = R1c(1,j,k1,k2)+mcx_brdf(k)*w_brdf(k)* &
+              R1c(k1,k2,j,1) = R1c(k1,k2,j,1)+mcx_brdf(k)*w_brdf(k)* &
                                R1m(k1,k2)*fac
             enddo
             do k2 = 3,4
-              R1s(1,j,k1,k2) = R1s(1,j,k1,k2)+msx_brdf(k)*w_brdf(k)* &
+              R1s(k1,k2,j,1) = R1s(k1,k2,j,1)+msx_brdf(k)*w_brdf(k)* &
                                R1m(k1,k2)*fac
             enddo
           enddo
@@ -792,14 +790,13 @@ contains
              xmu(nmug+1),sxj, xmu(i),sxi, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m)
-          R1cscal(2,i) = R1cscal(2,i)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
+          R1cscal(i,2) = R1cscal(i,2)+mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
           do k1 = 1,2
-            R1c(2,i,k1,1) = R1c(2,i,k1,1)+mcx_brdf(k)*w_brdf(k)* &
+            R1c(k1,1,i,2) = R1c(k1,1,i,2)+mcx_brdf(k)*w_brdf(k)* &
                             R1m(k1,1)*fac
           enddo
           do k1 = 3,4
-            R1s(2,i,k1,1) = R1s(2,i,k1,1)+msx_brdf(k)*w_brdf(k)* &
+            R1s(k1,1,i,2) = R1s(k1,1,i,2)+msx_brdf(k)*w_brdf(k)* &
                             R1m(k1,1)*fac
           enddo
         enddo
@@ -834,11 +831,11 @@ contains
 
 !  Outputs
 
-      double precision R1cscal(2,nmug)
-      double precision R1c(2,nmug,4,4),R1s(2,nmug,4,4)
-      double precision Ls_R1cscal(2,nmug,nspars)
-      double precision Ls_R1c(2,nmug,4,4,nspars), &
-                       Ls_R1s(2,nmug,4,4,nspars)
+      double precision R1cscal(nmug,2)
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
+      double precision Ls_R1c(4,4,nmug,nspars,2), Ls_R1s(4,4,nmug,nspars,2)
 
 !  Local variables
 
@@ -890,44 +887,33 @@ contains
              xmu(nmug+2),sxi,xmu(j),sxj, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m,Ls_R1m)
-          R1cscal(1,j) = R1cscal(1,j)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
-          Ls_R1cscal(1,j,:) = Ls_R1cscal(1,j,:)+mcx_brdf(k)*w_brdf(k)* &
-                              Ls_R1m(1,1,:)*fac
+          R1cscal(j,1) = R1cscal(j,1) + mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
+          Ls_R1cscal(j,:,1) = Ls_R1cscal(j,:,1) + mcx_brdf(k)*w_brdf(k)*Ls_R1m(1,1,:)*fac
           do k1 = 1,2
             do k2 = 1,2
-              R1c(1,j,k1,k2) = R1c(1,j,k1,k2)+mcx_brdf(k)*w_brdf(k)* &
-                               R1m(k1,k2)*fac
-              Ls_R1c(1,j,k1,k2,:) = Ls_R1c(1,j,k1,k2,:)+mcx_brdf(k)* &
-                                    w_brdf(k)*Ls_R1m(k1,k2,:)*fac
+              R1c(k1,k2,j,1) = R1c(k1,k2,j,1)+mcx_brdf(k)*w_brdf(k)*R1m(k1,k2)*fac
+              Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)+mcx_brdf(k)*w_brdf(k)*Ls_R1m(k1,k2,:)*fac
             enddo
             do k2 = 3,4
-              R1s(1,j,k1,k2) = R1s(1,j,k1,k2)+msx_brdf(k)*w_brdf(k)* &
-                               R1m(k1,k2)*fac
-              Ls_R1s(1,j,k1,k2,:) = Ls_R1s(1,j,k1,k2,:)+msx_brdf(k)* &
-                                    w_brdf(k)*Ls_R1m(k1,k2,:)*fac
+              R1s(k1,k2,j,1) = R1s(k1,k2,j,1) + msx_brdf(k)*w_brdf(k)*R1m(k1,k2)*fac
+              Ls_R1s(k1,k2,j,:,1) = Ls_R1s(k1,k2,j,:,1) + msx_brdf(k)*w_brdf(k)*Ls_R1m(k1,k2,:)*fac
             enddo
           enddo
         enddo
-        R1cscal(1,j) = R1cscal(1,j)*shadij
-        R1c(1,j,1:2,1:2) = R1c(1,j,1:2,1:2)*shadij
-        R1s(1,j,1:2,3:4) = R1s(1,j,1:2,3:4)*shadij
-        Ls_R1cscal(1,j,1) = Ls_R1cscal(1,j,1)*shadij+R1cscal(1,j)* &
-                            D_shadij(1)/shadij
-        Ls_R1c(1,j,1:2,1:2,1) = Ls_R1c(1,j,1:2,1:2,1)*shadij+ &
-                                R1c(1,j,1:2,1:2)* &
-                                D_shadij(1)/shadij
-        Ls_R1s(1,j,1:2,3:4,1) = Ls_R1s(1,j,1:2,3:4,1)*shadij+ &
-                                R1s(1,j,1:2,3:4)* &
-                                D_shadij(1)/shadij
-        Ls_R1cscal(1,j,2) = Ls_R1cscal(1,j,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
-        Ls_R1c(1,j,1:2,1:2,2) = Ls_R1c(1,j,1:2,1:2,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
-        Ls_R1s(1,j,1:2,3:4,2) = Ls_R1s(1,j,1:2,3:4,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        R1cscal(j,1) = R1cscal(j,1)*shadij
+        R1c(1:2,1:2,j,1) = R1c(1:2,1:2,j,1)*shadij
+        R1s(1:2,3:4,j,1) = R1s(1:2,3:4,j,1)*shadij
+        Ls_R1cscal(j,1,1) = Ls_R1cscal(j,1,1)*shadij + R1cscal(j,1)*D_shadij(1)/shadij
+        Ls_R1c(1:2,1:2,j,1,1) = Ls_R1c(1:2,1:2,j,1,1)*shadij + R1c(1:2,1:2,j,1)*D_shadij(1)/shadij
+        Ls_R1s(1:2,3:4,j,1,1) = Ls_R1s(1:2,3:4,j,1,1)*shadij + R1s(1:2,3:4,j,1)*D_shadij(1)/shadij
+        Ls_R1cscal(j,2,1) = Ls_R1cscal(j,2,1)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        Ls_R1c(1:2,1:2,j,2,1) = Ls_R1c(1:2,1:2,j,2,1)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        Ls_R1s(1:2,3:4,j,2,1) = Ls_R1s(1:2,3:4,j,2,1)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
         if (m .eq. 0) then
-          R1cscal(1,j) = R1cscal(1,j)+pars_giss(3) ! V. Natraj, 8/17/2010
-          R1c(1,j,1,1) = R1c(1,j,1,1)+pars_giss(3) ! V. Natraj, 8/17/2010
-          Ls_R1cscal(1,j,3) = Ls_R1cscal(1,j,3)+1.d0 ! V. Natraj, 8/17/2010
-          Ls_R1c(1,j,1,1,3) = Ls_R1c(1,j,1,1,3)+1.d0 ! V. Natraj, 8/17/2010
+          R1cscal(j,1) = R1cscal(j,1)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1c(1,1,j,1) = R1c(1,1,j,1)+pars_giss(3) ! V. Natraj, 8/17/2010
+          Ls_R1cscal(j,3,1) = Ls_R1cscal(j,3,1)+1.d0 ! V. Natraj, 8/17/2010
+          Ls_R1c(1,1,j,3,1) = Ls_R1c(1,1,j,3,1)+1.d0 ! V. Natraj, 8/17/2010
         endif
       enddo
 
@@ -943,42 +929,31 @@ contains
              xmu(i),sxi,xmu(nmug+1),sxj, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m,Ls_R1m)
-          R1cscal(2,i) = R1cscal(2,i)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
-          Ls_R1cscal(2,i,:) = Ls_R1cscal(2,i,:)+mcx_brdf(k)*w_brdf(k)* &
-                              Ls_R1m(1,1,:)*fac
+          R1cscal(i,2) = R1cscal(i,2) + mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
+          Ls_R1cscal(i,:,2) = Ls_R1cscal(i,:,2) + mcx_brdf(k)*w_brdf(k)*Ls_R1m(1,1,:)*fac
           do k1 = 1,2
-            R1c(2,i,k1,1) = R1c(2,i,k1,1)+mcx_brdf(k)*w_brdf(k)* &
-                            R1m(k1,1)*fac
-            Ls_R1c(2,i,k1,1,:) = Ls_R1c(2,i,k1,1,:)+mcx_brdf(k)* &
-                                 w_brdf(k)*Ls_R1m(k1,1,:)*fac
+            R1c(k1,1,i,2) = R1c(k1,1,i,2) + mcx_brdf(k)*w_brdf(k)*R1m(k1,1)*fac
+            Ls_R1c(k1,1,i,:,2) = Ls_R1c(k1,1,i,:,2) + mcx_brdf(k)*w_brdf(k)*Ls_R1m(k1,1,:)*fac
           enddo
           do k1 = 3,4
-            R1s(2,i,k1,1) = R1s(2,i,k1,1)+msx_brdf(k)*w_brdf(k)* &
-                            R1m(k1,1)*fac
-            Ls_R1s(2,i,k1,1,:) = Ls_R1s(2,i,k1,1,:)+msx_brdf(k)* &
-                                 w_brdf(k)*Ls_R1m(k1,1,:)*fac
+            R1s(k1,1,i,2) = R1s(k1,1,i,2) + msx_brdf(k)*w_brdf(k)*R1m(k1,1)*fac
+            Ls_R1s(k1,1,i,:,2) = Ls_R1s(k1,1,i,:,2) + msx_brdf(k)*w_brdf(k)*Ls_R1m(k1,1,:)*fac
           enddo
         enddo
-        R1cscal(2,i) = R1cscal(2,i)*shadij
-        R1c(2,i,1:2,1) = R1c(2,i,1:2,1)*shadij
-        R1s(2,i,3:4,1) = R1s(2,i,3:4,1)*shadij
-        Ls_R1cscal(2,i,1) = Ls_R1cscal(2,i,1)*shadij+R1cscal(2,i)* &
-                            D_shadij(1)/shadij
-        Ls_R1c(2,i,1:2,1,1) = Ls_R1c(2,i,1:2,1,1)*shadij+ &
-                              R1c(2,i,1:2,1)* &
-                              D_shadij(1)/shadij
-        Ls_R1s(2,i,3:4,1,1) = Ls_R1s(2,i,3:4,1,1)*shadij+ &
-                              R1s(2,i,3:4,1)* &
-                              D_shadij(1)/shadij
-        Ls_R1cscal(2,i,2) = Ls_R1cscal(2,i,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
-        Ls_R1c(2,i,1:2,1,2) = Ls_R1c(2,i,1:2,1,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
-        Ls_R1s(2,i,3:4,1,2) = Ls_R1s(2,i,3:4,1,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        R1cscal(i,2) = R1cscal(i,2)*shadij
+        R1c(1:2,1,i,2) = R1c(1:2,1,i,2)*shadij
+        R1s(3:4,1,i,2) = R1s(3:4,1,i,2)*shadij
+        Ls_R1cscal(i,1,2) = Ls_R1cscal(i,1,2)*shadij+R1cscal(i,2)*D_shadij(1)/shadij
+        Ls_R1c(1:2,1,i,1,2) = Ls_R1c(1:2,1,i,1,2)*shadij + R1c(1:2,1,i,2)*D_shadij(1)/shadij
+        Ls_R1s(3:4,1,i,1,2) = Ls_R1s(3:4,1,i,1,2)*shadij + R1s(3:4,1,i,2)*D_shadij(1)/shadij
+        Ls_R1cscal(i,2,2) = Ls_R1cscal(i,2,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        Ls_R1c(1:2,1,i,2,2) = Ls_R1c(1:2,1,i,2,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
+        Ls_R1s(3:4,1,i,2,2) = Ls_R1s(3:4,1,i,2,2)*shadij ! deriv wrt ri just propagates, V. Natraj, 8/17/2010
         if (m .eq. 0) then
-          R1cscal(2,i) = R1cscal(2,i)+pars_giss(3) ! V. Natraj, 8/17/2010
-          R1c(2,i,1,1) = R1c(2,i,1,1)+pars_giss(3) ! V. Natraj, 8/17/2010
-          Ls_R1cscal(2,i,3) = Ls_R1cscal(2,i,3)+1.d0 ! V. Natraj, 8/17/2010
-          Ls_R1c(2,i,1,1,3) = Ls_R1c(2,i,1,1,3)+1.d0 ! V. Natraj, 8/17/2010
+          R1cscal(i,2) = R1cscal(i,2)+pars_giss(3) ! V. Natraj, 8/17/2010
+          R1c(1,1,i,2) = R1c(1,1,i,2)+pars_giss(3) ! V. Natraj, 8/17/2010
+          Ls_R1cscal(i,3,2) = Ls_R1cscal(i,3,2)+1.d0 ! V. Natraj, 8/17/2010
+          Ls_R1c(1,1,i,3,2) = Ls_R1c(1,1,i,3,2)+1.d0 ! V. Natraj, 8/17/2010
         endif
       enddo
 
@@ -1005,22 +980,16 @@ contains
              xmu(j),sxj, xmu(nmug+2),sxi, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m,Ls_R1m)
-          R1cscal(1,j) = R1cscal(1,j)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
-          Ls_R1cscal(1,j,:) = Ls_R1cscal(1,j,:)+mcx_brdf(k)*w_brdf(k)* &
-                              Ls_R1m(1,1,:)*fac
+          R1cscal(j,1) = R1cscal(j,1) + mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
+          Ls_R1cscal(j,:,1) = Ls_R1cscal(j,:,1) + mcx_brdf(k)*w_brdf(k)*Ls_R1m(1,1,:)*fac
           do k1 = 1,2
             do k2 = 1,2
-              R1c(1,j,k1,k2) = R1c(1,j,k1,k2)+mcx_brdf(k)*w_brdf(k)* &
-                               R1m(k1,k2)*fac
-              Ls_R1c(1,j,k1,k2,:) = Ls_R1c(1,j,k1,k2,:)+mcx_brdf(k)* &
-                                    w_brdf(k)*Ls_R1m(k1,k2,:)*fac
+              R1c(k1,k2,j,1) = R1c(k1,k2,j,1)+mcx_brdf(k)*w_brdf(k)*R1m(k1,k2)*fac
+              Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)+mcx_brdf(k)*w_brdf(k)*Ls_R1m(k1,k2,:)*fac
             enddo
             do k2 = 3,4
-              R1s(1,j,k1,k2) = R1s(1,j,k1,k2)+msx_brdf(k)*w_brdf(k)* &
-                               R1m(k1,k2)*fac
-              Ls_R1s(1,j,k1,k2,:) = Ls_R1s(1,j,k1,k2,:)+msx_brdf(k)* &
-                                    w_brdf(k)*Ls_R1m(k1,k2,:)*fac
+              R1s(k1,k2,j,1) = R1s(k1,k2,j,1)+msx_brdf(k)*w_brdf(k)*R1m(k1,k2)*fac
+              Ls_R1s(k1,k2,j,:,1) = Ls_R1s(k1,k2,j,:,1)+msx_brdf(k)*w_brdf(k)*Ls_R1m(k1,k2,:)*fac
             enddo
           enddo
         enddo
@@ -1035,21 +1004,15 @@ contains
              xmu(nmug+1),sxj, xmu(i),sxi, & !I
              cx_brdf(k),sx_brdf(k), & !I
              R1m,Ls_R1m)
-          R1cscal(2,i) = R1cscal(2,i)+mcx_brdf(k)*w_brdf(k)* &
-                         R1m(1,1)*fac
-          Ls_R1cscal(2,i,:) = Ls_R1cscal(2,i,:)+mcx_brdf(k)*w_brdf(k)* &
-                              Ls_R1m(1,1,:)*fac
+          R1cscal(i,2) = R1cscal(i,2)+mcx_brdf(k)*w_brdf(k)*R1m(1,1)*fac
+          Ls_R1cscal(i,:,2) = Ls_R1cscal(i,:,2)+mcx_brdf(k)*w_brdf(k)*Ls_R1m(1,1,:)*fac
           do k1 = 1,2
-            R1c(2,i,k1,1) = R1c(2,i,k1,1)+mcx_brdf(k)*w_brdf(k)* &
-                            R1m(k1,1)*fac
-            Ls_R1c(2,i,k1,1,:) = Ls_R1c(2,i,k1,1,:)+mcx_brdf(k)* &
-                                 w_brdf(k)*Ls_R1m(k1,1,:)*fac
+            R1c(k1,1,i,2) = R1c(k1,1,i,2) + mcx_brdf(k)*w_brdf(k)*R1m(k1,1)*fac
+            Ls_R1c(k1,1,i,:,2) = Ls_R1c(k1,1,i,:,2) + mcx_brdf(k)*w_brdf(k)*Ls_R1m(k1,1,:)*fac
           enddo
           do k1 = 3,4
-            R1s(2,i,k1,1) = R1s(2,i,k1,1)+msx_brdf(k)*w_brdf(k)* &
-                            R1m(k1,1)*fac
-            Ls_R1s(2,i,k1,1,:) = Ls_R1s(2,i,k1,1,:)+msx_brdf(k)* &
-                                 w_brdf(k)*Ls_R1m(k1,1,:)*fac
+            R1s(k1,1,i,2) = R1s(k1,1,i,2) + msx_brdf(k)*w_brdf(k)*R1m(k1,1)*fac
+            Ls_R1s(k1,1,i,:,2) = Ls_R1s(k1,1,i,:,2) + msx_brdf(k)*w_brdf(k)*Ls_R1m(k1,1,:)*fac
           enddo
         enddo
       enddo

@@ -547,13 +547,17 @@ subroutine STD_outgoing_sphergeom_Qbasic                 &
 
 !  Quadratures
 
-      real(ffp), intent(out)  :: xfine    (nlayers,maxfine)
-      real(ffp), intent(out)  :: wfine    (nlayers,maxfine)
+      !real(ffp), intent(out)  :: xfine    (nlayers,maxfine)
+      !real(ffp), intent(out)  :: wfine    (nlayers,maxfine)
+      real(ffp), intent(out)  :: xfine    (maxfine,nlayers)
+      real(ffp), intent(out)  :: wfine    (maxfine,nlayers)
 
 !  Local geoemetry arrays
 
-      real(ffp), intent(out)  :: csqfine  (nlayers,maxfine)
-      real(ffp), intent(out)  :: cotfine  (nlayers,maxfine)
+      !real(ffp), intent(out)  :: csqfine  (nlayers,maxfine)
+      !real(ffp), intent(out)  :: cotfine  (nlayers,maxfine)
+      real(ffp), intent(out)  :: csqfine  (maxfine,nlayers)
+      real(ffp), intent(out)  :: cotfine  (maxfine,nlayers)
 
 !  Local
 !  -----
@@ -610,10 +614,14 @@ subroutine STD_outgoing_sphergeom_Qbasic                 &
             csfine = one / sin(tfine(j))
             radii_fine(n,j) = raycon * csfine
             alpha_fine(n,j) = tfine(j)
-            xfine(n,j)   = radii(n1) - radii_fine(n,j)
-            wfine(n,j)   = afine(j)
-            cotfine(n,j) = cos(tfine(j)) * csfine
-            csqfine(n,j) = csfine * csfine
+            !xfine(n,j)   = radii(n1) - radii_fine(n,j)
+            !wfine(n,j)   = afine(j)
+            !cotfine(n,j) = cos(tfine(j)) * csfine
+            !csqfine(n,j) = csfine * csfine
+            xfine(j,n)   = radii(n1) - radii_fine(n,j)
+            wfine(j,n)   = afine(j)
+            cotfine(j,n) = cos(tfine(j)) * csfine
+            csqfine(j,n) = csfine * csfine
          enddo
       enddo
 
@@ -690,13 +698,17 @@ subroutine STD_outgoing_sphergeom_Qadjusted              &
 
 !  Quadratures
 
-      real(ffp), intent(out)  :: xfine    (nlayers,maxfine)
-      real(ffp), intent(out)  :: wfine    (nlayers,maxfine)
+      !real(ffp), intent(out)  :: xfine    (nlayers,maxfine)
+      !real(ffp), intent(out)  :: wfine    (nlayers,maxfine)
+      real(ffp), intent(out)  :: xfine    (maxfine,nlayers)
+      real(ffp), intent(out)  :: wfine    (maxfine,nlayers)
 
 !  Local geoemetry arrays
 
-      real(ffp), intent(out)  :: csqfine  (nlayers,maxfine)
-      real(ffp), intent(out)  :: cotfine  (nlayers,maxfine)
+      !real(ffp), intent(out)  :: csqfine  (nlayers,maxfine)
+      !real(ffp), intent(out)  :: cotfine  (nlayers,maxfine)
+      real(ffp), intent(out)  :: csqfine  (maxfine,nlayers)
+      real(ffp), intent(out)  :: cotfine  (maxfine,nlayers)
 
 !  Local
 !  -----
@@ -796,10 +808,14 @@ subroutine STD_outgoing_sphergeom_Qadjusted              &
                   csfine = one / sin(tfine(j))
                   radii_fine(n,j) = raycon * csfine
                   alpha_fine(n,j) = tfine(j)
-                  xfine(n,j)   = radii(n1) - radii_fine(n,j)
-                  wfine(n,j)   = afine(j)
-                  cotfine(n,j) = cos(tfine(j)) * csfine
-                  csqfine(n,j) = csfine * csfine
+                  !xfine(n,j)   = radii(n1) - radii_fine(n,j)
+                  !wfine(n,j)   = afine(j)
+                  !cotfine(n,j) = cos(tfine(j)) * csfine
+                  !csqfine(n,j) = csfine * csfine
+                  xfine(j,n)   = radii(n1) - radii_fine(n,j)
+                  wfine(j,n)   = afine(j)
+                  cotfine(j,n) = cos(tfine(j)) * csfine
+                  csqfine(j,n) = csfine * csfine
                enddo
             enddo
          endif
@@ -816,10 +832,14 @@ subroutine STD_outgoing_sphergeom_Qadjusted              &
             csfine = one / sin(tfine(j))
             radii_fine(n,j) = raycon * csfine
             alpha_fine(n,j) = tfine(j)
-            xfine(n,j)   = radii(n1) - radii_fine(n,j)
-            wfine(n,j)   = afine(j)
-            cotfine(n,j) = cos(tfine(j)) * csfine
-            csqfine(n,j) = csfine * csfine
+            !xfine(n,j)   = radii(n1) - radii_fine(n,j)
+            !wfine(n,j)   = afine(j)
+            !cotfine(n,j) = cos(tfine(j)) * csfine
+            !csqfine(n,j) = csfine * csfine
+            xfine(j,n)   = radii(n1) - radii_fine(n,j)
+            wfine(j,n)   = afine(j)
+            cotfine(j,n) = cos(tfine(j)) * csfine
+            csqfine(j,n) = csfine * csfine
          enddo
 
 !    -- For all layers above Critical layer, Regular quadrature only if flagged
@@ -833,10 +853,14 @@ subroutine STD_outgoing_sphergeom_Qadjusted              &
                   csfine = one / sin(tfine(j))
                   radii_fine(n,j) = raycon * csfine
                   alpha_fine(n,j) = tfine(j)
-                  xfine(n,j)   = radii(n1) - radii_fine(n,j)
-                  wfine(n,j)   = afine(j)
-                  cotfine(n,j) = cos(tfine(j)) * csfine
-                  csqfine(n,j) = csfine * csfine
+                  !xfine(n,j)   = radii(n1) - radii_fine(n,j)
+                  !wfine(n,j)   = afine(j)
+                  !cotfine(n,j) = cos(tfine(j)) * csfine
+                  !csqfine(n,j) = csfine * csfine
+                  xfine(j,n)   = radii(n1) - radii_fine(n,j)
+                  wfine(j,n)   = afine(j)
+                  cotfine(j,n) = cos(tfine(j)) * csfine
+                  csqfine(j,n) = csfine * csfine
                enddo
             enddo
          endif
@@ -904,8 +928,8 @@ subroutine SD_incoming_sphergeom                                      &
 
 !  Fine level output (geometry)
 
-      integer  , intent(Out)  :: ntraverse_fine(nlayers,maxfine)
-      real(ffp), intent(Out)  :: sunpaths_fine (nlayers,nlayers,maxfine)
+      integer  , intent(Out)  :: ntraverse_fine(maxfine,nlayers)
+      real(ffp), intent(Out)  :: sunpaths_fine (nlayers,maxfine,nlayers)
 
 !  scattering angle and associated angles
 
@@ -948,7 +972,7 @@ subroutine SD_incoming_sphergeom                                      &
       do n = 1, nlayers
          ntraverse(n) = n
          do j = 1, nfinedivs(n)
-            ntraverse_fine(n,j) = n
+            ntraverse_fine(j,n) = n
          enddo
       enddo
 
@@ -1080,10 +1104,10 @@ subroutine SD_incoming_sphergeom                                      &
               if ( DirectSunf(j) ) then
                  call FindSunPaths_D &
                   (Do_ZeroSunBOA,nlayers,Radii_fine(n,j),Radii,&
-                   thetaf(j),sthetaf(j),N,sunpaths_fine(n,:,J))
+                   thetaf(j),sthetaf(j),N,sunpaths_fine(:,J,n))
               else
                  call FindSunPaths_T &
-                  (nlayers,Pie,Radii_fine(n,j),Radii,thetaf(j),sthetaf(j),N,sunpaths_fine(n,:,J),ntraverse_fine(n,J))
+                  (nlayers,Pie,Radii_fine(n,j),Radii,thetaf(j),sthetaf(j),N,sunpaths_fine(:,J,n),ntraverse_fine(J,n))
               endif
 !             if ( n.eq.14 ) write(*,*)j,n,Radii_fine(n,j)-radii(n)
            enddo
@@ -1431,9 +1455,6 @@ SUBROUTINE GAULEG_NG(X1,X2,X,W,N,NMAX)
             arg = ( real(i,ffp) - qtr ) / ( rn + half )
 !            Z=COS(3.141592654D0*(I-.25D0)/(N+.5D0))
             Z  = COS ( pie * arg )
-            ! Force loop below to always be run at least once,
-            ! otherwise PP doesn't get initialized.
-            Z1 = 10000
             DO WHILE (ABS(Z-Z1).GT.EPS)
                   P1=one
                   P2=zero
