@@ -847,8 +847,8 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 
 !  Linearization control
 
-      LOGICAL, INTENT(IN)  :: LAYER_VARY_FLAG(NLAYERS)
-      INTEGER, INTENT(IN)  :: LAYER_VARY_NUMBER(NLAYERS)
+      LOGICAL, INTENT(IN)  :: LAYER_VARY_FLAG(19)
+      INTEGER, INTENT(IN)  :: LAYER_VARY_NUMBER(19)
 
 !  Flux factor
 
@@ -868,15 +868,15 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 
 !  OMEGA and ASYMM, + linearizations
 
-      REAL(kind=dp), INTENT(IN)  :: OMEGA ( NLAYERS )
-      REAL(kind=dp), INTENT(IN)  :: ASYMM ( NLAYERS )
-      REAL(kind=dp), INTENT(IN)  :: L_OMEGA ( NLAYERS,NPARS )
-      REAL(kind=dp), INTENT(IN)  :: L_ASYMM ( NLAYERS,NPARS )
+      REAL(kind=dp), INTENT(IN)  :: OMEGA ( 19)
+      REAL(kind=dp), INTENT(IN)  :: ASYMM ( 19)
+      REAL(kind=dp), INTENT(IN)  :: L_OMEGA ( 19,7)
+      REAL(kind=dp), INTENT(IN)  :: L_ASYMM ( 19,7)
 
 !  User streams
 
-      REAL(kind=dp), INTENT(IN)  :: USER_STREAMS ( N_USER_STREAMS )
-      REAL(kind=dp), INTENT(IN)  :: ULP          ( N_USER_STREAMS )
+      REAL(kind=dp), INTENT(IN)  :: USER_STREAMS (1)
+      REAL(kind=dp), INTENT(IN)  :: ULP          (1)
 
 !  Saved help variables
 
@@ -884,15 +884,15 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 
 !  Linearized Beam solutions
 
-      REAL(kind=dp), INTENT(IN)  :: L_WVEC(2,NLAYERS,0:NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: L_WVEC(2,19,0:19,7)
 
 !  Subroutine output arguments
 !  ---------------------------
 
 !  Diffuse-term Particular beam solutions at user-defined angles
 
-      REAL(kind=dp), INTENT(INOUT) :: L_U_WPOS2(N_USER_STREAMS,NLAYERS,0:NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(INOUT) :: L_U_WNEG2(N_USER_STREAMS,NLAYERS,0:NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(INOUT) :: L_U_WPOS2(1,19,0:19,7)
+      REAL(kind=dp), INTENT(INOUT) :: L_U_WNEG2(1,19,0:19,7)
 
 !  Single-scatter Particular beam solutions at user-defined angles
 !    NOT REQUIRED, MS_MODE only2 = Diffuse term contribution
@@ -914,6 +914,8 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
       ELSE IF ( DO_COLUMN_LINEARIZATION ) THEN
         NV = 0
       ENDIF
+
+      !print*,'TWOSTREAM_L_BEAM_USERSOLUTION: ',NLAYERS,NPARS,N_USER_STREAMS  ! 19,7,1
 
 !  No particular solution beyond the cutoff layer
 !  ... Zero the user solutions and exit
@@ -982,7 +984,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 !  Distinguish between upwelling and downwelling
 
         IF ( DO_UPWELLING ) THEN
-          DO UM = 1, N_USER_STREAMS
+          DO UM = 1, 1
             if (fourier.eq.0 ) then
 !              pos1 = l_h1(0) + l_h1(1) * user_streams(UM)
               pos2 = l_h2(0) + l_h2(1) * user_streams(UM)
@@ -996,7 +998,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
         ENDIF
 
         IF ( DO_DNWELLING ) THEN
-          DO UM = 1, N_USER_STREAMS
+          DO UM = 1, 1
             if (fourier.eq.0 ) then
 !              pos1 = l_h1(0) - l_h1(1) * user_streams(UM)
               pos2 = l_h2(0) - l_h2(1) * user_streams(UM)
@@ -1031,7 +1033,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 
       DO K = 1, N - 1
         DO Q = 1, LAYER_VARY_NUMBER(K)
-          DO UM = 1, N_USER_STREAMS
+          DO UM = 1, 1
             L_U_WPOS2(UM,N,K,Q) = 0.0d0
             L_U_WNEG2(UM,N,K,Q) = 0.0d0
           ENDDO
@@ -1051,7 +1053,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
       IF ( .NOT. DO_FIRST ) THEN
         DO K = 1, N - 1
           DO Q = 1, LAYER_VARY_NUMBER(K)
-            DO UM = 1, N_USER_STREAMS
+            DO UM = 1, 1
               L_U_WPOS2(UM,N,K,Q) = 0.0d0
               L_U_WNEG2(UM,N,K,Q) = 0.0d0
             ENDDO
@@ -1089,7 +1091,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
 !  Distinguish between upwelling and downwelling
 
             IF ( DO_UPWELLING ) THEN
-              DO UM = 1, N_USER_STREAMS
+              DO UM = 1, 1
                 if (fourier.eq.0 ) then
                   pos2 = l_h2(0) + l_h2(1) * user_streams(UM)
                 else
@@ -1100,7 +1102,7 @@ SUBROUTINE TWOSTREAM_L_BEAM_USERSOLUTION                            &
             ENDIF
 
             IF ( DO_DNWELLING ) THEN
-              DO UM = 1, N_USER_STREAMS
+              DO UM = 1, 1
                 if (fourier.eq.0 ) then
                   pos2 = l_h2(0) - l_h2(1) * user_streams(UM)
                 else
