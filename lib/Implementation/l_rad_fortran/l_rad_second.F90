@@ -1,6 +1,7 @@
 module l_rad_second_m
 
 USE l_surface_fourier_m
+#define NOIFINNLAYLOOP
 
 PUBLIC
 
@@ -1221,6 +1222,15 @@ contains
 
           if (linearize) then
           do p = 1, npar
+#ifdef NOIFINNLAYLOOP
+            do n = 1, nlay
+              L_V1(n,p,l) = x*(L_phgl(n,p,k)*R1c(l,1,k,2)+ &
+                            phgl(k)*L_R1c(l,1,k,n,p,2))+ &
+                            a*Prc(l,1,k,2)*L_gl(n,p,k)/4.d0
+            enddo
+            L_V1(layer,p,l) = L_V1(layer,p,l)+(L_a(p)*Prc(l,1,k,2)+ &
+                              a*L_Prc(l,1,p,k,2))*gl(k)/4.d0
+#else
             do n = 1, nlay
               L_V1(n,p,l) = x*(L_phgl(n,p,k)*R1c(l,1,k,2)+ &
                             phgl(k)*L_R1c(l,1,k,n,p,2))+ &
@@ -1230,6 +1240,7 @@ contains
                               a*L_Prc(l,1,p,k,2))*gl(k)/4.d0
               endif
             enddo
+#endif
           enddo
           endif
 
@@ -1244,6 +1255,21 @@ contains
             !dir$ vector unaligned
             do p = 1, npar
               !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
+              do n = 1, nlay
+                L_S1(n,p,i) = L_S1(n,p,i)+a*Ptc(i,l,k,1)*L_V1(n,p,l)*w(k)
+                L_V2 = (L_x0(n,p)*phhl(k)+ &
+                        x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                        x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                        a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
+                L_S2(n,p,i) = L_S2(n,p,i)+a*Ptc(l,1,k,2)*L_V2*w(k)
+              enddo
+              L_S1(layer,p,i) = L_S1(layer,p,i) + (L_a(p)*Ptc(i,l,k,1) + &
+                                a*L_Ptc(i,l,p,k,1))*V1(l)*w(k)
+              L_S2(layer,p,i) = L_S2(layer,p,i) + a*Ptc(l,1,k,2)*w(k)*((L_a(p)*Prc(i,l,k,1) &
+                          + a*L_Prc(i,l,p,k,1))*hl(k)/4.d0) &
+                          + (L_a(p)*Ptc(l,1,k,2) + a*L_Ptc(l,1,p,k,2))*V2(i,l)*w(k)
+#else
               do n = 1, nlay
                 L_S1(n,p,i) = L_S1(n,p,i)+a*Ptc(i,l,k,1)*L_V1(n,p,l)*w(k)
                 L_V2 = (L_x0(n,p)*phhl(k)+ &
@@ -1260,6 +1286,7 @@ contains
                                 a*L_Ptc(l,1,p,k,2))*V2(i,l)*w(k)
                 endif
               enddo ! nlay
+#endif
             enddo ! npar
             endif ! linearize
           enddo
@@ -1275,6 +1302,14 @@ contains
             !dir$ vector unaligned
             do p = 1, npar
               !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
+              do n = 1, nlay
+                L_V4(n,p,l) = x*(L_phgl(n,p,k)*R1s(l,1,k,2)+ &
+                              phgl(k)*L_R1s(l,1,k,n,p,2))+ &
+                              a*Prs(l,1,k,2)*L_gl(n,p,k)/4.d0
+              enddo
+              L_V4(layer,p,l) = L_V4(layer,p,l)+(L_a(p)*Prs(l,1,k,2) + a*L_Prs(l,1,p,k,2))*gl(k)/4.d0
+#else
               do n = 1, nlay
                 L_V4(n,p,l) = x*(L_phgl(n,p,k)*R1s(l,1,k,2)+ &
                               phgl(k)*L_R1s(l,1,k,n,p,2))+ &
@@ -1283,6 +1318,7 @@ contains
                   L_V4(n,p,l) = L_V4(n,p,l)+(L_a(p)*Prs(l,1,k,2) + a*L_Prs(l,1,p,k,2))*gl(k)/4.d0
                 endif
               enddo
+#endif
             enddo
             endif
             do i = 1, 2
@@ -1296,6 +1332,18 @@ contains
               !dir$ vector unaligned
               do p = 1, npar
                 !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
+                 do n = 1, nlay
+                   L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V4(n,p,l)*w(k)
+                   L_V6 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
+                   L_S4(n,p,i) = L_S4(n,p,i)+a*Pts(l,1,k,2)*L_V6*w(k)
+                 enddo
+                 L_S3(layer,p,i) = L_S3(layer,p,i) + (L_a(p)*Pts(i,l,k,1) + a*L_Pts(i,l,p,k,1))*V4(l)*w(k)
+                 L_S4(layer,p,i) = L_S4(layer,p,i) + a*Pts(l,1,k,2)*w(k)*(L_a(p)*Prs(i,l,k,1) + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0
+#else
                 do n = 1, nlay
                   L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V4(n,p,l)*w(k)
                   if (n .eq. layer) then
@@ -1314,6 +1362,7 @@ contains
                                   a*L_Pts(l,1,p,k,2))*V6(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
@@ -1336,6 +1385,21 @@ contains
               !dir$ vector unaligned
               do p = 1, npar
                 !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
+                do n = 1, nlay
+                  L_S1(n,p,i) = L_S1(n,p,i) + a*Ptc(i,l,k,1)*L_V4(n,p,l)*w(k)
+                  L_V2 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                         a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
+                  L_S2(n,p,i) = L_S2(n,p,i) + a*Pts(l,1,k,2)*L_V2*w(k)
+                enddo
+                L_S1(layer,p,i) = L_S1(layer,p,i) + (L_a(p)*Ptc(i,l,k,1)+ &
+                                  a*L_Ptc(i,l,p,k,1))*V4(l)*w(k)
+                L_S2(layer,p,i) = L_S2(layer,p,i) + a*Pts(l,1,k,2)*w(k)*(L_a(p)*Prc(i,l,k,1) + &
+                           a*L_Prc(i,l,p,k,1))*hl(k)/4.d0 + (L_a(p)*Pts(l,1,k,2) + &
+                                  a*L_Pts(l,1,p,k,2))*V2(i,l)*w(k)
+#else
                 do n = 1, nlay
                   L_S1(n,p,i) = L_S1(n,p,i) + a*Ptc(i,l,k,1)*L_V4(n,p,l)*w(k)
                   if (n .eq. layer) then
@@ -1356,6 +1420,7 @@ contains
                                   a*L_Pts(l,1,p,k,2))*V2(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
@@ -1368,6 +1433,22 @@ contains
               endif
               if (linearize) then
               do p = 1, npar
+#ifdef NOIFINNLAYLOOP
+                do n = 1, nlay
+                  L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V1(n,p,l)*w(k)
+                  L_V6 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
+                  L_S4(n,p,i) = L_S4(n,p,i) + a*Ptc(l,1,k,2)*L_V6*w(k)
+                enddo
+                L_S3(layer,p,i) = L_S3(layer,p,i)+(L_a(p)*Pts(i,l,k,1)+ &
+                                  a*L_Pts(i,l,p,k,1))*V1(l)*w(k)
+                L_S4(layer,p,i) = L_S4(layer,p,i) &
+                   + a*Ptc(l,1,k,2)*w(k)*(L_a(p)*Prs(i,l,k,1) &
+                   + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0 + (L_a(p)*Ptc(l,1,k,2)+ &
+                                  a*L_Ptc(l,1,p,k,2))*V6(i,l)*w(k)
+#else
                 do n = 1, nlay
                   L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V1(n,p,l)*w(k)
                   if (n .eq. layer) then
@@ -1387,6 +1468,7 @@ contains
                                   a*L_Ptc(l,1,p,k,2))*V6(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
@@ -1402,6 +1484,17 @@ contains
         endif
         if (linearize) then
         do p = 1, npar
+#ifdef NOIFINNLAYLOOP
+          do n = 1, nlay
+            L_V1scal = x*(L_phgl(n,p,k)*R1cscal(k,2)+ &
+                       phgl(k)*L_R1cscal(k,n,p,2))+ &
+                       a*Prc(1,1,k,2)*L_gl(n,p,k)/4.d0
+            L_S1scal(n,p) = L_S1scal(n,p)+a*Ptc(1,1,k,1)*L_V1scal*w(k)
+          enddo
+          L_S1scal(layer,p) = L_S1scal(layer,p) &
+             + a*Ptc(1,1,k,1)*w(k)*((L_a(p)*Prc(1,1,k,2)+ a*L_Prc(1,1,p,k,2))*gl(k)/4.d0) &
+             + (L_a(p)*Ptc(1,1,k,1) + a*L_Ptc(1,1,p,k,1))*V1scal*w(k)
+#else
           do n = 1, nlay
             L_V1scal = x*(L_phgl(n,p,k)*R1cscal(k,2)+ &
                        phgl(k)*L_R1cscal(k,n,p,2))+ &
@@ -1416,6 +1509,7 @@ contains
                               a*L_Ptc(1,1,p,k,1))*V1scal*w(k)
             endif
           enddo
+#endif
         enddo
         endif
 
@@ -1426,6 +1520,17 @@ contains
         endif
         if (linearize) then
         do p = 1, npar
+#ifdef NOIFINNLAYLOOP
+          do n = 1, nlay
+            L_V2scal = (L_x0(n,p)*phhl(k)+x0*L_phhl(n,p,k))* &
+                       R1cscal(k,1)+x0*phhl(k)*L_R1cscal(k,n,p,1)+ &
+                       a*Prc(1,1,k,1)*L_hl(n,p,k)/4.d0
+            L_S2scal(n,p) = L_S2scal(n,p)+a*Ptc(1,1,k,2)*L_V2scal*w(k)
+          enddo
+          L_S2scal(layer,p) = L_S2scal(layer,p) &
+             + a*Ptc(1,1,k,2)*w(k)*(L_a(p)*Prc(1,1,k,1) + a*L_Prc(1,1,p,k,1))*hl(k)/4.d0 &
+             + (L_a(p)*Ptc(1,1,k,2) + a*L_Ptc(1,1,p,k,2))*V2scal*w(k)
+#else
           do n = 1, nlay
             L_V2scal = (L_x0(n,p)*phhl(k)+x0*L_phhl(n,p,k))* &
                        R1cscal(k,1)+x0*phhl(k)*L_R1cscal(k,n,p,1)+ &
@@ -1440,6 +1545,7 @@ contains
                               a*L_Ptc(1,1,p,k,2))*V2scal*w(k)
             endif
           enddo
+#endif
         enddo
         endif
 
