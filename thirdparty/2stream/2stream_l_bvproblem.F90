@@ -189,16 +189,20 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 
 !  Weighting function column matrices
 
-      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NTOTAL,NPARS)
-      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( 2,     NPARS)
+      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( 7,19)
+      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( 7,2 )
+      !REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NPARS,NTOTAL)
+      !REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( NPARS,2 )
 
 !  Linearized Solution constants of integration, and related quantities
 
-      REAL(kind=dp), INTENT(OUT) :: NCON(NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(OUT) :: PCON(NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(OUT) :: NCON(7,19)
+      REAL(kind=dp), INTENT(OUT) :: PCON(7,19)
+      !REAL(kind=dp), INTENT(OUT) :: NCON(NPARS,NLAYERS)
+      !REAL(kind=dp), INTENT(OUT) :: PCON(NPARS,NLAYERS)
 
-      REAL(kind=dp), INTENT(OUT) :: NCON_XVEC(2,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(OUT) :: PCON_XVEC(2,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(OUT) :: NCON_XVEC(NPARS,2,NLAYERS)
+      REAL(kind=dp), INTENT(OUT) :: PCON_XVEC(NPARS,2,NLAYERS)
 
 !  Local variables
 !  ---------------
@@ -266,7 +270,55 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 
       IF ( NLAYERS .GT. 1 ) THEN
       !print*,'TWOSTREAM_BVP: ',N_WEIGHTFUNCS,NTOTAL,NLAYERS
-      ! 7          38          19
+      ! 7          38        19
+#if 1
+        !!DIR$ vector unaligned
+        !DO Q = 1, N_WEIGHTFUNCS
+        DO Q = 1, 7
+          COL2_WF(Q,1) = COL2_WF(Q,1) * ELM(1,3)
+          COL2_WF(Q,2) = (MAT(2,2)*COL2_WF(Q,1)-COL2_WF(Q,2))*ELM(2,3)
+        ENDDO
+        !DO I = 3, NTOTAL
+        DO I = 3, 38
+          !!DIR$ vector unaligned
+          !DO Q = 1, N_WEIGHTFUNCS
+          DO Q = 1, 7
+            DEN = ELM(I,4)
+            TERM1 = MAT(I,1) * COL2_WF(Q,I-2)
+            TERM2 = ELM(I,3) * COL2_WF(Q,I-1) - COL2_WF(Q,I)
+            COL2_WF(Q,I) = ( TERM1 + TERM2 ) * DEN
+          ENDDO
+        ENDDO
+
+        !N1 = NTOTAL-1
+        N1 = 38-1
+        !!DIR$ vector unaligned
+        !DO Q = 1, N_WEIGHTFUNCS
+        DO Q = 1, 7
+          COL2_WF(Q,N1) = COL2_WF(Q,N1) + ELM(N1,1)*COL2_WF(Q,NTOTAL)
+        ENDDO
+        !DO I = NTOTAL-2, 1, -1
+        DO I = 38-2, 1, -1
+          !!DIR$ vector unaligned
+          !DO Q = 1, N_WEIGHTFUNCS
+          DO Q = 1, 7
+            TERM1 = ELM(I,1) * COL2_WF(Q,I+1)
+            TERM2 = ELM(I,2) * COL2_WF(Q,I+2)
+            COL2_WF(Q,I) = COL2_WF(Q,I) + TERM1 + TERM2
+          ENDDO
+        ENDDO
+
+        !DO N = 1, NLAYERS
+        DO N = 1, 19
+          C0 = (N-1)*2
+          !!DIR$ vector unaligned
+          !DO Q = 1, N_WEIGHTFUNCS
+          DO Q = 1, 7
+            NCON(Q,N) = COL2_WF(Q,C0+1)
+            PCON(Q,N) = COL2_WF(Q,C0+2)
+          ENDDO
+        ENDDO
+#else
 
 !  For each weighting function
 
@@ -274,13 +326,13 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 
 !  Fill up back-substitution array
 
-          COL2_WF(1,Q) = COL2_WF(1,Q) * ELM(1,3) 
-          COL2_WF(2,Q) = (MAT(2,2)*COL2_WF(1,Q)-COL2_WF(2,Q))*ELM(2,3) 
+          COL2_WF(Q,1) = COL2_WF(Q,1) * ELM(1,3) 
+          COL2_WF(Q,2) = (MAT(2,2)*COL2_WF(Q,1)-COL2_WF(Q,2))*ELM(2,3) 
           DO I = 3, NTOTAL
             DEN = ELM(I,4)
-            TERM1 = MAT(I,1) * COL2_WF(I-2,Q)
-            TERM2 = ELM(I,3) * COL2_WF(I-1,Q) - COL2_WF(I,Q)
-            COL2_WF(I,Q) = ( TERM1 + TERM2 ) * DEN
+            TERM1 = MAT(I,1) * COL2_WF(Q,I-2)
+            TERM2 = ELM(I,3) * COL2_WF(Q,I-1) - COL2_WF(Q,I)
+            COL2_WF(Q,I) = ( TERM1 + TERM2 ) * DEN
           ENDDO
 
           !!DIR$ vector unaligned
@@ -297,35 +349,35 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 !  back-substitution 
 
           N1 = NTOTAL-1
-          COL2_WF(N1,Q) = COL2_WF(N1,Q) + ELM(N1,1)*COL2_WF(NTOTAL,Q) 
+          COL2_WF(Q,N1) = COL2_WF(Q,N1) + ELM(N1,1)*COL2_WF(Q,NTOTAL)
           DO I = NTOTAL-2, 1, -1 
-            TERM1 = ELM(I,1) * COL2_WF(I+1,Q)
-            TERM2 = ELM(I,2) * COL2_WF(I+2,Q)
-            COL2_WF(I,Q) = COL2_WF(I,Q) + TERM1 + TERM2
+            TERM1 = ELM(I,1) * COL2_WF(Q,I+1)
+            TERM2 = ELM(I,2) * COL2_WF(Q,I+2)
+            COL2_WF(Q,I) = COL2_WF(Q,I) + TERM1 + TERM2
           ENDDO
 
 !  Set integration constants NCON and PCON for +/- eigensolutions
 
           DO N = 1, NLAYERS
             C0 = (N-1)*2
-            NCON(N,Q) = COL2_WF(C0+1,Q)
-            PCON(N,Q) = COL2_WF(C0+2,Q)
+            NCON(Q,N) = COL2_WF(Q,C0+1)
+            PCON(Q,N) = COL2_WF(Q,C0+2)
           ENDDO
 
 !  End WF loop
 
         ENDDO
-
+#endif
 !  Special case for 1 layer
 
       ELSE IF ( NLAYERS .EQ. 1 ) THEN
         DO Q = 1, N_WEIGHTFUNCS
-          A = SCOL2_WF(1,Q)
-          B = SCOL2_WF(2,Q)
-          SCOL2_WF(1,Q) = SELM(1,1) * A + SELM(1,2) * B
-          SCOL2_WF(2,Q) = SELM(2,1) * A + SELM(2,2) * B
-          NCON(1,Q) = SCOL2_WF(1,Q)
-          PCON(1,Q) = SCOL2_WF(2,Q)
+          A = SCOL2_WF(Q,1)
+          B = SCOL2_WF(Q,2)
+          SCOL2_WF(Q,1) = SELM(1,1) * A + SELM(1,2) * B
+          SCOL2_WF(Q,2) = SELM(2,1) * A + SELM(2,2) * B
+          NCON(Q,1) = SCOL2_WF(Q,1)
+          PCON(Q,1) = SCOL2_WF(Q,2)
         ENDDO
       ENDIF
 
@@ -333,15 +385,21 @@ SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER                            &
 !  ---------------------
 
       DO N = 1, NLAYERS
-        DO Q = 1, N_WEIGHTFUNCS
-          DO I = 1, 2
-            NCON_XVEC(I,N,Q) = NCON(N,Q)*XPOS(I,N)
-            PCON_XVEC(I,N,Q) = PCON(N,Q)*XNEG(I,N)
+        DO I = 1, 2
+          DO Q = 1, N_WEIGHTFUNCS
+            NCON_XVEC(Q,I,N) = NCON(Q,N)*XPOS(I,N)
+            PCON_XVEC(Q,I,N) = PCON(Q,N)*XNEG(I,N)
           ENDDO
         ENDDO
       ENDDO
 
 !  Finish
+!      DO I = 1, NTOTAL
+!        DO Q = 1, N_WEIGHTFUNCS
+!          print*,'SOLUTION_MASTER: ',Q,I,COL2_WF(Q,I)
+!        ENDDO
+!      ENDDO
+!      stop
 
       RETURN
 END SUBROUTINE TWOSTREAM_BVP_L_SOLUTION_MASTER
@@ -468,8 +526,8 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
 
 !  Weighting function column matrices
 
-      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NTOTAL,NPARS)
-      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( 2,     NPARS)
+      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NPARS,NTOTAL)
+      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( NPARS,2)
 
 !  local variables
 !  ---------------
@@ -480,14 +538,16 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
       REAL(kind=dp) :: VAR1, VAR2, VAR_U, TRANS2, FACTOR
       LOGICAL       :: REGULAR_BCL3, REGULAR_BCL4
 
+      !print*,'P_COLUMN_SETUP: ',NLAYERS,NPARS,N_LAYER_WFS,NBEAMS ! 19,7,7,1
+
 !  initialise
 !  ----------
 
 !  zero the results vectors
 
-      DO Q = 1, NPARS
-        DO I = 1, NTOTAL
-          COL2_WF(I,Q) = 0.0d0
+      DO I = 1, NTOTAL
+        DO Q = 1, NPARS
+          COL2_WF(Q,I) = 0.0d0
         ENDDO
       ENDDO
 
@@ -556,11 +616,11 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
          CNEG  = EIGENTRANS(N)   * L_XNEG(1,N,Q) +  &
                L_EIGENTRANS(N,Q) *   XNEG(1,N)
          L_HOM = LCON(N) * CPOS + MCON(N) * CNEG
-         COL2_WF(1,Q) = L_PAR - L_HOM
+         COL2_WF(Q,1) = L_PAR - L_HOM
         ENDDO
       ELSE
         DO Q = 1, N_LAYER_WFS
-          COL2_WF(1,Q) = 0.0d0
+          COL2_WF(Q,1) = 0.0d0
         ENDDO
       ENDIF
 
@@ -576,7 +636,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
           DO I = 1, 2
             CM = C0 + I
             DO Q = 1, N_LAYER_WFS
-              COL2_WF(CM,Q) = 0.0d0
+              COL2_WF(Q,CM) = 0.0d0
             ENDDO
           ENDDO
         ENDDO
@@ -597,7 +657,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
             CNEG  = EIGENTRANS(N)   * L_XNEG(I,N,Q) +  &
                   L_EIGENTRANS(N,Q) *   XNEG(I,N)
             L_HOM = LCON(N) * CPOS + MCON(N) * CNEG
-            COL2_WF(CM,Q) = L_PAR + L_HOM
+            COL2_WF(Q,CM) = L_PAR + L_HOM
           ENDDO
         ENDDO
       ENDIF
@@ -656,7 +716,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
             CPOS  = EIGENTRANS(N)   * L_XPOS(I,N,Q) + &
                   L_EIGENTRANS(N,Q) *   XPOS(I,N)
             L_HOM = LCON(N)*CPOS + MCON(N)*CNEG
-            COL2_WF(CM,Q) = L_PAR - L_HOM
+            COL2_WF(Q,CM) = L_PAR - L_HOM
           ENDDO
         ENDDO
 
@@ -711,7 +771,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
           DO I = 1, 2
             CM = C0 + I
             DO Q = 1, N_LAYER_WFS
-              COL2_WF(CM,Q) = L_WUPPER(I,N1,Q) - L_WLOWER(I,N,Q)
+              COL2_WF(Q,CM) = L_WUPPER(I,N1,Q) - L_WLOWER(I,N,Q)
             ENDDO
           ENDDO
 
@@ -756,7 +816,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
           CPOS  = CPOS          - HSP_U * FACTOR
           CNEG  = L_XNEG(2,N,Q) - HSM_U * FACTOR
           L_HOM = LCON(N)*CPOS + MCON(N)*CNEG
-          COL2_WF(CM,Q) = - L_PAR - L_HOM
+          COL2_WF(Q,CM) = - L_PAR - L_HOM
         ENDDO
        ELSE
         DO Q = 1, N_LAYER_WFS
@@ -765,7 +825,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
                   L_EIGENTRANS(N,Q) *   XPOS(2,N)
           CNEG  = L_XNEG(2,N,Q)
           L_HOM = LCON(N)*CPOS + MCON(N)*CNEG
-          COL2_WF(CM,Q) = - L_PAR - L_HOM
+          COL2_WF(Q,CM) = - L_PAR - L_HOM
         ENDDO
        ENDIF
       ENDIF
@@ -776,11 +836,11 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
        IF ( DO_INCLUDE_SURFACE ) THEN
         DO Q = 1, N_LAYER_WFS
           L_PAR = L_WLOWER(2,N,Q) - L_WLOWER(1,N,Q)* FACTOR
-          COL2_WF(CM,Q) = - L_PAR
+          COL2_WF(Q,CM) = - L_PAR
         ENDDO
        ELSE
         DO Q = 1, N_LAYER_WFS
-          COL2_WF(CM,Q) = - L_WLOWER(2,N,Q)
+          COL2_WF(Q,CM) = - L_WLOWER(2,N,Q)
         ENDDO
        ENDIF
       ENDIF
@@ -793,7 +853,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
         FAC = - DIRECT_BEAM(IPARTIC) * CHAPMAN_FACTORS(N,LAYER_TO_VARY,IPARTIC)
         DO Q = 1, N_LAYER_WFS
           L_BEAM = L_DELTAU_VERT(LAYER_TO_VARY,Q) * FAC
-          COL2_WF(CM,Q) = COL2_WF(CM,Q) + L_BEAM
+          COL2_WF(Q,CM) = COL2_WF(Q,CM) + L_BEAM
         ENDDO
       ENDIF
 
@@ -804,7 +864,7 @@ SUBROUTINE TWOSTREAM_L_BVP_P_COLUMN_SETUP                           &
         !DO I = 1, 1
         DO I = 1, 2
           DO Q = 1, N_LAYER_WFS
-            SCOL2_WF(I,Q) = COL2_WF(I,Q)
+            SCOL2_WF(Q,I) = COL2_WF(Q,I)
           ENDDO
         ENDDO
       ENDIF
@@ -932,8 +992,8 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
 
 !  Weighting function column matrices
 
-      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NTOTAL,NPARS)
-      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( 2,     NPARS)
+      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NPARS,NTOTAL)
+      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( NPARS,2)
 
 !  local variables
 !  ---------------
@@ -950,7 +1010,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
 
       DO I = 1, NTOTAL
         DO Q = 1, N_WEIGHTFUNCS
-          COL2_WF(I,Q) = 0.0d0
+          COL2_WF(Q,I) = 0.0d0
         ENDDO
       ENDDO
 
@@ -1009,7 +1069,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
         CNEG  =   EIGENTRANS(N)   * L_XNEG(1,N,Q) + &
                 L_EIGENTRANS(N,Q) *   XNEG(1,N)
         L_HOM = LCON(N) * CPOS + MCON(N) * CNEG
-        COL2_WF(1,Q) = L_PAR - L_HOM
+        COL2_WF(Q,1) = L_PAR - L_HOM
       ENDDO
 
 !  Intermediate boundary conditions
@@ -1058,7 +1118,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
             L_PAR  = L_WUPPER(I,N1,Q) - L_WLOWER(I,N,Q)      
             L_HOM  = L_HOMU - L_HOMD
 
-            COL2_WF(CM,Q) = L_PAR + L_HOM
+            COL2_WF(Q,CM) = L_PAR + L_HOM
 
           ENDDO
         ENDDO
@@ -1099,7 +1159,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
           CPOS  = CPOS          - HSP_U * FACTOR
           CNEG  = L_XNEG(2,N,Q) - HSM_U * FACTOR
           L_HOM = LCON(N)*CPOS + MCON(N)*CNEG
-          COL2_WF(CM,Q) = - L_PAR - L_HOM
+          COL2_WF(Q,CM) = - L_PAR - L_HOM
         ENDDO
       ELSE
         DO Q = 1, N_WEIGHTFUNCS
@@ -1108,7 +1168,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
                   L_EIGENTRANS(N,Q) *   XPOS(2,N)
           CNEG  = L_XNEG(2,N,Q)
           L_HOM = LCON(N)*CPOS + MCON(N)*CNEG
-          COL2_WF(CM,Q) = - L_PAR - L_HOM
+          COL2_WF(Q,CM) = - L_PAR - L_HOM
         ENDDO
       ENDIF
 
@@ -1123,7 +1183,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
             FAC3 = FAC * CHAPMAN_FACTORS(N,K,IPARTIC)
             L_BEAM = L_BEAM + L_DELTAU_VERT(K,Q) * FAC3
           ENDDO
-          COL2_WF(CM,Q) = COL2_WF(CM,Q) + L_BEAM
+          COL2_WF(Q,CM) = COL2_WF(Q,CM) + L_BEAM
         ENDDO
       ENDIF
 
@@ -1138,7 +1198,7 @@ SUBROUTINE TWOSTREAM_L_BVP_C_COLUMN_SETUP                           &
       IF ( NLAYERS .EQ. 1 ) THEN
         DO I = 1, 2
           DO Q = 1, N_WEIGHTFUNCS
-            SCOL2_WF(I,Q) = COL2_WF(I,Q)
+            SCOL2_WF(Q,I) = COL2_WF(Q,I)
           ENDDO
         ENDDO
       ENDIF
@@ -1232,8 +1292,8 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
 
 !  Weighting function column matrices
 
-      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NTOTAL,NSPARS)
-      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( 2,     NSPARS)
+      REAL(kind=dp), INTENT(OUT) :: COL2_WF  ( NSPARS,NTOTAL)
+      REAL(kind=dp), INTENT(OUT) :: SCOL2_WF ( NSPARS,2)
 
 !  Linearized Solution constants of integration, and related quantities
 
@@ -1254,7 +1314,7 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
 
       DO I = 1, NTOTAL
         DO Q = 1, NSPARS
-          COL2_WF(I,Q) = 0.0d0
+          COL2_WF(Q,I) = 0.0d0
         ENDDO
       ENDDO
 
@@ -1278,10 +1338,10 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
 
       IF ( DO_BRDF_SURFACE ) THEN
         DO Q = 1, N_SURFACE_WFS
-          COL2_WF(CM,Q) = IDOWNSURF_Q * LS_BRDF_F(Q,M) * SURFACE_FACTOR
+          COL2_WF(Q,CM) = IDOWNSURF_Q * LS_BRDF_F(Q,M) * SURFACE_FACTOR
         ENDDO
       ELSE
-        COL2_WF(CM,1) = IDOWNSURF_Q * SURFACE_FACTOR
+        COL2_WF(1,CM) = IDOWNSURF_Q * SURFACE_FACTOR
       ENDIF
 
 !  Add direct beam term
@@ -1290,10 +1350,10 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
         IF ( DO_BRDF_SURFACE ) THEN
           DO Q = 1, N_SURFACE_WFS
             AWF_DIRECT = ATMOS_ATTN(IBEAM) * LS_BRDF_F_0(Q,M,IBEAM)
-            COL2_WF(CM,Q) = COL2_WF(CM,Q) + AWF_DIRECT
+            COL2_WF(Q,CM) = COL2_WF(Q,CM) + AWF_DIRECT
           ENDDO
         ELSE
-          COL2_WF(CM,1) = COL2_WF(CM,1) + ATMOS_ATTN(IBEAM)
+          COL2_WF(1,CM) = COL2_WF(1,CM) + ATMOS_ATTN(IBEAM)
         ENDIF
       ENDIF
 
@@ -1303,11 +1363,11 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
         IF ( DO_BRDF_SURFACE ) THEN
           DO Q = 1, N_SURFACE_WFS
             AWF_EMISS = SURFBB * LS_EMISS(Q)
-            COL2_WF(CM,Q) = COL2_WF(CM,Q) + AWF_EMISS
+            COL2_WF(Q,CM) = COL2_WF(Q,CM) + AWF_EMISS
           ENDDO
         ELSE
           EMISS_VAR = SURFBB
-          COL2_WF(CM,1) = COL2_WF(CM,1) - EMISS_VAR
+          COL2_WF(1,CM) = COL2_WF(1,CM) - EMISS_VAR
         ENDIF
       ENDIF
 
@@ -1316,7 +1376,7 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
       IF ( NLAYERS .EQ. 1 ) THEN
         DO N = 1, NTOTAL
           DO Q = 1, N_SURFACE_WFS
-            SCOL2_WF(N,Q) = COL2_WF(N,Q)
+            SCOL2_WF(Q,N) = COL2_WF(Q,N)
           ENDDO
         ENDDO
       ENDIF
@@ -1334,31 +1394,31 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
 
 !  Fill up back-substitution array
 
-          COL2_WF(1,Q) = COL2_WF(1,Q) * ELM(1,3) 
-          COL2_WF(2,Q) = (MAT(2,2)*COL2_WF(1,Q)-COL2_WF(2,Q))*ELM(2,3) 
+          COL2_WF(Q,1) = COL2_WF(Q,1) * ELM(1,3) 
+          COL2_WF(Q,2) = (MAT(2,2)*COL2_WF(Q,1)-COL2_WF(Q,2))*ELM(2,3) 
           DO I = 3, NTOTAL
             DEN = ELM(I,4)
-            TERM1 = MAT(I,1) * COL2_WF(I-2,Q)
-            TERM2 = ELM(I,3) * COL2_WF(I-1,Q) - COL2_WF(I,Q)
-            COL2_WF(I,Q) = ( TERM1 + TERM2 ) * DEN
+            TERM1 = MAT(I,1) * COL2_WF(Q,I-2)
+            TERM2 = ELM(I,3) * COL2_WF(Q,I-1) - COL2_WF(Q,I)
+            COL2_WF(Q,I) = ( TERM1 + TERM2 ) * DEN
           ENDDO
 
 !  back-substitution 
 
           N1 = NTOTAL-1
-          COL2_WF(N1,Q) = COL2_WF(N1,Q) + ELM(N1,1)*COL2_WF(NTOTAL,Q) 
+          COL2_WF(Q,N1) = COL2_WF(Q,N1) + ELM(N1,1)*COL2_WF(Q,NTOTAL)
           DO I = NTOTAL-2, 1, -1 
-            TERM1 = ELM(I,1) * COL2_WF(I+1,Q)
-            TERM2 = ELM(I,2) * COL2_WF(I+2,Q)
-            COL2_WF(I,Q) = COL2_WF(I,Q) + TERM1 + TERM2
+            TERM1 = ELM(I,1) * COL2_WF(Q,I+1)
+            TERM2 = ELM(I,2) * COL2_WF(Q,I+2)
+            COL2_WF(Q,I) = COL2_WF(Q,I) + TERM1 + TERM2
           ENDDO
 
 !  Set integration constants NCON and PCON for +/- eigensolutions
 
           DO N = 1, NLAYERS
             C0 = (N-1)*2
-            NCONALB(N,Q) = COL2_WF(C0+1,Q)
-            PCONALB(N,Q) = COL2_WF(C0+2,Q)
+            NCONALB(N,Q) = COL2_WF(Q,C0+1)
+            PCONALB(N,Q) = COL2_WF(Q,C0+2)
           ENDDO
 
         ENDDO
@@ -1367,12 +1427,12 @@ SUBROUTINE TWOSTREAM_BVP_S_SOLUTION_MASTER                    &
 
       ELSE IF ( NLAYERS .EQ. 1 ) THEN
         DO Q = 1, N_SURFACE_WFS
-          A = SCOL2_WF(1,Q)
-          B = SCOL2_WF(2,Q)
-          SCOL2_WF(1,Q) = SELM(1,1) * A + SELM(1,2) * B
-          SCOL2_WF(2,Q) = SELM(2,1) * A + SELM(2,2) * B
-          NCONALB(1,Q) = SCOL2_WF(1,Q)
-          PCONALB(1,Q) = SCOL2_WF(2,Q)
+          A = SCOL2_WF(Q,1)
+          B = SCOL2_WF(Q,2)
+          SCOL2_WF(Q,1) = SELM(1,1) * A + SELM(1,2) * B
+          SCOL2_WF(Q,2) = SELM(2,1) * A + SELM(2,2) * B
+          NCONALB(1,Q) = SCOL2_WF(Q,1)
+          PCONALB(1,Q) = SCOL2_WF(Q,2)
         ENDDO
       ENDIF
 
