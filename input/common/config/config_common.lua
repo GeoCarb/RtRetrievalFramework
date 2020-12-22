@@ -2395,17 +2395,13 @@ end
 ConfigCommon.brdf_retrieval = CreatorMultiSpec:new {}
 
 function ConfigCommon.brdf_retrieval:retrieval_flag(i)
-   local n_coefs = self:apriori_v(i - 1):rows()
+   local num_coefs = self:apriori_v(i - 1):rows()
 
-   local flag = Blitz_bool_array_1d(n_coefs)
-
-   n_coefs = self:apriori_v(0):rows()
-
-   n_coefs = self:apriori_v(0):rows()
+   local flag = Blitz_bool_array_1d(num_coefs)
 
    if self.retrieve_bands ~= nil and self.retrieve_bands[i] then
        flag:set(Range.all(), false)
-       for i = 5, n_coefs - 1 do
+       for i = 5, num_coefs - 1 do
            flag:set(i, true)
        end
    else
@@ -2422,12 +2418,10 @@ ConfigCommon.brdf_veg_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_veg_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-   local n_coefs  = self:apriori_v(0):rows()
+   local num_coefs = self:apriori_v(0):rows()
 
-   n_coefs = self:apriori_v(0):rows()
-
-   local ap = Blitz_double_array_2d(num_spec, n_coefs)
-   local flag = Blitz_bool_array_2d(num_spec, n_coefs)
+   local ap = Blitz_double_array_2d(num_spec, num_coefs)
+   local flag = Blitz_bool_array_2d(num_spec, num_coefs)
 
    for i = 1, num_spec do
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
@@ -2462,12 +2456,10 @@ ConfigCommon.brdf_soil_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_soil_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-   local n_coefs  = self:apriori_v(0):rows()
+   local num_coefs = self:apriori_v(0):rows()
 
-   n_coefs = self:apriori_v(0):rows()
-
-   local ap = Blitz_double_array_2d(num_spec, n_coefs)
-   local flag = Blitz_bool_array_2d(num_spec, n_coefs)
+   local ap = Blitz_double_array_2d(num_spec, num_coefs)
+   local flag = Blitz_bool_array_2d(num_spec, num_coefs)
 
    for i = 1, num_spec do
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
