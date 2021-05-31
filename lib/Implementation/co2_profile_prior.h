@@ -12,7 +12,8 @@ namespace FullPhysics {
 class CO2ProfilePrior: public Printable<CO2ProfilePrior> {
 public:
   CO2ProfilePrior(const OcoMetFile& Met_file,
-		  const HdfFile& Profile_file);
+		  const HdfFile& Profile_file,
+                  const std::string& field);
   virtual ~CO2ProfilePrior() {}
   blitz::Array<double, 1> apriori_vmr(const Pressure& pressure) const;
   virtual void print(std::ostream& Os) const { Os << "CO2ProfilePrior";}

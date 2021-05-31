@@ -950,11 +950,11 @@ function ConfigCommon:reference_co2_apriori_met_apriori()
 end
 
 ------------------------------------------------------------
---- Get co2 apriori for the profile file
+--- Get co2 apriori from the profile file
 ------------------------------------------------------------
 
 function ConfigCommon:co2_profile_file_apriori()
-   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile())
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "CO2Prior/co2_prior_profile_cpr")
    return t:apriori_vmr(self.config.pressure)
 end
 
@@ -1001,6 +1001,15 @@ function ConfigCommon:reference_ch4_apriori_met_apriori()
 end
 
 ------------------------------------------------------------
+--- Get ch4 apriori from the profile file
+------------------------------------------------------------
+
+function ConfigCommon:ch4_profile_file_apriori()
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "CH4Prior/ch4_prior_profile_cpr")
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
 --- Load the CO VMR object
 ------------------------------------------------------------
 
@@ -1018,6 +1027,15 @@ end
 
 function ConfigCommon:reference_co_apriori_met_apriori()
    local t = self.config:reference_co_apriori_met_obj()
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
+--- Get co apriori from the profile file
+------------------------------------------------------------
+
+function ConfigCommon:co_profile_file_apriori()
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "COPrior/co_prior_profile_cpr")
    return t:apriori_vmr(self.config.pressure)
 end
 
