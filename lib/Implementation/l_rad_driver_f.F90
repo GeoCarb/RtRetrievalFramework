@@ -144,14 +144,20 @@ contains
     
     !  Variables for calc_geom_first_enh
     Allocate( l_rad_struct%FO_nfinedivs(nlayer) )
-    Allocate( l_rad_struct%ntraverse_fine(nlayer, maxfine) )
+    !Allocate( l_rad_struct%ntraverse_fine(nlayer, maxfine) )
+    Allocate( l_rad_struct%ntraverse_fine( maxfine, nlayer ) )
     Allocate( l_rad_struct%extinc_i(nlayer) )
     Allocate( l_rad_struct%FO_cota(0:nlayer) )
-    Allocate( l_rad_struct%FO_xfine(nlayer, maxfine) )
-    Allocate( l_rad_struct%FO_wfine(nlayer, maxfine) )
-    Allocate( l_rad_struct%FO_csqfine(nlayer, maxfine) )
-    Allocate( l_rad_struct%FO_cotfine(nlayer, maxfine) )
-    Allocate( l_rad_struct%sunpaths_fine(nlayer, nlayer, maxfine) )
+    !Allocate( l_rad_struct%FO_xfine(nlayer, maxfine) )
+    !Allocate( l_rad_struct%FO_wfine(nlayer, maxfine) )
+    !Allocate( l_rad_struct%FO_csqfine(nlayer, maxfine) )
+    !Allocate( l_rad_struct%FO_cotfine(nlayer, maxfine) )
+    !Allocate( l_rad_struct%sunpaths_fine(nlayer, nlayer, maxfine) )
+    Allocate( l_rad_struct%FO_xfine(maxfine, nlayer) )
+    Allocate( l_rad_struct%FO_wfine(maxfine, nlayer) )
+    Allocate( l_rad_struct%FO_csqfine(maxfine, nlayer) )
+    Allocate( l_rad_struct%FO_cotfine(maxfine, nlayer) )
+    Allocate( l_rad_struct%sunpaths_fine(nlayer, maxfine, nlayer) )
 
     ! Variables for calc_geom_second
     Allocate( l_rad_struct%sun_chapman2(nlayer, nlayer) )
@@ -499,6 +505,7 @@ contains
         nfoumax = nmoms-1
     endif
 
+    !print*,'driver: lay,stoke,mom,par ',n_layers, nstokes, nmoms, n_params
     call L_rad_second &
          (n_layers, nstokes, nmoms-1, n_params, nmoms / 2, nphibrdf, l_rad_struct%surftype, & !I
          l_rad_struct%regular_ps, l_rad_struct%enhanced_ps, & !I

@@ -1190,17 +1190,17 @@ SUBROUTINE TWOSTREAM_L_FOURIER_MASTER                                        &
 
 !  Solution constants of integration, and related quantities
 
-      REAL(kind=dp) ::  NCON(NLAYERS,NPARS)
-      REAL(kind=dp) ::  PCON(NLAYERS,NPARS)
+      REAL(kind=dp) ::  NCON(NPARS,NLAYERS)
+      REAL(kind=dp) ::  PCON(NPARS,NLAYERS)
       REAL(kind=dp) ::  NCONALB(NLAYERS,NSPARS)
       REAL(kind=dp) ::  PCONALB(NLAYERS,NSPARS)
-      REAL(kind=dp) ::  NCON_XVEC(2,NLAYERS,NPARS)
-      REAL(kind=dp) ::  PCON_XVEC(2,NLAYERS,NPARS)
+      REAL(kind=dp) ::  NCON_XVEC(NPARS,2,NLAYERS)
+      REAL(kind=dp) ::  PCON_XVEC(NPARS,2,NLAYERS)
 
 !  Column vectors for solving BCs
 
-      REAL(kind=dp) ::  COL2_WF    (NTOTAL,NPARS)
-      REAL(kind=dp) ::  SCOL2_WF   (2,NPARS)
+      REAL(kind=dp) ::  COL2_WF    (NPARS,NTOTAL)
+      REAL(kind=dp) ::  SCOL2_WF   (NPARS,2)
       REAL(kind=dp) ::  COL2_WFALB    (NTOTAL,NSPARS)
       REAL(kind=dp) ::  SCOL2_WFALB   (2,NSPARS)
 

@@ -108,15 +108,15 @@ subroutine l_sscorr_outgoing &
 
       integer  , Intent(in)  :: ntraverse  (0:nlayers)
       real(fpk), Intent(in)  :: sunpaths   (0:nlayers,nlayers)
-      integer  , Intent(in)  :: ntraverse_fine(nlayers,maxfinelayers)
-      real(fpk), Intent(in)  :: sunpaths_fine (nlayers,nlayers,maxfinelayers)
+      integer  , Intent(in)  :: ntraverse_fine(maxfinelayers,nlayers)
+      real(fpk), Intent(in)  :: sunpaths_fine (nlayers,maxfinelayers,nlayers)
 
 !  LOS Quadratures for Enhanced PS
 
-      real(fpk), Intent(in)  :: xfine   (nlayers,maxfinelayers)
-      real(fpk), Intent(in)  :: wfine   (nlayers,maxfinelayers)
-      real(fpk), Intent(in)  :: csqfine (nlayers,maxfinelayers)
-      real(fpk), Intent(in)  :: cotfine (nlayers,maxfinelayers)
+      real(fpk), Intent(in)  :: xfine   (maxfinelayers,nlayers)
+      real(fpk), Intent(in)  :: wfine   (maxfinelayers,nlayers)
+      real(fpk), Intent(in)  :: csqfine (maxfinelayers,nlayers)
+      real(fpk), Intent(in)  :: cotfine (maxfinelayers,nlayers)
 
 !  outputs
 !  -------
@@ -132,22 +132,22 @@ subroutine l_sscorr_outgoing &
 
       REAL(fpk)  :: EXTINCTION_I   ( NLAYERS )
       REAL(fpk)  :: EXTINCTION     ( NLAYERS )
-      REAL(fpk)  :: L_EXTINCTION   ( NLAYERS, n_wfuncs )
-      REAL(fpk)  :: L_EXTINCTION_I ( NLAYERS, n_wfuncs )
+      REAL(fpk)  :: L_extinction   ( n_wfuncs,nlayers )
+      REAL(fpk)  :: L_extinction_i ( n_wfuncs,nlayers )
 
 !  Attenuations
 
-      real(fpk)  :: attenuations_i        (0:nlayers)
-      real(fpk)  :: attenuations_fine_i   (nlayers,maxfinelayers)
+      real(fpk)  :: Attenuations_i        (0:nlayers)
+      real(fpk)  :: Attenuations_fine_i   (maxfinelayers,nlayers)
 
-      real(fpk)  :: attenuations          (0:nlayers)
-      real(fpk)  :: attenuations_fine     (nlayers,maxfinelayers)
+      real(fpk)  :: Attenuations          (0:nlayers)
+      real(fpk)  :: Attenuations_fine     (maxfinelayers,nlayers)
 
-      real(fpk)  :: L_attenuations_i      (0:nlayers,0:nlayers,n_wfuncs)
-      real(fpk)  :: L_attenuations_fine_i (nlayers,maxfinelayers,0:nlayers,n_wfuncs)
+      real(fpk)  :: L_Attenuations_i      (0:nlayers,0:nlayers,n_wfuncs)
+      real(fpk)  :: L_Attenuations_fine_i (maxfinelayers,n_wfuncs,0:nlayers,nlayers)
 
-      real(fpk)  :: L_attenuations        (0:nlayers,0:nlayers,n_wfuncs)
-      real(fpk)  :: L_attenuations_fine   (nlayers,maxfinelayers,0:nlayers,n_wfuncs)
+      real(fpk)  :: L_Attenuations        (0:nlayers,0:nlayers,n_wfuncs)
+      real(fpk)  :: L_Attenuations_fine   (maxfinelayers,n_wfuncs,0:nlayers,nlayers) ! j,q,k,n
 
 !  Source function integration results
 
@@ -158,10 +158,10 @@ subroutine l_sscorr_outgoing &
       real(fpk)  :: multiplier_up    ( nlayers )
 
       real(fpk)  :: L_sources_up      ( nlayers,nstokes,0:nlayers,n_wfuncs )
-      real(fpk)  :: L_lostrans_up_i   ( nlayers, n_wfuncs )
-      real(fpk)  :: L_multiplier_up_i ( nlayers,0:nlayers,n_wfuncs )
-      real(fpk)  :: L_lostrans_up     ( nlayers, n_wfuncs )
-      real(fpk)  :: L_multiplier_up   ( nlayers,0:nlayers,n_wfuncs )
+      real(fpk)  :: L_lostrans_up_i   ( n_wfuncs,nlayers )
+      real(fpk)  :: L_multiplier_up_i ( n_wfuncs,0:nlayers,nlayers )
+      real(fpk)  :: L_lostrans_up     ( n_wfuncs,nlayers )
+      real(fpk)  :: L_multiplier_up   ( n_wfuncs,0:nlayers,nlayers )
 
 !  Local cumulative source terms
 
@@ -173,7 +173,7 @@ subroutine l_sscorr_outgoing &
 
 !  Help
 
-      integer    :: n, ns, k, j, q, o1, nstart, nc
+      integer    :: n, ns, k, klast, j, je, q, o1, nstart, nc
 
       real(fpk)  :: argum(maxfinelayers), tran(maxfinelayers), func(maxfinelayers)
       real(fpk)  :: tran_i(maxfinelayers), func_i(maxfinelayers)
@@ -198,11 +198,13 @@ subroutine l_sscorr_outgoing &
 !  Zero local sources
 
       sources_up   = zero
-      L_sources_up = zero
       lostrans_up_i = zero   ; multiplier_up_i   = zero
       lostrans_up   = zero   ; multiplier_up   = zero
-      L_lostrans_up_i = zero ; L_multiplier_up_i = zero
-      L_lostrans_up = zero   ; L_multiplier_up = zero
+      if ( linearize ) then
+        L_sources_up = zero
+        L_lostrans_up_i = zero ; L_multiplier_up_i = zero
+        L_lostrans_up = zero   ; L_multiplier_up = zero
+      endif
 
 !  Bookkeeping
 
@@ -211,21 +213,21 @@ subroutine l_sscorr_outgoing &
 !  Use basic definitions
 
       do n = 1, nlayers
-         help = height_grid(n-1) - height_grid(n)
-         extinction(n) = deltau_vert(nlayers-n+1) / help
-         extinction_i(n) = deltau_vert_i(nlayers-n+1) / help
+        help = height_grid(n-1) - height_grid(n)
+        extinction(n) = deltau_vert(nlayers-n+1) / help
+        extinction_i(n) = deltau_vert_i(nlayers-n+1) / help
       enddo
 
 !  Linearized extinctions
 
       if ( linearize ) THEN   
-         do k = 1, nlayers
-            help = height_grid(k-1) - height_grid(k)
-            do q = 1, n_wfuncs
-               l_extinction(k,q) = l_deltau_vert(nlayers-k+1,q) / help
-               l_extinction_i(k,q) = l_deltau_vert_i(nlayers-k+1,q) / help
-            enddo
-         enddo
+        do k = 1, nlayers
+          help = height_grid(k-1) - height_grid(k)
+          do q = 1, n_wfuncs
+            L_extinction  (q,k) = l_deltau_vert  (nlayers-k+1,q) / help
+            L_extinction_i(q,k) = l_deltau_vert_i(nlayers-k+1,q) / help
+          enddo
+        enddo
       endif
 
 !  Attenuations
@@ -233,32 +235,29 @@ subroutine l_sscorr_outgoing &
 
 !  Initialize, only to layer Ncrit if applicable
 
-      Attenuations     = zero ; Attenuations_fine     = zero
-      Attenuations_i   = zero ; Attenuations_fine_i   = zero
-      L_Attenuations   = zero ; L_Attenuations_fine   = zero
-      L_Attenuations_i = zero ; L_Attenuations_fine_i = zero
       nstart = nlayers ; if (Ncrit.ne.0) nstart = nCrit
 
 !  Attenuations to End points (including TOA). All representations
 !  MUST go all the way to NLAYERS (surface term required)
 
       do n = 0, nlayers
+         klast = ntraverse(n)
          sumd = ZERO
          sumd_i = ZERO
-         do k = 1, ntraverse(n)
+         do k = 1, klast
             sumd = sumd + extinction(k) * sunpaths(n,k)
             sumd_i = sumd_i + extinction_i(k) * sunpaths(n,k)
          enddo
-         if (sumd .lt. cutoff ) Attenuations(n) = exp( - sumd )
+         Attenuations  (n) = zero
+         Attenuations_i(n) = zero
+         if (sumd   .lt. cutoff ) Attenuations(n) = exp( - sumd )
          if (sumd_i .lt. cutoff ) Attenuations_i(n) = exp( - sumd_i )
          if ( linearize ) then
-            do k = 1, nlayers
-               if ( k.le.ntraverse(n) ) then
-                  do q = 1, n_wfuncs
-                     L_Attenuations(n,k,q) = - Attenuations(n) * L_extinction(k,q) * sunpaths(n,k)
-                     L_Attenuations_i(n,k,q) = - Attenuations_i(n) * L_extinction_i(k,q) * sunpaths(n,k)
-                  enddo
-               endif
+            do k = 1, klast
+              do q = 1, n_wfuncs
+                L_Attenuations(n,k,q)   = - Attenuations(n) * L_extinction(q,k) * sunpaths(n,k)
+                L_Attenuations_i(n,k,q) = - Attenuations_i(n) * L_extinction_i(q,k) * sunpaths(n,k)
+              enddo
             enddo
          endif
       enddo
@@ -272,23 +271,25 @@ subroutine l_sscorr_outgoing &
 !  Enhanced-spherical, fine-layer attenuations
 
       do n = 1, nstart
-         do j = 1, nfinedivs(n)
+         je = nfinedivs(n)
+         do j = 1, je
+            klast = ntraverse_fine(j,n)
             sumd = zero
             sumd_i = zero
-            do k = 1, ntraverse_fine(n,j)
-               sumd = sumd + extinction(k) * sunpaths_fine(n,k,j)
-               sumd_i = sumd_i + extinction_i(k) * sunpaths_fine(n,k,j)
+            do k = 1, klast
+              sumd   = sumd   + extinction  (k) * sunpaths_fine(k,j,n)
+              sumd_i = sumd_i + extinction_i(k) * sunpaths_fine(k,j,n)
             enddo
-            if (sumd .lt. cutoff ) Attenuations_fine(n,j) = exp( - sumd )
-            if (sumd_i .lt. cutoff ) Attenuations_fine_i(n,j) = exp( - sumd_i )
+            Attenuations_fine  (j,n) = zero
+            Attenuations_fine_i(j,n) = zero
+            if (sumd   .lt. cutoff ) Attenuations_fine  (j,n) = exp( - sumd )
+            if (sumd_i .lt. cutoff ) Attenuations_fine_i(j,n) = exp( - sumd_i )
             if ( linearize ) then
-               do k = 1, nlayers
-                  if ( k.le.ntraverse_fine(n,j) ) then
-                     do q = 1, n_wfuncs
-                        L_Attenuations_fine(n,j,k,q) = - Attenuations_fine(n,j) * L_extinction(k,q) * sunpaths_fine(n,k,j)
-                        L_Attenuations_fine_i(n,j,k,q) = - Attenuations_fine_i(n,j) * L_extinction_i(k,q) * sunpaths_fine(n,k,j)
-                     enddo
-                  endif
+               do k = 1, klast
+                 do q = 1, n_wfuncs
+                   L_Attenuations_fine  (j,q,k,n) = - Attenuations_fine  (j,n) * L_extinction  (q,k) * sunpaths_fine(k,j,n)
+                   L_Attenuations_fine_i(j,q,k,n) = - Attenuations_fine_i(j,n) * L_extinction_i(q,k) * sunpaths_fine(k,j,n)
+                 enddo
                enddo
             endif
          enddo
@@ -302,6 +303,8 @@ subroutine l_sscorr_outgoing &
 
       if ( doNadir ) then
          do n = nlayers, 1, -1
+            je = nfinedivs(n)
+            klast = ntraverse(n)
 
 !  LOS transmittance
 
@@ -313,8 +316,8 @@ subroutine l_sscorr_outgoing &
             if ( lostau_i .lt. cutoff ) lostrans_up_i(n) = exp( - lostau_i )
             if ( linearize ) then
                do q = 1, n_wfuncs
-                  L_lostrans_up(n,q) = - L_deltau_vert(nlayers-n+1,q) * lostrans_up(n)
-                  L_lostrans_up_i(n,q) = - L_deltau_vert_i(nlayers-n+1,q) * lostrans_up_i(n)
+                  L_lostrans_up(q,n)   = - L_deltau_vert  (nlayers-n+1,q) * lostrans_up(n)
+                  L_lostrans_up_i(q,n) = - L_deltau_vert_i(nlayers-n+1,q) * lostrans_up_i(n)
                enddo
             endif
 
@@ -323,48 +326,49 @@ subroutine l_sscorr_outgoing &
             if ( n.le.nstart  ) then
                sum = zero
                sum_i = zero
-               do j = 1, nfinedivs(n)
-                  argum(j) = xfine(n,j)
+               do j = 1, je
+                  argum(j) = xfine(j,n)
                   tran(j)  = exp ( - argum(j) * kn )
                   tran_i(j)  = exp ( - argum(j) * kn_i )
-                  func(j)  = attenuations_fine(n,j) * tran(j)
-                  func_i(j)  = attenuations_fine_i(n,j) * tran_i(j)
-                  sum = sum + func(j) * wfine(n,j)
-                  sum_i = sum_i + func_i(j) * wfine(n,j)
+                  func(j)  = Attenuations_fine(j,n) * tran(j)
+                  func_i(j)  = Attenuations_fine_i(j,n) * tran_i(j)
+                  sum   = sum   + func(j) * wfine(j,n)
+                  sum_i = sum_i + func_i(j) * wfine(j,n)
                enddo
                multiplier_up(n) = sum * kn
                multiplier_up_i(n) = sum_i * kn_i
                if ( linearize ) then
-                  do k = 1, nlayers
-                     if ( k.le.ntraverse(n) ) then
-                        do q = 1, n_wfuncs
-                           if ( k.eq.n ) then
-                              L_sum = zero
-                              L_sum_i = zero
-                              do j = 1, nfinedivs(n)
-                                 L_tran = - argum(j) * L_extinction(n,q) * tran(j)
-                                 L_tran_i = - argum(j) * L_extinction_i(n,q) * tran_i(j)
-                                 L_func = L_attenuations_fine(n,j,k,q) * tran(j) + L_tran * attenuations_fine(n,j)
-                                 L_func_i = L_attenuations_fine_i(n,j,k,q) * tran_i(j) + L_tran_i * attenuations_fine_i(n,j)
-                                 L_sum  = L_sum + L_func * wfine(n,j)
-                                 L_sum_i  = L_sum_i + L_func_i * wfine(n,j)
-                              enddo
-                              L_multiplier_up(n,k,q)  = L_sum * kn + sum * L_extinction(n,q)
-                              L_multiplier_up_i(n,k,q)  = L_sum_i * kn_i + sum_i * L_extinction_i(n,q)
-                           else
-                              L_sum = zero
-                              L_sum_i = zero
-                              do j = 1, nfinedivs(n)
-                                 L_func = L_attenuations_fine(n,j,k,q)  * tran(j)
-                                 L_func_i = L_attenuations_fine_i(n,j,k,q)  * tran_i(j)
-                                 L_sum  = L_sum + L_func * wfine(n,j)
-                                 L_sum_i  = L_sum_i + L_func_i * wfine(n,j)
-                              enddo
-                              L_multiplier_up(n,k,q)  = L_sum * kn
-                              L_multiplier_up_i(n,k,q)  = L_sum_i * kn_i
-                           endif
+                  do k = 1, klast
+                    if ( k.ne.n ) then
+                      do q = 1, n_wfuncs
+                        L_sum = zero
+                        L_sum_i = zero
+                        !do j = 1, nfinedivs(n)
+                        do j = 1, je
+                          L_func   = L_Attenuations_fine  (j,q,k,n)*tran  (j)
+                          L_func_i = L_Attenuations_fine_i(j,q,k,n)*tran_i(j)
+                          L_sum    = L_sum   + L_func   * wfine(j,n)
+                          L_sum_i  = L_sum_i + L_func_i * wfine(j,n)
                         enddo
-                     endif
+                        L_multiplier_up  (q,k,n)  = L_sum * kn
+                        L_multiplier_up_i(q,k,n)  = L_sum_i * kn_i
+                      enddo
+                    else
+                      do q = 1, n_wfuncs
+                        L_sum = zero
+                        L_sum_i = zero
+                        do j = 1, je
+                          L_tran   = - argum(j)*L_extinction  (q,k)*tran  (j)
+                          L_tran_i = - argum(j)*L_extinction_i(q,k)*tran_i(j)
+                          L_func   = L_Attenuations_fine  (j,q,k,n)*tran  (j) + L_tran  *Attenuations_fine  (j,n)
+                          L_func_i = L_Attenuations_fine_i(j,q,k,n)*tran_i(j) + L_tran_i*Attenuations_fine_i(j,n)
+                          L_sum    = L_sum   + L_func  *wfine(j,n)
+                          L_sum_i  = L_sum_i + L_func_i*wfine(j,n)
+                        enddo
+                        L_multiplier_up  (q,k,n)  = L_sum  *kn   + sum  *L_extinction  (q,n)
+                        L_multiplier_up_i(q,k,n)  = L_sum_i*kn_i + sum_i*L_extinction_i(q,n)
+                      enddo
+                    endif
                   enddo
                endif
             endif
@@ -379,6 +383,8 @@ subroutine l_sscorr_outgoing &
 
       if ( .not. doNadir ) then
          do n = nlayers, 1, -1
+            je = nfinedivs(n)
+            klast = ntraverse(n)
 
 !  LOS transmittance
 
@@ -391,8 +397,8 @@ subroutine l_sscorr_outgoing &
             if ( tran_1_i .lt. cutoff ) lostrans_up_i(n) = exp ( - tran_1_i )
             if ( linearize ) then
                do q = 1, n_wfuncs
-                  L_lostrans_up(n,q) = - L_extinction(n,q) * cons * lostrans_up(n)
-                  L_lostrans_up_i(n,q) = - L_extinction_i(n,q) * cons * lostrans_up_i(n)
+                  L_lostrans_up(q,n)   = - L_extinction(q,n) * cons * lostrans_up(n)
+                  L_lostrans_up_i(q,n) = - L_extinction_i(q,n) * cons * lostrans_up_i(n)
                enddo
             endif
 
@@ -401,50 +407,53 @@ subroutine l_sscorr_outgoing &
             if ( n.le.nstart  ) then
                sum = zero
                sum_i = zero
-               do j = 1, nfinedivs(n)
-                  argum(j) = Raycon * ( cot_2 - cotfine(n,j) )
+               !dir$ loop count min=3,avg=3,max=7
+               do j = 1, je
+                  argum(j) = Raycon * ( cot_2 - cotfine(j,n) )
                   tran(j)  = exp ( - kn * argum(j) )
-                  tran_i(j)  = exp ( - kn_i * argum(j) )
-                  func(j)  = attenuations_fine(n,j) * csqfine(n,j) * tran(j)
-                  func_i(j)  = attenuations_fine_i(n,j) * csqfine(n,j) * tran_i(j)
-                  sum      = sum + func(j) * wfine(n,j)
-                  sum_i    = sum_i + func_i(j) * wfine(n,j)
+                  tran_i(j)= exp ( - kn_i * argum(j) )
+                  func(j)  = Attenuations_fine  (j,n) * csqfine(j,n) * tran(j)
+                  func_i(j)= Attenuations_fine_i(j,n) * csqfine(j,n) * tran_i(j)
+                  sum      = sum   + func(j) * wfine(j,n)
+                  sum_i    = sum_i + func_i(j) * wfine(j,n)
                enddo
                Multiplier_up(n) = sum * ke
                Multiplier_up_i(n) = sum_i * ke_i
                if ( linearize ) then
-                  do k = 1, nlayers
-                     if ( k.le.ntraverse(n) ) then
-                        do q = 1, n_wfuncs
-                           if ( k.eq.n ) then
-                              L_sum = zero
-                              L_sum_i = zero
-                              do j = 1, nfinedivs(n)
-                                 L_tran = - argum(j) * L_extinction(n,q) * tran(j)
-                                 L_tran_i = - argum(j) * L_extinction_i(n,q) * tran_i(j)
-                                 L_func = L_attenuations_fine(n,j,k,q) * csqfine(n,j) * tran(j) + &
-                                     L_tran * attenuations_fine(n,j) * csqfine(n,j)
-                                 L_func_i = L_attenuations_fine_i(n,j,k,q) * csqfine(n,j) * tran_i(j) + &
-                                     L_tran_i * attenuations_fine_i(n,j) * csqfine(n,j)
-                                 L_sum  = L_sum + L_func * wfine(n,j)
-                                 L_sum_i  = L_sum_i + L_func_i * wfine(n,j)
-                              enddo
-                              L_multiplier_up(n,k,q)  = L_sum * ke + L_extinction(N,q) * Raycon * sum
-                              L_multiplier_up_i(n,k,q)  = L_sum_i * ke_i + L_extinction_i(N,q) * Raycon * sum_i
-                           else
-                              L_sum = zero
-                              L_sum_i = zero
-                              do j = 1, nfinedivs(n)
-                                 L_func = L_attenuations_fine(n,j,k,q) * csqfine(n,j) * tran(j)
-                                 L_func_i = L_attenuations_fine_i(n,j,k,q) * csqfine(n,j) * tran_i(j)
-                                 L_sum  = L_sum + L_func * wfine(n,j)
-                                 L_sum_i  = L_sum_i + L_func_i * wfine(n,j)
-                              enddo
-                              L_multiplier_up(n,k,q)  = L_sum * ke
-                              L_multiplier_up_i(n,k,q)  = L_sum_i * ke_i
-                           endif
+                  do k = 1, klast
+                    if ( k.ne.n ) then
+                      !!dir$ loop count min=3,avg=7,max=8
+                      do q = 1, n_wfuncs
+                        L_sum = zero
+                        L_sum_i = zero
+                        !!dir$ loop count min=3,avg=3,max=7
+                        do j = 1, je
+                          L_func   = L_Attenuations_fine  (j,q,k,n)*csqfine(j,n)*tran  (j)
+                          L_func_i = L_Attenuations_fine_i(j,q,k,n)*csqfine(j,n)*tran_i(j)
+                          L_sum    = L_sum   + L_func  *wfine(j,n)
+                          L_sum_i  = L_sum_i + L_func_i*wfine(j,n)
                         enddo
-                     endif
+                        L_multiplier_up  (q,k,n)  = L_sum  *ke
+                        L_multiplier_up_i(q,k,n)  = L_sum_i*ke_i
+                      enddo
+                    else
+                      !!dir$ loop count min=3,avg=7,max=8
+                      do q = 1, n_wfuncs
+                        L_sum = zero
+                        L_sum_i = zero
+                        !!dir$ loop count min=3,avg=3,max=7
+                        do j = 1, je
+                          L_tran   = - argum(j)*L_extinction  (q,n)*tran  (j)
+                          L_tran_i = - argum(j)*L_extinction_i(q,n)*tran_i(j)
+                          L_func   = L_Attenuations_fine  (j,q,k,n)*csqfine(j,n)*tran  (j) + L_tran  *Attenuations_fine  (j,n)*csqfine(j,n)
+                          L_func_i = L_Attenuations_fine_i(j,q,k,n)*csqfine(j,n)*tran_i(j) + L_tran_i*Attenuations_fine_i(j,n)*csqfine(j,n)
+                          L_sum    = L_sum   + L_func  *wfine(j,n)
+                          L_sum_i  = L_sum_i + L_func_i*wfine(j,n)
+                        enddo
+                        L_multiplier_up  (q,k,n)  = L_sum  *ke   + L_extinction  (q,n)*Raycon*sum
+                        L_multiplier_up_i(q,k,n)  = L_sum_i*ke_i + L_extinction_i(q,n)*Raycon*sum_i
+                      enddo
+                    endif
                   enddo
                endif
             endif
@@ -472,14 +481,14 @@ subroutine l_sscorr_outgoing &
                do k = 1, nlayers
                   do q = 1, n_wfuncs
                      do o1 = 1, 1
-                        L_sources_up(n,o1,k,q) = shelp(o1) * L_multiplier_up_i(n,k,q)
+                        L_sources_up(n,o1,k,q) = shelp(o1) * L_multiplier_up_i(q,k,n)
                         if ( k.eq.n ) then
                            L_Shelp = L_zmat_up(nc,o1,q) * omega_total_i(nc) + zmat_up(nc,o1) * L_omega_total_i(nc,q)
                            L_sources_up(n,o1,k,q) =  L_sources_up(n,o1,k,q) + L_Shelp * multiplier_up_i(n)
                         endif
                      enddo
                      do o1 = 2, nstokes
-                        L_sources_up(n,o1,k,q) = shelp(o1) * L_multiplier_up(n,k,q)
+                        L_sources_up(n,o1,k,q) = shelp(o1) * L_multiplier_up(q,k,n)
                         if ( k.eq.n ) then
                            L_Shelp = L_zmat_up(nc,o1,q) * omega_total(nc) + zmat_up(nc,o1) * L_omega_total(nc,q)
                            L_sources_up(n,o1,k,q) =  L_sources_up(n,o1,k,q) + L_Shelp * multiplier_up(n)
@@ -574,10 +583,10 @@ subroutine l_sscorr_outgoing &
                if ( k.eq.n ) then
                   do q = 1, n_wfuncs
                      L_cumsource(1,q) = L_SOURCES_UP(N,1,K,Q)    + &
-                          L_LOSTRANS_UP_I(N,Q) * CUMSOURCE_UP(NC-1,1) + &
+                          L_lostrans_up_I(Q,N) * CUMSOURCE_UP(NC-1,1) + &
                             LOSTRANS_UP_I(N)   * L_CUMSOURCE(1,Q)
                      L_cumsource(2:ns,q) = L_SOURCES_UP(N,2:ns,K,Q)    + &
-                          L_LOSTRANS_UP(N,Q) * CUMSOURCE_UP(NC-1,2:ns) + &
+                          L_lostrans_up(Q,N) * CUMSOURCE_UP(NC-1,2:ns) + &
                             LOSTRANS_UP(N)   * L_CUMSOURCE(2:ns,Q)
                   enddo
                else
@@ -607,9 +616,9 @@ subroutine l_sscorr_outgoing &
                NC = NLAYERS + 1 - N
                if ( k.eq.n ) then
                   do q = 1, n_wfuncs
-                     L_cumsource(1,q) =  L_LOSTRANS_UP_I(N,Q) * CUMSOURCE_DB(NC-1,1) + &
+                     L_cumsource(1,q) =  L_lostrans_up_I(Q,N) * CUMSOURCE_DB(NC-1,1) + &
                                               LOSTRANS_UP_I(N)   * L_CUMSOURCE(1,Q)
-                     L_cumsource(2:ns,q) =  L_LOSTRANS_UP(N,Q) * CUMSOURCE_DB(NC-1,2:ns) + &
+                     L_cumsource(2:ns,q) =  L_lostrans_up(Q,N) * CUMSOURCE_DB(NC-1,2:ns) + &
                                               LOSTRANS_UP(N)   * L_CUMSOURCE(2:ns,Q)
                   enddo
                else

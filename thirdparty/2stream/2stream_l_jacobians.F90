@@ -106,7 +106,7 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  Surface stuff
 
       REAL(kind=dp), INTENT(IN)  :: SURFACE_FACTOR, ALBEDO
-      REAL(kind=dp), INTENT(IN)  :: UBRDF_F ( 0:1, N_USER_STREAMS )
+      REAL(kind=dp), INTENT(IN)  :: UBRDF_F ( 0:1, 1)
 
 !  Direct-beam contributions, not required
 !      REAL(kind=dp), INTENT(IN)  :: USER_DIRECT_BEAM(N_USER_STREAMS,NBEAMS)
@@ -115,13 +115,13 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 
 !  transmittance factors for +/- eigenvalues
 
-      REAL(kind=dp), INTENT(IN)  :: T_DELT_EIGEN  (NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: L_T_DELT_EIGEN(NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: T_DELT_EIGEN  (19)
+      REAL(kind=dp), INTENT(IN)  :: L_T_DELT_EIGEN(19,7)
 
 !  Transmittance factors for user-defined stream angles
 
-      REAL(kind=dp), INTENT(IN)  :: T_DELT_USERM   (NLAYERS,N_USER_STREAMS)
-      REAL(kind=dp), INTENT(IN)  :: L_T_DELT_USERM (NLAYERS,N_USER_STREAMS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: T_DELT_USERM   (19,1)
+      REAL(kind=dp), INTENT(IN)  :: L_T_DELT_USERM (19,1,7)
 
 !  Stream value
 
@@ -129,37 +129,37 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 
 !  Eigenvector solutions
 
-      REAL(kind=dp), INTENT(IN)  :: L_XPOS(2,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: L_XNEG(2,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: L_XPOS(2,19,7)
+      REAL(kind=dp), INTENT(IN)  :: L_XNEG(2,19,7)
 
 !  Solution constants of integration
 
-      REAL(kind=dp), INTENT(IN)  :: LCON(NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: MCON(NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: NCON(NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: PCON(NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: LCON(19)
+      REAL(kind=dp), INTENT(IN)  :: MCON(19)
+      REAL(kind=dp), INTENT(IN)  :: NCON(7,19)
+      REAL(kind=dp), INTENT(IN)  :: PCON(7,19)
 
 !  Solution constants of integration multiplied by homogeneous solutions
 
-      REAL(kind=dp), INTENT(IN)  :: LCON_XVEC(2,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: NCON_XVEC(2,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: PCON_XVEC(2,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: LCON_XVEC(2,19)
+      REAL(kind=dp), INTENT(IN)  :: NCON_XVEC(7,2,19)
+      REAL(kind=dp), INTENT(IN)  :: PCON_XVEC(7,2,19)
 
 !  General beam solutions at the Upper/Lower boundary
 
-      REAL(kind=dp), INTENT(IN)  :: L_WLOWER(2,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: L_WLOWER(2,19,7)
 
 !  Eigenvectors defined at user-defined stream angles
 
-      REAL(kind=dp), INTENT(IN)  :: U_XPOS(N_USER_STREAMS,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: U_XNEG(N_USER_STREAMS,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: L_U_XPOS(N_USER_STREAMS,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: L_U_XNEG(N_USER_STREAMS,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: U_XPOS(1,19)
+      REAL(kind=dp), INTENT(IN)  :: U_XNEG(1,19)
+      REAL(kind=dp), INTENT(IN)  :: L_U_XPOS(1,19,7)
+      REAL(kind=dp), INTENT(IN)  :: L_U_XNEG(1,19,7)
 
 !  Diffuse-term Particular beam solutions at user-defined angles
 
-      REAL(kind=dp), INTENT(IN)  :: U_WPOS2(N_USER_STREAMS,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: L_U_WPOS2(N_USER_STREAMS,NLAYERS,0:NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: U_WPOS2(1,19)
+      REAL(kind=dp), INTENT(IN)  :: L_U_WPOS2(1,19,0:19,7)
 
 !  Single-scatter Particular beam solutions at user-defined angles
 !    ****** NOT REQUIRED for MS-mode only
@@ -168,28 +168,28 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 
 !  solution multipliers 
 
-      REAL(kind=dp), INTENT(IN)  :: HMULT_1(N_USER_STREAMS,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: HMULT_2(N_USER_STREAMS,NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: EMULT_UP(N_USER_STREAMS,NLAYERS,NBEAMS)
+      REAL(kind=dp), INTENT(IN)  :: HMULT_1(1,19)
+      REAL(kind=dp), INTENT(IN)  :: HMULT_2(1,19)
+      REAL(kind=dp), INTENT(IN)  :: EMULT_UP(1,19,NBEAMS)
 
-      REAL(kind=dp), INTENT(IN)  :: L_HMULT_1(N_USER_STREAMS,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: L_HMULT_2(N_USER_STREAMS,NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: L_EMULT_UP(N_USER_STREAMS,NLAYERS,NBEAMS,0:NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: L_HMULT_1(1,19,7)
+      REAL(kind=dp), INTENT(IN)  :: L_HMULT_2(1,19,7)
+      REAL(kind=dp), INTENT(IN)  :: L_EMULT_UP(1,19,NBEAMS,0:19,7)
 
 !  Cumulative source terms
 
-      REAL(kind=dp), INTENT(IN)  :: CUMSOURCE_UP(N_USER_STREAMS,0:NLAYERS)
+      REAL(kind=dp), INTENT(IN)  :: CUMSOURCE_UP(1,0:19)
 
 !  Thermal layer source term
 
-      REAL(kind=dp), INTENT(IN)  :: L_LAYER_TSUP_UP(N_USER_STREAMS,NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: L_LAYER_TSUP_UP(1,19,7)
 
 !  Outputs
 !  -------
 
 !  User-defined Jacobians, Fourier component
 
-      REAL(kind=dp), INTENT(INOUT) :: ATMOSWF_F_UP(N_USER_STREAMS,NBEAMS,0:NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(INOUT) :: ATMOSWF_F_UP(1,NBEAMS,0:19,7)
 
 !  local variables
 !  ---------------
@@ -197,16 +197,16 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  BOA source terms
 !    MS mode only, do not require direct beam source terms
 
-      REAL(kind=dp) :: L_BOA_MSSOURCE ( N_USER_STREAMS, NPARS )
+      REAL(kind=dp) :: L_BOA_MSSOURCE ( 1, 7)
 
 !  Reflectance integrand  a(j).x(j).I(-j)
 
-      REAL(kind=dp) :: L_IDOWN(NPARS)
+      REAL(kind=dp) :: L_IDOWN(7)
 
 !  Local layer and cumulative source terms
 
-      REAL(kind=dp) :: L_LAYERSOURCE ( N_USER_STREAMS, NPARS )
-      REAL(kind=dp) :: L_CUMULSOURCE ( N_USER_STREAMS, NPARS )
+      REAL(kind=dp) :: L_LAYERSOURCE ( 1, 7)
+      REAL(kind=dp) :: L_CUMULSOURCE ( 1, 7)
 
 !  help variables
 
@@ -216,6 +216,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
       REAL(kind=dp) :: NCON_UXVEC, PCON_UXVEC, KMULT, KMULT_0
 
 !  indices
+      !print*,'TWOSTREAM_UPUSER_ATMOSWF: ',K_PARAMETERS, N_USER_STREAMS ! 7, 1
+      !print*,'TWOSTREAM_UPUSER_ATMOSWF: ',NLAYERS,NPARS ! 19, 7
 
       K  = VARIATION_INDEX
       IB = IPARTIC
@@ -224,8 +226,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  Zero all Fourier components - New rule, better for safety
 !    Only did this for components close to zenith (formerly)
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, 7
+        DO UM = 1, 1
           ATMOSWF_F_UP(UM,IPARTIC,K,Q) = 0.0d0
         ENDDO
       ENDDO
@@ -236,8 +238,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !  initialise boa source terms
 !    MS mode only, do not require direct beam source terms
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, 7
+        DO UM = 1, 1
           L_BOA_MSSOURCE(UM,Q) = 0.0d0
         ENDDO
       ENDDO
@@ -252,16 +254,16 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
           SPAR = 0.0_dp
           IF ( K.EQ.N .OR. K.EQ.0 ) THEN
             SPAR = L_WLOWER(1,N,Q)                          ! Always exists solar or thermal or both
-            H1   = NCON_XVEC(1,N,Q) * T_DELT_EIGEN(N)
+            H1   = NCON_XVEC(Q,1,N) * T_DELT_EIGEN(N)
             H2   = LCON_XVEC(1,N) * L_T_DELT_EIGEN(N,Q)
             H3   = LCON(N)*T_DELT_EIGEN(N)*L_XPOS(1,N,Q)
-            H4   = PCON_XVEC(1,N,Q)
+            H4   = PCON_XVEC(Q,1,N)
             H5   = MCON(N) * L_XNEG(1,N,Q)
             L_IDOWN(Q) = SPAR + H1 + H2 + H3 + H4 + H5
           ELSE IF (K.LT.N.AND.K.NE.0) THEN
             IF ( DO_SOLAR_SOURCES ) SPAR = L_WLOWER(1,N,Q)  ! Only exists solar
-            H1 = NCON_XVEC(1,N,Q) * T_DELT_EIGEN(N)
-            H2 = PCON_XVEC(1,N,Q) 
+            H1 = NCON_XVEC(Q,1,N) * T_DELT_EIGEN(N)
+            H2 = PCON_XVEC(Q,1,N) 
             L_IDOWN(Q) = SPAR + H1 + H2
           ENDIF
           IF ( DO_BRDF_SURFACE ) THEN
@@ -311,8 +313,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 !     No Direct-beam contribution, MS-mode only
 
       NC = 0
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, 7
+        DO UM = 1, 1
           L_CUMULSOURCE(UM,Q) = L_BOA_MSSOURCE(UM,Q) 
         ENDDO
       ENDDO
@@ -331,8 +333,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             LCON_UXVEC = LCON(N) * U_XPOS(UM,N)
             MCON_UXVEC = MCON(N) * U_XNEG(UM,N)
             DO Q = 1, K_PARAMETERS
-              NCON_UXVEC = NCON(N,Q) * U_XPOS(UM,N)
-              PCON_UXVEC = PCON(N,Q) * U_XNEG(UM,N)
+              NCON_UXVEC = NCON(Q,N) * U_XPOS(UM,N)
+              PCON_UXVEC = PCON(Q,N) * U_XNEG(UM,N)
               H1 = LCON_UXVEC * L_HMULT_2(UM,N,Q)
               H2 = NCON_UXVEC *   HMULT_2(UM,N)
               H3 = LCON(N)*L_U_XPOS(UM,N,Q)*HMULT_2(UM,N)
@@ -343,10 +345,14 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.NE.K .AND. K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
-              NCON_UXVEC = NCON(N,Q) * U_XPOS(UM,N)
-              PCON_UXVEC = PCON(N,Q) * U_XNEG(UM,N)
+          !!dir$ loop count=7
+          !DO Q = 1, K_PARAMETERS
+          DO Q = 1, 7
+            !!dir$ loop count=1
+            !DO UM = 1, N_USER_STREAMS
+            DO UM = 1, 1
+              NCON_UXVEC = NCON(Q,N) * U_XPOS(UM,N)
+              PCON_UXVEC = PCON(Q,N) * U_XNEG(UM,N)
               H2 = NCON_UXVEC * HMULT_2(UM,N)
               H5 = PCON_UXVEC * HMULT_1(UM,N)
               L_LAYERSOURCE(UM,Q) = H2 + H5
@@ -361,8 +367,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
       IF ( DO_INCLUDE_THERMEMISS ) THEN
         TM = 1.0_dp ; IF ( DO_SOLAR_SOURCES ) TM = 1.0_dp/PI4
         IF ( N.EQ.K .OR. K.EQ.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, 7
+            DO UM = 1, 1
               L_LAYERSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q) + L_LAYER_TSUP_UP(UM,N,Q)*TM
             ENDDO
           ENDDO
@@ -386,8 +392,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.GT.K .AND. K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, 7
+            DO UM = 1, 1
               SFOR2 = L_EMULT_UP(UM,N,IB,K,Q) *   U_WPOS2(UM,N) &
                       + EMULT_UP(UM,N,IB)     * L_U_WPOS2(UM,N,K,Q)
               L_LAYERSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q) + SFOR2 
@@ -431,8 +437,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
             ENDDO
           ENDDO
         ELSE IF ( N.NE.K.AND.K.NE.0 ) THEN
-          DO UM = 1, N_USER_STREAMS
-            DO Q = 1, K_PARAMETERS
+          DO Q = 1, 7
+            DO UM = 1, 1
               L_CUMULSOURCE(UM,Q) = L_LAYERSOURCE(UM,Q)  + &
                    T_DELT_USERM(N,UM)*L_CUMULSOURCE(UM,Q)
             ENDDO
@@ -445,8 +451,8 @@ SUBROUTINE TWOSTREAM_UPUSER_ATMOSWF                                      &
 
 !  User-defined stream output, just set to the cumulative source term
 
-      DO UM = 1, N_USER_STREAMS
-        DO Q = 1, K_PARAMETERS
+      DO Q = 1, 7
+        DO UM = 1, 1
           ATMOSWF_F_UP(UM,IPARTIC,K,Q) = FLUX_MULTIPLIER * L_CUMULSOURCE(UM,Q)
         ENDDO
       ENDDO
@@ -515,8 +521,8 @@ SUBROUTINE TWOSTREAM_DNUSER_ATMOSWF                             &
 
       REAL(kind=dp), INTENT(IN)  :: LCON(NLAYERS)
       REAL(kind=dp), INTENT(IN)  :: MCON(NLAYERS)
-      REAL(kind=dp), INTENT(IN)  :: NCON(NLAYERS,NPARS)
-      REAL(kind=dp), INTENT(IN)  :: PCON(NLAYERS,NPARS)
+      REAL(kind=dp), INTENT(IN)  :: NCON(NPARS,NLAYERS)
+      REAL(kind=dp), INTENT(IN)  :: PCON(NPARS,NLAYERS)
 
 !  Eigenvectors defined at user-defined stream angles
 
@@ -613,8 +619,8 @@ SUBROUTINE TWOSTREAM_DNUSER_ATMOSWF                             &
             LCON_UXVEC = LCON(N) * U_XNEG(UM,N)
             MCON_UXVEC = MCON(N) * U_XPOS(UM,N)
             DO Q = 1, K_PARAMETERS
-              NCON_UXVEC = NCON(N,Q) * U_XNEG(UM,N)
-              PCON_UXVEC = PCON(N,Q) * U_XPOS(UM,N)
+              NCON_UXVEC = NCON(Q,N) * U_XNEG(UM,N)
+              PCON_UXVEC = PCON(Q,N) * U_XPOS(UM,N)
               H1 = LCON_UXVEC * L_HMULT_1(UM,N,Q)
               H2 = NCON_UXVEC *   HMULT_1(UM,N)
               H3 = LCON(N)*L_U_XNEG(UM,N,Q)*HMULT_1(UM,N)
@@ -627,8 +633,8 @@ SUBROUTINE TWOSTREAM_DNUSER_ATMOSWF                             &
         ELSE IF ( N.NE.K .AND. K.NE.0 ) THEN
           DO UM = 1, N_USER_STREAMS
             DO Q = 1, K_PARAMETERS
-              NCON_UXVEC = NCON(N,Q) * U_XNEG(UM,N)
-              PCON_UXVEC = PCON(N,Q) * U_XPOS(UM,N)
+              NCON_UXVEC = NCON(Q,N) * U_XNEG(UM,N)
+              PCON_UXVEC = PCON(Q,N) * U_XPOS(UM,N)
               H2 = NCON_UXVEC * HMULT_1(UM,N)
               H5 = PCON_UXVEC * HMULT_2(UM,N)
               L_LAYERSOURCE(UM,Q) = H2 + H5

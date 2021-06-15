@@ -1,6 +1,7 @@
 module l_rad_second_m
 
 USE l_surface_fourier_m
+#define NOIFINNLAYLOOP
 
 PUBLIC
 
@@ -61,20 +62,21 @@ contains
       double precision fac(nlay),L_fac(nlay,nlay,npar)
       double precision phg(nlay,nmug),phh(nlay,nmug)
       double precision g(nlay,nmug),h(nlay,nmug)
-      double precision L_phg(nlay,nmug,nlay,npar)
-      double precision L_phh(nlay,nmug,nlay,npar)
-      double precision L_g(nlay,nmug,nlay,npar)
-      double precision L_h(nlay,nmug,nlay,npar)
+      double precision L_phg(nlay,npar,nmug,nlay)
+      double precision L_phh(nlay,npar,nmug,nlay)
+      double precision L_g(nlay,npar,nmug,nlay)
+      double precision L_h(nlay,npar,nmug,nlay)
       double precision Asurf,ws
       double precision shadow(nmug+2),Ls_shadow(nmug+2,nspars)
       double precision mcx_brdf(nphibrdf),msx_brdf(nphibrdf)
       double precision R2(nstokes),R2c(nstokes)
-      double precision R1c(2,nmug,4,4),R1s(2,nmug,4,4)
-      double precision R2cscal,R1cscal(2,nmug)
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision R2cscal,R1cscal(nmug,2)
       double precision R2s(nstokes)
-      double precision L_R1c(2,nmug,4,4,nlay,npar)
-      double precision L_R1s(2,nmug,4,4,nlay,npar)
-      double precision L_R1cscal(2,nmug,nlay,npar)
+      double precision L_R1c(4,4,nmug,nlay,npar,2)
+      double precision L_R1s(4,4,nmug,nlay,npar,2)
+      double precision L_R1cscal(nmug,nlay,npar,2)
       double precision L_R2(nstokes,nlay,npar)
       double precision L_R2c(nstokes,nlay,npar)
       double precision L_R2s(nstokes,nlay,npar)
@@ -83,15 +85,12 @@ contains
       double precision Ls_R2c(nstokes,nspars)
       double precision Ls_R2s(nstokes,nspars)
       double precision Ls_R2cscal(nspars)
-      double precision Ls_R1c(2,nmug,4,4,nspars)
-      double precision Ls_R1s(2,nmug,4,4,nspars)
-      double precision Ls_R1cscal(2,nmug,nspars)
-      double precision Ptc(2,nmug,4,4),Pts(2,nmug,4,4), &
-                       Prc(2,nmug,4,4),Prs(2,nmug,4,4)
-      double precision L_Ptc(2,nmug,4,4,npar), &
-                       L_Pts(2,nmug,4,4,npar), &
-                       L_Prc(2,nmug,4,4,npar), &
-                       L_Prs(2,nmug,4,4,npar)
+      double precision Ls_R1c(4,4,nmug,nspars,2)
+      double precision Ls_R1s(4,4,nmug,nspars,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
+      double precision Ptc(4,4,nmug,2),Pts(4,4,nmug,2), Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Ptc(4,4,npar,nmug,2), L_Pts(4,4,npar,nmug,2), &
+                       L_Prc(4,4,npar,nmug,2), L_Prs(4,4,npar,nmug,2)
 
 !  New variables for the Land surface BRDF types
 
@@ -313,9 +312,9 @@ contains
 !  ...scalar
             if (m .eq. 0) then
               if (s_linearize) then
-                Ls_R1cscal(1,j,:) = 1.d0
+                Ls_R1cscal(j,:,1) = 1.d0
               endif
-              R1cscal(1,j) = Asurf
+              R1cscal(j,1) = Asurf
             endif
 
 !  ...vector
@@ -324,9 +323,9 @@ contains
                 if ((k1 .eq. 1) .and. (k2 .eq. 1) .and. &
                     (m .eq. 0)) then
                   if (s_linearize) then
-                    Ls_R1c(1,j,k1,k2,:) = 1.d0
+                    Ls_R1c(k1,k2,j,:,1) = 1.d0
                   endif
-                  R1c(1,j,k1,k2) = Asurf
+                  R1c(k1,k2,j,1) = Asurf
                 endif
               enddo
             enddo
@@ -340,9 +339,9 @@ contains
 !  ...scalar
             if (m .eq. 0) then
               if (s_linearize) then
-                Ls_R1cscal(2,i,:) = 1.d0
+                Ls_R1cscal(i,:,2) = 1.d0
               endif
-              R1cscal(2,i) = Asurf
+              R1cscal(i,2) = Asurf
             endif
 
 !  ...vector
@@ -351,9 +350,9 @@ contains
                 if ((k1 .eq. 1) .and. (k2 .eq. 1) .and. &
                     (m .eq. 0)) then
                   if (s_linearize) then
-                    Ls_R1c(2,i,k1,k2,:) = 1.d0
+                    Ls_R1c(k1,k2,i,:,2) = 1.d0
                   endif
-                  R1c(2,i,k1,k2) = Asurf
+                  R1c(k1,k2,i,2) = Asurf
                 endif
               enddo
             enddo
@@ -392,17 +391,43 @@ contains
              Ptc,Pts,Prc,Prs, & !I
              L_Ptc,L_Pts,L_Prc,L_Prs, & !I
              phg(layer,:),phh(layer,:),g(layer,:),h(layer,:), & !I
-             L_phg(layer,:,:,:),L_phh(layer,:,:,:), & !I
-             L_g(layer,:,:,:),L_h(layer,:,:,:), & !I
+             L_phg(:,:,:,layer),L_phh(:,:,:,layer), & !I
+             L_g(:,:,:,layer),L_h(:,:,:,layer), & !I
              R1c,R1s,R1cscal, & !I
-             L_R1c, L_R1s,L_R1cscal, & !I
+             L_R1c,L_R1s, L_R1cscal, & !I
              Ls_R1c, Ls_R1s,Ls_R1cscal, & !I
              R2c,R2s,R2cscal, &
              L_R2c,L_R2s,L_R2cscal, &
              Ls_R2c,Ls_R2s,Ls_R2cscal)
 
 !  Get the first order of scattering (using previous layer)
-
+#if 1
+          if(m .gt. 0) then
+          call L_ord1m_MGZ &
+            (nmug,nlay,npar,nspars, & !I
+             layer,linearize,s_linearize, & !I
+             Prc,Prs, & !I
+             L_Prc,L_Prs, & !I
+             chibj(layer,:),facj(layer,:),L_chibj(layer,:,:), & !I
+             L_facj(layer,:,:),chibi(layer,:),faci(layer,:), & !I
+             L_chibi(layer,:,:,:),L_faci(layer,:,:), & !I
+             R1c,R1s,R1cscal, &
+             L_R1c,L_R1s,L_R1cscal, &
+             Ls_R1c,Ls_R1s,Ls_R1cscal)
+          else
+          call L_ord1m_MNGZ &
+            (nmug,nlay,npar,nspars, & !I
+             layer,linearize,s_linearize, & !I
+             Prc,Prs, & !I
+             L_Prc,L_Prs, & !I
+             chibj(layer,:),facj(layer,:),L_chibj(layer,:,:), & !I
+             L_facj(layer,:,:),chibi(layer,:),faci(layer,:), & !I
+             L_chibi(layer,:,:,:),L_faci(layer,:,:), & !I
+             R1c,R1s,R1cscal, &
+             L_R1c,L_R1s,L_R1cscal, &
+             Ls_R1c,Ls_R1s,Ls_R1cscal)
+          endif
+#else
           call L_ord1m &
             (m,nmug,nlay,npar,nspars, & !I
              layer,linearize,s_linearize, & !I
@@ -414,7 +439,7 @@ contains
              R1c,R1s,R1cscal, &
              L_R1c,L_R1s,L_R1cscal, &
              Ls_R1c,Ls_R1s,Ls_R1cscal)
-
+#endif
 !  end recursion
 
         enddo
@@ -505,10 +530,10 @@ contains
       double precision fac(nlay),L_fac(nlay,nlay,npar)
       double precision phg(nlay,nmug),phh(nlay,nmug)
       double precision g(nlay,nmug),h(nlay,nmug)
-      double precision L_phg(nlay,nmug,nlay,npar)
-      double precision L_phh(nlay,nmug,nlay,npar)
-      double precision L_g(nlay,nmug,nlay,npar)
-      double precision L_h(nlay,nmug,nlay,npar)
+      double precision L_phg(nlay,npar,nmug,nlay)
+      double precision L_phh(nlay,npar,nmug,nlay)
+      double precision L_g(nlay,npar,nmug,nlay)
+      double precision L_h(nlay,npar,nmug,nlay)
 
 !  local variables
 
@@ -784,7 +809,7 @@ contains
                   (allb(layer)*s0_all(layer) .lt. 1.d-3) .and.  &
                   (allb(layer)*xp .lt. 1.d-3)) then
 
-                L_phg(layer,k,n,p) = L_btemp(n,p)*(1.d0-allb(layer)* &
+                L_phg(n,p,k,layer) = L_btemp(n,p)*(1.d0-allb(layer)* &
                                      (argj+2.d0*s0_all(layer))+ &
                                      allb(layer)*allb(layer)* &
                                      (arg*arg+arg*argi+argi*argi)/ &
@@ -792,7 +817,7 @@ contains
                                      L_s0_all(layer,n,p)*(1.d0- &
                                      allb(layer)*(argj+2.d0* &
                                      s0_all(layer))/2.d0)
-                L_phh(layer,k,n,p) = L_btemp(n,p)*(1.d0-allb(layer)* &
+                L_phh(n,p,k,layer) = L_btemp(n,p)*(1.d0-allb(layer)* &
                                      (argi+2.d0*x)+ &
                                      allb(layer)*allb(layer)* &
                                      (arg*arg+arg*argj+argj*argj)/ &
@@ -804,16 +829,16 @@ contains
                 if (x .gt. 1.d10) then
                   L_z = L_btemp(n,p)*xp*s0_all(layer)+ &
                         allb(layer)*xp*L_s0_all(layer,n,p)
-                  L_g(layer,k,n,p) = L_z*(1.d0-bjk/2.d0* &
+                  L_g(n,p,k,layer) = L_z*(1.d0-bjk/2.d0* &
                                      (1.d0-bjk/3.d0))+ &
                                      z*(-L_bjk/2.d0* &
                                      (1.d0-bjk/3.d0)+ &
                                      bjk/2.d0*L_bjk/3.d0)
-                  L_h(layer,k,n,p) = 0.d0
+                  L_h(n,p,k,layer) = 0.d0
                 else if (s0_all(layer) .gt. 1.d10) then
                   L_z = L_btemp(n,p)*xp*x
-                  L_g(layer,k,n,p) = 0.d0
-                  L_h(layer,k,n,p) = L_z*(1.d0-bik/2.d0* &
+                  L_g(n,p,k,layer) = 0.d0
+                  L_h(n,p,k,layer) = L_z*(1.d0-bik/2.d0* &
                                      (1.d0-bik/3.d0))+ &
                                      z*(-L_bik/2.d0* &
                                      (1.d0-bik/3.d0)+ &
@@ -822,12 +847,12 @@ contains
                   L_z = 2.d0*L_btemp(n,p)*allb(layer)*x* &
                         s0_all(layer)*xp/2.d0+allb(layer)* &
                         allb(layer)*x*L_s0_all(layer,n,p)*xp/2.d0
-                  L_g(layer,k,n,p) = L_z*(1.d0-(allb(layer)* &
+                  L_g(n,p,k,layer) = L_z*(1.d0-(allb(layer)* &
                                      (xp+x+2.d0*s0_all(layer)))/3.d0)+ &
                                      z*(-L_btemp(n,p)*(xp+x+2.d0* &
                                      s0_all(layer))-2.d0*allb(layer)* &
                                      L_s0_all(layer,n,p))/3.d0
-                  L_h(layer,k,n,p) = L_z*(1.d0-(allb(layer)* &
+                  L_h(n,p,k,layer) = L_z*(1.d0-(allb(layer)* &
                                      (xp+s0_all(layer)+2.d0*x))/3.d0)+ &
                                      z*(-L_btemp(n,p)*(xp+ &
                                      s0_all(layer)+2.d0*x)- &
@@ -884,23 +909,23 @@ contains
 
                 if (dabs(x-s0_all(layer)) .lt. 1.d-5) then
                   if (dabs(x-xp) .gt. 1.d-5) then
-                    L_phg(layer,k,n,p) = L_chi(allb(layer),L_btemp(n,p), &
+                    L_phg(n,p,k,layer) = L_chi(allb(layer),L_btemp(n,p), &
                                                s0_all(layer), &
                                                L_s0_all(layer,n,p))* &
                                          eimek/(xp-x)+ &
                                          chi(allb(layer),s0_all(layer))* &
                                          L_eimek/(xp-x)
-                    L_phh(layer,k,n,p) = L_phg(layer,k,n,p)
-                    L_g(layer,k,n,p) = (s0_all(layer)*xp/ &
+                    L_phh(n,p,k,layer) = L_phg(n,p,k,layer)
+                    L_g(n,p,k,layer) = (s0_all(layer)*xp/ &
                                        (s0_all(layer)+xp))*(L_g1(n,p)- &
-                                       x*L_phg(layer,k,n,p))+ &
+                                       x*L_phg(n,p,k,layer))+ &
                                        (g1-x*phg(layer,k))* &
                                        (L_s0_all(layer,n,p)*xp/ &
                                        (s0_all(layer)+xp)-s0_all(layer)* &
                                        xp*L_s0_all(layer,n,p)/ &
                                        (s0_all(layer)+xp)/ &
                                        (s0_all(layer)+xp))
-                    L_h(layer,k,n,p) = (s0_all(layer)*xp/ &
+                    L_h(n,p,k,layer) = (s0_all(layer)*xp/ &
                                        (xp-s0_all(layer)))* &
                                        (L_g1(n,p)-x*L_eik/(x+xp))+ &
                                        (g1-x*eik/(x+xp))* &
@@ -911,12 +936,12 @@ contains
                                        (-s0_all(layer)+xp)/ &
                                        (-s0_all(layer)+xp))
                   else
-                    L_phg(layer,k,n,p) = L_btemp(n,p)*(1.d0-chib)- &
+                    L_phg(n,p,k,layer) = L_btemp(n,p)*(1.d0-chib)- &
                                          allb(layer)*L_chib
-                    L_phh(layer,k,n,p) = L_phg(layer,k,n,p)
-                    L_g(layer,k,n,p) = (x*s0_all(layer)/ &
+                    L_phh(n,p,k,layer) = L_phg(n,p,k,layer)
+                    L_g(n,p,k,layer) = (x*s0_all(layer)/ &
                                        (x+s0_all(layer)))*(L_g1(n,p)- &
-                                       x*L_phg(layer,k,n,p))+ &
+                                       x*L_phg(n,p,k,layer))+ &
                                        (g1-x*phg(layer,k))* &
                                        (L_s0_all(layer,n,p)* &
                                        x/(s0_all(layer)+x)- &
@@ -924,12 +949,12 @@ contains
                                        L_s0_all(layer,n,p)/ &
                                        (s0_all(layer)+x)/ &
                                        (s0_all(layer)+x))
-                    L_h(layer,k,n,p) = L_g(layer,k,n,p)
+                    L_h(n,p,k,layer) = L_g(n,p,k,layer)
                   endif
                 else if (dabs(x-xp) .lt. 1.d-5) then
-                  L_phg(layer,k,n,p) = L_btemp(n,p)*(1.d0-chib)- &
+                  L_phg(n,p,k,layer) = L_btemp(n,p)*(1.d0-chib)- &
                                        allb(layer)*L_chib
-                  L_phh(layer,k,n,p) = L_chi(allb(layer),L_btemp(n,p), &
+                  L_phh(n,p,k,layer) = L_chi(allb(layer),L_btemp(n,p), &
                                              x,0.d0)*ejmek/ &
                                        (xp-s0_all(layer))+ &
                                        chi(allb(layer),x)* &
@@ -937,16 +962,16 @@ contains
                                        ejmek*L_s0_all(layer,n,p)/ &
                                        (xp-s0_all(layer))/ &
                                        (xp-s0_all(layer)))
-                  L_g(layer,k,n,p) = (x*s0_all(layer)/ &
+                  L_g(n,p,k,layer) = (x*s0_all(layer)/ &
                                      (x+s0_all(layer)))* &
-                                     (L_g1(n,p)-x*L_phg(layer,k,n,p))+ &
+                                     (L_g1(n,p)-x*L_phg(n,p,k,layer))+ &
                                      (g1-x*phg(layer,k))* &
                                      (L_s0_all(layer,n,p)*x/ &
                                      (s0_all(layer)+x)-s0_all(layer)* &
                                      x*L_s0_all(layer,n,p)/ &
                                      (s0_all(layer)+x)/ &
                                      (s0_all(layer)+x))
-                  L_h(layer,k,n,p) = (s0_all(layer)*xp/ &
+                  L_h(n,p,k,layer) = (s0_all(layer)*xp/ &
                                      (xp-s0_all(layer)))* &
                                      (L_g1(n,p)-x*L_eik/(x+xp))+ &
                                      (g1-x*eik/(x+xp))* &
@@ -957,17 +982,17 @@ contains
                                      (-s0_all(layer)+xp)/ &
                                      (-s0_all(layer)+xp))
                 else if (dabs(s0_all(layer)-xp) .lt. 1.d-5) then
-                  L_phg(layer,k,n,p) = L_chi(allb(layer),L_btemp(n,p), &
+                  L_phg(n,p,k,layer) = L_chi(allb(layer),L_btemp(n,p), &
                                              s0_all(layer), &
                                        L_s0_all(layer,n,p))*eimek/ &
                                        (xp-x)+chi(allb(layer), &
                                                   s0_all(layer))* &
                                        L_eimek/(xp-x)
-                  L_phh(layer,k,n,p) = L_btemp(n,p)*(1.d0-chib)- &
+                  L_phh(n,p,k,layer) = L_btemp(n,p)*(1.d0-chib)- &
                                        allb(layer)*L_chib
-                  L_g(layer,k,n,p) = (s0_all(layer)*xp/ &
+                  L_g(n,p,k,layer) = (s0_all(layer)*xp/ &
                                      (s0_all(layer)+xp))* &
-                                     (L_g1(n,p)-x*L_phg(layer,k,n,p))+ &
+                                     (L_g1(n,p)-x*L_phg(n,p,k,layer))+ &
                                      (g1-x*phg(layer,k))* &
                                      (L_s0_all(layer,n,p)*xp/ &
                                      (s0_all(layer)+xp)- &
@@ -978,7 +1003,7 @@ contains
                   tempo = L_s0_all(layer,n,p)/(x+s0_all(layer))- &
                           s0_all(layer)*L_s0_all(layer,n,p)/ &
                           (x+s0_all(layer))/(x+s0_all(layer))
-                  L_h(layer,k,n,p) = x*tempo*(s0_all(layer)*chib/ &
+                  L_h(n,p,k,layer) = x*tempo*(s0_all(layer)*chib/ &
                                      (x+s0_all(layer))-allb(layer)* &
                                      s0_all(layer)*chi(allb(layer),x+ &
                                                        s0_all(layer)))+ &
@@ -995,13 +1020,13 @@ contains
                                            x+s0_all(layer), &
                                      L_s0_all(layer,n,p)))
                 else
-                  L_phg(layer,k,n,p) = L_chi(allb(layer),L_btemp(n,p), &
+                  L_phg(n,p,k,layer) = L_chi(allb(layer),L_btemp(n,p), &
                                              s0_all(layer), &
                                        L_s0_all(layer,n,p))*eimek/ &
                                        (xp-x)+chi(allb(layer), &
                                                   s0_all(layer))* &
                                        L_eimek/(xp-x)
-                  L_phh(layer,k,n,p) = L_chi(allb(layer),L_btemp(n,p), &
+                  L_phh(n,p,k,layer) = L_chi(allb(layer),L_btemp(n,p), &
                                              x,0.d0)*ejmek/ &
                                        (xp-s0_all(layer))+ &
                                        chi(allb(layer),x)*L_ejmek/ &
@@ -1010,9 +1035,9 @@ contains
                                        L_s0_all(layer,n,p)/ &
                                        (xp-s0_all(layer))/ &
                                        (xp-s0_all(layer))
-                  L_g(layer,k,n,p) = (s0_all(layer)*xp/ &
+                  L_g(n,p,k,layer) = (s0_all(layer)*xp/ &
                                      (s0_all(layer)+xp))* &
-                                     (L_g1(n,p)-x*L_phg(layer,k,n,p))+ &
+                                     (L_g1(n,p)-x*L_phg(n,p,k,layer))+ &
                                      (g1-x*phg(layer,k))* &
                                      (L_s0_all(layer,n,p)*xp/ &
                                      (s0_all(layer)+xp)- &
@@ -1020,7 +1045,7 @@ contains
                                      L_s0_all(layer,n,p)/ &
                                      (s0_all(layer)+xp)/ &
                                      (s0_all(layer)+xp))
-                  L_h(layer,k,n,p) = (s0_all(layer)*xp/ &
+                  L_h(n,p,k,layer) = (s0_all(layer)*xp/ &
                                      (xp-s0_all(layer)))* &
                                      (L_g1(n,p)-x*L_eik/(x+xp))+ &
                                      (g1-x*eik/(x+xp))* &
@@ -1081,24 +1106,22 @@ contains
       double precision a,L_a(npar)
       double precision x,x0,L_x0(nlay,npar)
       double precision facl,L_facl(nlay,npar)
-      double precision Ptc(2,nmug,4,4),Pts(2,nmug,4,4), &
-                       Prc(2,nmug,4,4),Prs(2,nmug,4,4)
-      double precision L_Ptc(2,nmug,4,4,npar), &
-                       L_Pts(2,nmug,4,4,npar), &
-                       L_Prc(2,nmug,4,4,npar), &
-                       L_Prs(2,nmug,4,4,npar)
+      double precision Ptc(4,4,nmug,2),Pts(4,4,nmug,2), &
+                       Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Ptc(4,4,npar,nmug,2), L_Pts(4,4,npar,nmug,2), &
+                       L_Prc(4,4,npar,nmug,2), L_Prs(4,4,npar,nmug,2)
       double precision phgl(nmug),phhl(nmug),gl(nmug),hl(nmug)
-      double precision L_phgl(nmug,nlay,npar),L_phhl(nmug,nlay,npar)
-      double precision L_gl(nmug,nlay,npar),L_hl(nmug,nlay,npar)
-      double precision R1c(2,nmug,4,4)
-      double precision R1s(2,nmug,4,4)
-      double precision R1cscal(2,nmug)
-      double precision L_R1c(2,nmug,4,4,nlay,npar)
-      double precision L_R1s(2,nmug,4,4,nlay,npar)
-      double precision L_R1cscal(2,nmug,nlay,npar)
-      double precision Ls_R1c(2,nmug,4,4,nspars)
-      double precision Ls_R1s(2,nmug,4,4,nspars)
-      double precision Ls_R1cscal(2,nmug,nspars)
+      double precision L_phgl(nlay,npar,nmug),L_phhl(nlay,npar,nmug)
+      double precision L_gl(nlay,npar,nmug),L_hl(nlay,npar,nmug)
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision R1cscal(nmug,2)
+      double precision L_R1c(4,4,nmug,nlay,npar,2)
+      double precision L_R1s(4,4,nmug,nlay,npar,2)
+      double precision L_R1cscal(nmug,nlay,npar,2)
+      double precision Ls_R1c(4,4,nmug,nspars,2)
+      double precision Ls_R1s(4,4,nmug,nspars,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
 
 !  outputs
 
@@ -1114,10 +1137,10 @@ contains
       integer i,k,l,n,p
       double precision S1(nstokes),S2(nstokes)
       double precision S3(nstokes),S4(nstokes)
-      double precision L_S1(nstokes,nlay,npar)
-      double precision L_S2(nstokes,nlay,npar)
-      double precision L_S3(nstokes,nlay,npar)
-      double precision L_S4(nstokes,nlay,npar)
+      double precision L_S1(nlay,npar,nstokes)
+      double precision L_S2(nlay,npar,nstokes)
+      double precision L_S3(nlay,npar,nstokes)
+      double precision L_S4(nlay,npar,nstokes)
       double precision Ls_S1(nstokes,nspars),Ls_S2(nstokes,nspars)
       double precision Ls_S3(nstokes,nspars),Ls_S4(nstokes,nspars)
       double precision S1scal,S2scal
@@ -1126,8 +1149,8 @@ contains
       double precision Ls_S1scal(nspars),Ls_S2scal(nspars)
       double precision V1(4),V2(nstokes,4)
       double precision V4(4),V6(nstokes,4)
-      double precision L_V1(4,nlay,npar),L_V2
-      double precision L_V4(4,nlay,npar),L_V6
+      double precision L_V1(nlay,npar,4),L_V2
+      double precision L_V4(nlay,npar,4),L_V6
       double precision Ls_V1(4,nspars),Ls_V2(nstokes,4,nspars)
       double precision Ls_V4(4,nspars),Ls_V6(nstokes,4,nspars)
       double precision V1scal,V2scal
@@ -1155,20 +1178,12 @@ contains
       if (linearize) then
         L_V1(:,:,:) = 0.d0
         L_V4(:,:,:) = 0.d0
-        do p = 1, npar
-          do n = 1, nlay
-            do i = 1, nstokes
-              L_S1(i,n,p) = 0.d0
-              L_S2(i,n,p) = 0.d0
-            enddo
-            L_S1scal(n,p) = 0.d0
-            L_S2scal(n,p) = 0.d0
-            do i = 1, nstokes
-              L_S3(i,n,p) = 0.d0
-              L_S4(i,n,p) = 0.d0
-            enddo
-          enddo
-        enddo
+        L_S1(:,:,:) = 0.d0
+        L_S2(:,:,:) = 0.d0
+        L_S3(:,:,:) = 0.d0
+        L_S4(:,:,:) = 0.d0
+        L_S1scal(:,:) = 0.d0
+        L_S2scal(:,:) = 0.d0
       endif
 
 !  linearise the surface weighting variables
@@ -1200,109 +1215,154 @@ contains
 !  Part 1: The I and Q components
 
         do l = 1, 2
-          V1(l) = x*phgl(k)*R1c(2,k,l,1)+a*Prc(2,k,l,1)*gl(k)/4.d0
+          V1(l) = x*phgl(k)*R1c(l,1,k,2)+a*Prc(l,1,k,2)*gl(k)/4.d0
           if (s_linearize) then
-            Ls_V1(l,:) = x*phgl(k)*Ls_R1c(2,k,l,1,:)
+            Ls_V1(l,:) = x*phgl(k)*Ls_R1c(l,1,k,:,2)
           endif
+
           if (linearize) then
           do p = 1, npar
+#ifdef NOIFINNLAYLOOP
             do n = 1, nlay
-              L_V1(l,n,p) = x*(L_phgl(k,n,p)*R1c(2,k,l,1)+ &
-                            phgl(k)*L_R1c(2,k,l,1,n,p))+ &
-                            a*Prc(2,k,l,1)*L_gl(k,n,p)/4.d0
+              L_V1(n,p,l) = x*(L_phgl(n,p,k)*R1c(l,1,k,2)+ &
+                            phgl(k)*L_R1c(l,1,k,n,p,2))+ &
+                            a*Prc(l,1,k,2)*L_gl(n,p,k)/4.d0
+            enddo
+            L_V1(layer,p,l) = L_V1(layer,p,l)+(L_a(p)*Prc(l,1,k,2)+ &
+                              a*L_Prc(l,1,p,k,2))*gl(k)/4.d0
+#else
+            do n = 1, nlay
+              L_V1(n,p,l) = x*(L_phgl(n,p,k)*R1c(l,1,k,2)+ &
+                            phgl(k)*L_R1c(l,1,k,n,p,2))+ &
+                            a*Prc(l,1,k,2)*L_gl(n,p,k)/4.d0
               if (n .eq. layer) then
-                L_V1(l,n,p) = L_V1(l,n,p)+(L_a(p)*Prc(2,k,l,1)+ &
-                              a*L_Prc(2,k,l,1,p))*gl(k)/4.d0
+                L_V1(n,p,l) = L_V1(n,p,l)+(L_a(p)*Prc(l,1,k,2)+ &
+                              a*L_Prc(l,1,p,k,2))*gl(k)/4.d0
               endif
             enddo
+#endif
           enddo
           endif
+
           do i = 1, 2
-            V2(i,l) = x0*phhl(k)*R1c(1,k,i,l)+ &
-                      a*Prc(1,k,i,l)*hl(k)/4.d0
+            V2(i,l) = x0*phhl(k)*R1c(i,l,k,1) + a*Prc(i,l,k,1)*hl(k)/4.d0
             if (s_linearize) then
-              Ls_V2(i,l,:) = x0*phhl(k)*Ls_R1c(1,k,i,l,:)
-              Ls_S1(i,:) = Ls_S1(i,:)+a*Ptc(1,k,i,l)* &
-                         Ls_V1(l,:)*w(k)
-              Ls_S2(i,:) = Ls_S2(i,:)+a*Ptc(2,k,l,1)*Ls_V2(i,l,:)*w(k)
+              Ls_V2(i,l,:) = x0*phhl(k)*Ls_R1c(i,l,k,:,1)
+              Ls_S1(i,:) = Ls_S1(i,:)+a*Ptc(i,l,k,1)*Ls_V1(l,:)*w(k)
+              Ls_S2(i,:) = Ls_S2(i,:)+a*Ptc(l,1,k,2)*Ls_V2(i,l,:)*w(k)
             endif
             if (linearize) then
+            !dir$ vector unaligned
             do p = 1, npar
+              !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
               do n = 1, nlay
-                L_S1(i,n,p) = L_S1(i,n,p)+a*Ptc(1,k,i,l)* &
-                              L_V1(l,n,p)*w(k)
-                if (n .eq. layer) then
-                  L_S1(i,n,p) = L_S1(i,n,p)+(L_a(p)*Ptc(1,k,i,l)+ &
-                                a*L_Ptc(1,k,i,l,p))*V1(l)*w(k)
-                endif
+                L_S1(n,p,i) = L_S1(n,p,i)+a*Ptc(i,l,k,1)*L_V1(n,p,l)*w(k)
                 L_V2 = (L_x0(n,p)*phhl(k)+ &
-                       x0*L_phhl(k,n,p))*R1c(1,k,i,l)+ &
-                       x0*phhl(k)*L_R1c(1,k,i,l,n,p)+ &
-                       a*Prc(1,k,i,l)*L_hl(k,n,p)/4.d0
-                if (n .eq. layer) then
-                  L_V2 = L_V2+(L_a(p)*Prc(1,k,i,l)+ &
-                         a*L_Prc(1,k,i,l,p))*hl(k)/4.d0
-                endif
-                L_S2(i,n,p) = L_S2(i,n,p)+a*Ptc(2,k,l,1)*L_V2*w(k)
-                if (n .eq. layer) then
-                  L_S2(i,n,p) = L_S2(i,n,p)+(L_a(p)*Ptc(2,k,l,1)+ &
-                                a*L_Ptc(2,k,l,1,p))*V2(i,l)*w(k)
-                endif
+                        x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                        x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                        a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
+                L_S2(n,p,i) = L_S2(n,p,i)+a*Ptc(l,1,k,2)*L_V2*w(k)
               enddo
-            enddo
-            endif
+              L_S1(layer,p,i) = L_S1(layer,p,i) + (L_a(p)*Ptc(i,l,k,1) + &
+                                a*L_Ptc(i,l,p,k,1))*V1(l)*w(k)
+              L_S2(layer,p,i) = L_S2(layer,p,i) + a*Ptc(l,1,k,2)*w(k)*((L_a(p)*Prc(i,l,k,1) &
+                          + a*L_Prc(i,l,p,k,1))*hl(k)/4.d0) &
+                          + (L_a(p)*Ptc(l,1,k,2) + a*L_Ptc(l,1,p,k,2))*V2(i,l)*w(k)
+#else
+              do n = 1, nlay
+                L_S1(n,p,i) = L_S1(n,p,i)+a*Ptc(i,l,k,1)*L_V1(n,p,l)*w(k)
+                L_V2 = (L_x0(n,p)*phhl(k)+ &
+                       x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                       x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                       a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
+                if (n .eq. layer) then
+                  L_S1(n,p,i) = L_S1(n,p,i)+(L_a(p)*Ptc(i,l,k,1) + a*L_Ptc(i,l,p,k,1))*V1(l)*w(k)
+                  L_V2 = L_V2+(L_a(p)*Prc(i,l,k,1) + a*L_Prc(i,l,p,k,1))*hl(k)/4.d0
+                endif
+                L_S2(n,p,i) = L_S2(n,p,i)+a*Ptc(l,1,k,2)*L_V2*w(k)
+                if (n .eq. layer) then
+                  L_S2(n,p,i) = L_S2(n,p,i)+(L_a(p)*Ptc(l,1,k,2)+ &
+                                a*L_Ptc(l,1,p,k,2))*V2(i,l)*w(k)
+                endif
+              enddo ! nlay
+#endif
+            enddo ! npar
+            endif ! linearize
           enddo
         enddo        
+
         if (m .gt. 0) then
           do l = 3, 4
-            V4(l) = x*phgl(k)*R1s(2,k,l,1)+a*Prs(2,k,l,1)*gl(k)/4.d0
+            V4(l) = x*phgl(k)*R1s(l,1,k,2)+a*Prs(l,1,k,2)*gl(k)/4.d0
             if (s_linearize) then
-              Ls_V4(l,:) = x*phgl(k)*Ls_R1s(2,k,l,1,:)
+              Ls_V4(l,:) = x*phgl(k)*Ls_R1s(l,1,k,:,2)
             endif
             if (linearize) then
+            !dir$ vector unaligned
             do p = 1, npar
+              !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
               do n = 1, nlay
-                L_V4(l,n,p) = x*(L_phgl(k,n,p)*R1s(2,k,l,1)+ &
-                              phgl(k)*L_R1s(2,k,l,1,n,p))+ &
-                              a*Prs(2,k,l,1)*L_gl(k,n,p)/4.d0
+                L_V4(n,p,l) = x*(L_phgl(n,p,k)*R1s(l,1,k,2)+ &
+                              phgl(k)*L_R1s(l,1,k,n,p,2))+ &
+                              a*Prs(l,1,k,2)*L_gl(n,p,k)/4.d0
+              enddo
+              L_V4(layer,p,l) = L_V4(layer,p,l)+(L_a(p)*Prs(l,1,k,2) + a*L_Prs(l,1,p,k,2))*gl(k)/4.d0
+#else
+              do n = 1, nlay
+                L_V4(n,p,l) = x*(L_phgl(n,p,k)*R1s(l,1,k,2)+ &
+                              phgl(k)*L_R1s(l,1,k,n,p,2))+ &
+                              a*Prs(l,1,k,2)*L_gl(n,p,k)/4.d0
                 if (n .eq. layer) then
-                  L_V4(l,n,p) = L_V4(l,n,p)+(L_a(p)*Prs(2,k,l,1)+ &
-                                a*L_Prs(2,k,l,1,p))*gl(k)/4.d0
+                  L_V4(n,p,l) = L_V4(n,p,l)+(L_a(p)*Prs(l,1,k,2) + a*L_Prs(l,1,p,k,2))*gl(k)/4.d0
                 endif
               enddo
+#endif
             enddo
             endif
             do i = 1, 2
-              V6(i,l) = x0*phhl(k)*R1s(1,k,i,l)+ &
-                        a*Prs(1,k,i,l)*hl(k)/4.d0
+              V6(i,l) = x0*phhl(k)*R1s(i,l,k,1) + a*Prs(i,l,k,1)*hl(k)/4.d0
               if (s_linearize) then
-                Ls_V6(i,l,:) = x0*phhl(k)*Ls_R1s(1,k,i,l,:)
-                Ls_S3(i,:) = Ls_S3(i,:)+a*Pts(1,k,i,l)*Ls_V4(l,:)*w(k)
-                Ls_S4(i,:) = Ls_S4(i,:)+a*Pts(2,k,l,1)*Ls_V6(i,l,:)*w(k)
+                Ls_V6(i,l,:) = x0*phhl(k)*Ls_R1s(i,l,k,:,1)
+                Ls_S3(i,:) = Ls_S3(i,:)+a*Pts(i,l,k,1)*Ls_V4(l,:)*w(k)
+                Ls_S4(i,:) = Ls_S4(i,:)+a*Pts(l,1,k,2)*Ls_V6(i,l,:)*w(k)
               endif
               if (linearize) then
+              !dir$ vector unaligned
               do p = 1, npar
+                !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
+                 do n = 1, nlay
+                   L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V4(n,p,l)*w(k)
+                   L_V6 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
+                   L_S4(n,p,i) = L_S4(n,p,i)+a*Pts(l,1,k,2)*L_V6*w(k)
+                 enddo
+                 L_S3(layer,p,i) = L_S3(layer,p,i) + (L_a(p)*Pts(i,l,k,1) + a*L_Pts(i,l,p,k,1))*V4(l)*w(k)
+                 L_S4(layer,p,i) = L_S4(layer,p,i) + a*Pts(l,1,k,2)*w(k)*(L_a(p)*Prs(i,l,k,1) + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0
+#else
                 do n = 1, nlay
-                  L_S3(i,n,p) = L_S3(i,n,p)+ &
-                                a*Pts(1,k,i,l)*L_V4(l,n,p)*w(k)
+                  L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V4(n,p,l)*w(k)
                   if (n .eq. layer) then
-                    L_S3(i,n,p) = L_S3(i,n,p)+(L_a(p)*Pts(1,k,i,l)+ &
-                                  a*L_Pts(1,k,i,l,p))*V4(l)*w(k)
+                    L_S3(n,p,i) = L_S3(n,p,i)+(L_a(p)*Pts(i,l,k,1) + a*L_Pts(i,l,p,k,1))*V4(l)*w(k)
                   endif
                   L_V6 = (L_x0(n,p)*phhl(k)+ &
-                         x0*L_phhl(k,n,p))*R1s(1,k,i,l)+ &
-                         x0*phhl(k)*L_R1s(1,k,i,l,n,p)+ &
-                         a*Prs(1,k,i,l)*L_hl(k,n,p)/4.d0
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
                   if (n .eq. layer) then
-                    L_V6 = L_V6+(L_a(p)*Prs(1,k,i,l)+ &
-                           a*L_Prs(1,k,i,l,p))*hl(k)/4.d0
+                    L_V6 = L_V6+(L_a(p)*Prs(i,l,k,1) + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0
                   endif
-                  L_S4(i,n,p) = L_S4(i,n,p)+a*Pts(2,k,l,1)*L_V6*w(k)
+                  L_S4(n,p,i) = L_S4(n,p,i)+a*Pts(l,1,k,2)*L_V6*w(k)
                   if (n .eq. layer) then
-                    L_S4(i,n,p) = L_S4(i,n,p)+(L_a(p)*Pts(2,k,l,1)+ &
-                                  a*L_Pts(2,k,l,1,p))*V6(i,l)*w(k)
+                    L_S4(n,p,i) = L_S4(n,p,i)+(L_a(p)*Pts(l,1,k,2)+ &
+                                  a*L_Pts(l,1,p,k,2))*V6(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
@@ -1314,72 +1374,101 @@ contains
         do i = 3, nstokes
           if (m .gt. 0) then
             do l = 3, 4
-              V2(i,l) = x0*phhl(k)*R1c(1,k,i,l)+ &
-                        a*Prc(1,k,i,l)*hl(k)/4.d0
+              V2(i,l) = x0*phhl(k)*R1c(i,l,k,1)+ &
+                        a*Prc(i,l,k,1)*hl(k)/4.d0
               if (s_linearize) then
-                Ls_V2(i,l,:) = x0*phhl(k)*Ls_R1c(1,k,i,l,:)
-                Ls_S1(i,:) = Ls_S1(i,:)+a*Ptc(1,k,i,l)*Ls_V4(l,:)*w(k)
-                Ls_S2(i,:) = Ls_S2(i,:)+a*Pts(2,k,l,1)*Ls_V2(i,l,:)*w(k)
+                Ls_V2(i,l,:) = x0*phhl(k)*Ls_R1c(i,l,k,:,1)
+                Ls_S1(i,:) = Ls_S1(i,:)+a*Ptc(i,l,k,1)*Ls_V4(l,:)*w(k)
+                Ls_S2(i,:) = Ls_S2(i,:)+a*Pts(l,1,k,2)*Ls_V2(i,l,:)*w(k)
               endif
               if (linearize) then
+              !dir$ vector unaligned
               do p = 1, npar
+                !dir$ vector unaligned
+#ifdef NOIFINNLAYLOOP
                 do n = 1, nlay
-                  L_S1(i,n,p) = L_S1(i,n,p)+ &
-                                a*Ptc(1,k,i,l)*L_V4(l,n,p)*w(k)
+                  L_S1(n,p,i) = L_S1(n,p,i) + a*Ptc(i,l,k,1)*L_V4(n,p,l)*w(k)
+                  L_V2 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                         a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
+                  L_S2(n,p,i) = L_S2(n,p,i) + a*Pts(l,1,k,2)*L_V2*w(k)
+                enddo
+                L_S1(layer,p,i) = L_S1(layer,p,i) + (L_a(p)*Ptc(i,l,k,1)+ &
+                                  a*L_Ptc(i,l,p,k,1))*V4(l)*w(k)
+                L_S2(layer,p,i) = L_S2(layer,p,i) + a*Pts(l,1,k,2)*w(k)*(L_a(p)*Prc(i,l,k,1) + &
+                           a*L_Prc(i,l,p,k,1))*hl(k)/4.d0 + (L_a(p)*Pts(l,1,k,2) + &
+                                  a*L_Pts(l,1,p,k,2))*V2(i,l)*w(k)
+#else
+                do n = 1, nlay
+                  L_S1(n,p,i) = L_S1(n,p,i) + a*Ptc(i,l,k,1)*L_V4(n,p,l)*w(k)
                   if (n .eq. layer) then
-                    L_S1(i,n,p) = L_S1(i,n,p)+(L_a(p)*Ptc(1,k,i,l)+ &
-                                  a*L_Ptc(1,k,i,l,p))*V4(l)*w(k)
+                    L_S1(n,p,i) = L_S1(n,p,i)+(L_a(p)*Ptc(i,l,k,1)+ &
+                                  a*L_Ptc(i,l,p,k,1))*V4(l)*w(k)
                   endif
                   L_V2 = (L_x0(n,p)*phhl(k)+ &
-                         x0*L_phhl(k,n,p))*R1c(1,k,i,l)+ &
-                         x0*phhl(k)*L_R1c(1,k,i,l,n,p)+ &
-                         a*Prc(1,k,i,l)*L_hl(k,n,p)/4.d0
+                         x0*L_phhl(n,p,k))*R1c(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1c(i,l,k,n,p,1)+ &
+                         a*Prc(i,l,k,1)*L_hl(n,p,k)/4.d0
                   if (n .eq. layer) then
-                    L_V2 = L_V2+(L_a(p)*Prc(1,k,i,l)+ &
-                           a*L_Prc(1,k,i,l,p))*hl(k)/4.d0
+                    L_V2 = L_V2+(L_a(p)*Prc(i,l,k,1)+ &
+                           a*L_Prc(i,l,p,k,1))*hl(k)/4.d0
                   endif
-                  L_S2(i,n,p) = L_S2(i,n,p)+ &
-                                a*Pts(2,k,l,1)*L_V2*w(k)
+                  L_S2(n,p,i) = L_S2(n,p,i) + a*Pts(l,1,k,2)*L_V2*w(k)
                   if (n .eq. layer) then
-                    L_S2(i,n,p) = L_S2(i,n,p)+(L_a(p)*Pts(2,k,l,1)+ &
-                                  a*L_Pts(2,k,l,1,p))*V2(i,l)*w(k)
+                    L_S2(n,p,i) = L_S2(n,p,i)+(L_a(p)*Pts(l,1,k,2)+ &
+                                  a*L_Pts(l,1,p,k,2))*V2(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
             do l = 1, 2
-              V6(i,l) = x0*phhl(k)*R1s(1,k,i,l)+ &
-                        a*Prs(1,k,i,l)*hl(k)/4.d0
+              V6(i,l) = x0*phhl(k)*R1s(i,l,k,1) + a*Prs(i,l,k,1)*hl(k)/4.d0
               if (s_linearize) then
-                Ls_V6(i,l,:) = x0*phhl(k)*Ls_R1s(1,k,i,l,:)
-                Ls_S3(i,:) = Ls_S3(i,:)+a*Pts(1,k,i,l)*Ls_V1(l,:)*w(k)
-                Ls_S4(i,:) = Ls_S4(i,:)+a*Ptc(2,k,l,1)*Ls_V6(i,l,:)*w(k)
+                Ls_V6(i,l,:) = x0*phhl(k)*Ls_R1s(i,l,k,:,1)
+                Ls_S3(i,:) = Ls_S3(i,:)+a*Pts(i,l,k,1)*Ls_V1(l,:)*w(k)
+                Ls_S4(i,:) = Ls_S4(i,:)+a*Ptc(l,1,k,2)*Ls_V6(i,l,:)*w(k)
               endif
               if (linearize) then
               do p = 1, npar
+#ifdef NOIFINNLAYLOOP
                 do n = 1, nlay
-                  L_S3(i,n,p) = L_S3(i,n,p)+ &
-                                a*Pts(1,k,i,l)*L_V1(l,n,p)*w(k)
+                  L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V1(n,p,l)*w(k)
+                  L_V6 = (L_x0(n,p)*phhl(k)+ &
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
+                  L_S4(n,p,i) = L_S4(n,p,i) + a*Ptc(l,1,k,2)*L_V6*w(k)
+                enddo
+                L_S3(layer,p,i) = L_S3(layer,p,i)+(L_a(p)*Pts(i,l,k,1)+ &
+                                  a*L_Pts(i,l,p,k,1))*V1(l)*w(k)
+                L_S4(layer,p,i) = L_S4(layer,p,i) &
+                   + a*Ptc(l,1,k,2)*w(k)*(L_a(p)*Prs(i,l,k,1) &
+                   + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0 + (L_a(p)*Ptc(l,1,k,2)+ &
+                                  a*L_Ptc(l,1,p,k,2))*V6(i,l)*w(k)
+#else
+                do n = 1, nlay
+                  L_S3(n,p,i) = L_S3(n,p,i) + a*Pts(i,l,k,1)*L_V1(n,p,l)*w(k)
                   if (n .eq. layer) then
-                    L_S3(i,n,p) = L_S3(i,n,p)+(L_a(p)*Pts(1,k,i,l)+ &
-                                  a*L_Pts(1,k,i,l,p))*V1(l)*w(k)
+                    L_S3(n,p,i) = L_S3(n,p,i)+(L_a(p)*Pts(i,l,k,1)+ &
+                                  a*L_Pts(i,l,p,k,1))*V1(l)*w(k)
                   endif
                   L_V6 = (L_x0(n,p)*phhl(k)+ &
-                         x0*L_phhl(k,n,p))*R1s(1,k,i,l)+ &
-                         x0*phhl(k)*L_R1s(1,k,i,l,n,p)+ &
-                         a*Prs(1,k,i,l)*L_hl(k,n,p)/4.d0
+                         x0*L_phhl(n,p,k))*R1s(i,l,k,1)+ &
+                         x0*phhl(k)*L_R1s(i,l,k,n,p,1)+ &
+                         a*Prs(i,l,k,1)*L_hl(n,p,k)/4.d0
                   if (n .eq. layer) then
-                    L_V6 = L_V6+(L_a(p)*Prs(1,k,i,l)+ &
-                           a*L_Prs(1,k,i,l,p))*hl(k)/4.d0
+                    L_V6 = L_V6+(L_a(p)*Prs(i,l,k,1) + a*L_Prs(i,l,p,k,1))*hl(k)/4.d0
                   endif
-                  L_S4(i,n,p) = L_S4(i,n,p)+ &
-                                a*Ptc(2,k,l,1)*L_V6*w(k)
+                  L_S4(n,p,i) = L_S4(n,p,i) + a*Ptc(l,1,k,2)*L_V6*w(k)
                   if (n .eq. layer) then
-                    L_S4(i,n,p) = L_S4(i,n,p)+(L_a(p)*Ptc(2,k,l,1)+ &
-                                  a*L_Ptc(2,k,l,1,p))*V6(i,l)*w(k)
+                    L_S4(n,p,i) = L_S4(n,p,i)+(L_a(p)*Ptc(l,1,k,2)+ &
+                                  a*L_Ptc(l,1,p,k,2))*V6(i,l)*w(k)
                   endif
                 enddo
+#endif
               enddo
               endif
             enddo
@@ -1388,51 +1477,75 @@ contains
 
 !  Part 3: the scalar calculation
 
-        V1scal = x*phgl(k)*R1cscal(2,k)+a*Prc(2,k,1,1)*gl(k)/4.d0
+        V1scal = x*phgl(k)*R1cscal(k,2)+a*Prc(1,1,k,2)*gl(k)/4.d0
         if (s_linearize) then
-          Ls_V1scal(:) = x*phgl(k)*Ls_R1cscal(2,k,:)
-          Ls_S1scal(:) = Ls_S1scal(:)+a*Ptc(1,k,1,1)*Ls_V1scal(:)*w(k)
+          Ls_V1scal(:) = x*phgl(k)*Ls_R1cscal(k,:,2)
+          Ls_S1scal(:) = Ls_S1scal(:)+a*Ptc(1,1,k,1)*Ls_V1scal(:)*w(k)
         endif
         if (linearize) then
         do p = 1, npar
+#ifdef NOIFINNLAYLOOP
           do n = 1, nlay
-            L_V1scal = x*(L_phgl(k,n,p)*R1cscal(2,k)+ &
-                       phgl(k)*L_R1cscal(2,k,n,p))+ &
-                       a*Prc(2,k,1,1)*L_gl(k,n,p)/4.d0
+            L_V1scal = x*(L_phgl(n,p,k)*R1cscal(k,2)+ &
+                       phgl(k)*L_R1cscal(k,n,p,2))+ &
+                       a*Prc(1,1,k,2)*L_gl(n,p,k)/4.d0
+            L_S1scal(n,p) = L_S1scal(n,p)+a*Ptc(1,1,k,1)*L_V1scal*w(k)
+          enddo
+          L_S1scal(layer,p) = L_S1scal(layer,p) &
+             + a*Ptc(1,1,k,1)*w(k)*((L_a(p)*Prc(1,1,k,2)+ a*L_Prc(1,1,p,k,2))*gl(k)/4.d0) &
+             + (L_a(p)*Ptc(1,1,k,1) + a*L_Ptc(1,1,p,k,1))*V1scal*w(k)
+#else
+          do n = 1, nlay
+            L_V1scal = x*(L_phgl(n,p,k)*R1cscal(k,2)+ &
+                       phgl(k)*L_R1cscal(k,n,p,2))+ &
+                       a*Prc(1,1,k,2)*L_gl(n,p,k)/4.d0
             if (n .eq. layer) then
-              L_V1scal = L_V1scal+(L_a(p)*Prc(2,k,1,1)+ &
-                         a*L_Prc(2,k,1,1,p))*gl(k)/4.d0
+              L_V1scal = L_V1scal+(L_a(p)*Prc(1,1,k,2)+ &
+                         a*L_Prc(1,1,p,k,2))*gl(k)/4.d0
             endif
-            L_S1scal(n,p) = L_S1scal(n,p)+a*Ptc(1,k,1,1)*L_V1scal*w(k)
+            L_S1scal(n,p) = L_S1scal(n,p)+a*Ptc(1,1,k,1)*L_V1scal*w(k)
             if (n .eq. layer) then
-              L_S1scal(n,p) = L_S1scal(n,p)+(L_a(p)*Ptc(1,k,1,1)+ &
-                              a*L_Ptc(1,k,1,1,p))*V1scal*w(k)
+              L_S1scal(n,p) = L_S1scal(n,p)+(L_a(p)*Ptc(1,1,k,1)+ &
+                              a*L_Ptc(1,1,p,k,1))*V1scal*w(k)
             endif
           enddo
+#endif
         enddo
         endif
 
-        V2scal = x0*phhl(k)*R1cscal(1,k)+a*Prc(1,k,1,1)*hl(k)/4.d0
+        V2scal = x0*phhl(k)*R1cscal(k,1)+a*Prc(1,1,k,1)*hl(k)/4.d0
         if (s_linearize) then
-          Ls_V2scal(:) = x0*phhl(k)*Ls_R1cscal(1,k,:)
-          Ls_S2scal(:) = Ls_S2scal(:)+a*Ptc(2,k,1,1)*Ls_V2scal(:)*w(k)
+          Ls_V2scal(:) = x0*phhl(k)*Ls_R1cscal(k,:,1)
+          Ls_S2scal(:) = Ls_S2scal(:)+a*Ptc(1,1,k,2)*Ls_V2scal(:)*w(k)
         endif
         if (linearize) then
         do p = 1, npar
+#ifdef NOIFINNLAYLOOP
           do n = 1, nlay
-            L_V2scal = (L_x0(n,p)*phhl(k)+x0*L_phhl(k,n,p))* &
-                       R1cscal(1,k)+x0*phhl(k)*L_R1cscal(1,k,n,p)+ &
-                       a*Prc(1,k,1,1)*L_hl(k,n,p)/4.d0
+            L_V2scal = (L_x0(n,p)*phhl(k)+x0*L_phhl(n,p,k))* &
+                       R1cscal(k,1)+x0*phhl(k)*L_R1cscal(k,n,p,1)+ &
+                       a*Prc(1,1,k,1)*L_hl(n,p,k)/4.d0
+            L_S2scal(n,p) = L_S2scal(n,p)+a*Ptc(1,1,k,2)*L_V2scal*w(k)
+          enddo
+          L_S2scal(layer,p) = L_S2scal(layer,p) &
+             + a*Ptc(1,1,k,2)*w(k)*(L_a(p)*Prc(1,1,k,1) + a*L_Prc(1,1,p,k,1))*hl(k)/4.d0 &
+             + (L_a(p)*Ptc(1,1,k,2) + a*L_Ptc(1,1,p,k,2))*V2scal*w(k)
+#else
+          do n = 1, nlay
+            L_V2scal = (L_x0(n,p)*phhl(k)+x0*L_phhl(n,p,k))* &
+                       R1cscal(k,1)+x0*phhl(k)*L_R1cscal(k,n,p,1)+ &
+                       a*Prc(1,1,k,1)*L_hl(n,p,k)/4.d0
             if (n .eq. layer) then
-              L_V2scal = L_V2scal+(L_a(p)*Prc(1,k,1,1)+ &
-                         a*L_Prc(1,k,1,1,p))*hl(k)/4.d0
+              L_V2scal = L_V2scal+(L_a(p)*Prc(1,1,k,1)+ &
+                         a*L_Prc(1,1,p,k,1))*hl(k)/4.d0
             endif
-            L_S2scal(n,p) = L_S2scal(n,p)+a*Ptc(2,k,1,1)*L_V2scal*w(k)
+            L_S2scal(n,p) = L_S2scal(n,p)+a*Ptc(1,1,k,2)*L_V2scal*w(k)
             if (n .eq. layer) then
-              L_S2scal(n,p) = L_S2scal(n,p)+(L_a(p)*Ptc(2,k,1,1)+ &
-                              a*L_Ptc(2,k,1,1,p))*V2scal*w(k)
+              L_S2scal(n,p) = L_S2scal(n,p)+(L_a(p)*Ptc(1,1,k,2)+ &
+                              a*L_Ptc(1,1,p,k,2))*V2scal*w(k)
             endif
           enddo
+#endif
         enddo
         endif
 
@@ -1443,13 +1556,13 @@ contains
 
         do i = 1, 2
           do l = 1, 2
-            S1(i) = S1(i)+a*Ptc(1,k,i,l)*V1(l)*w(k)
-            S2(i) = S2(i)+V2(i,l)*a*Ptc(2,k,l,1)*w(k)
+            S1(i) = S1(i)+a*Ptc(i,l,k,1)*V1(l)*w(k)
+            S2(i) = S2(i)+V2(i,l)*a*Ptc(l,1,k,2)*w(k)
           enddo
           if (m .gt. 0) then
             do l = 3,4
-              S3(i) = S3(i)+a*Pts(1,k,i,l)*V4(l)*w(k)
-              S4(i) = S4(i)+V6(i,l)*a*Pts(2,k,l,1)*w(k)
+              S3(i) = S3(i)+a*Pts(i,l,k,1)*V4(l)*w(k)
+              S4(i) = S4(i)+V6(i,l)*a*Pts(l,1,k,2)*w(k)
             enddo
           endif
 
@@ -1460,12 +1573,12 @@ contains
         do i = 3, nstokes
           if (m .gt. 0) then
             do l = 3, 4
-              S1(i) = S1(i)+a*Ptc(1,k,i,l)*V4(l)*w(k)
-              S2(i) = S2(i)+V2(i,l)*a*Pts(2,k,l,1)*w(k)
+              S1(i) = S1(i)+a*Ptc(i,l,k,1)*V4(l)*w(k)
+              S2(i) = S2(i)+V2(i,l)*a*Pts(l,1,k,2)*w(k)
             enddo
             do l = 1, 2
-              S3(i) = S3(i)+a*Pts(1,k,i,l)*V1(l)*w(k)
-              S4(i) = S4(i)+V6(i,l)*a*Ptc(2,k,l,1)*w(k)
+              S3(i) = S3(i)+a*Pts(i,l,k,1)*V1(l)*w(k)
+              S4(i) = S4(i)+V6(i,l)*a*Ptc(l,1,k,2)*w(k)
             enddo
           endif
 
@@ -1473,8 +1586,8 @@ contains
 
 !  Part 3: scalar
 
-        S1scal = S1scal+a*Ptc(1,k,1,1)*V1scal*w(k)
-        S2scal = S2scal+V2scal*a*Ptc(2,k,1,1)*w(k)
+        S1scal = S1scal+a*Ptc(1,1,k,1)*V1scal*w(k)
+        S2scal = S2scal+V2scal*a*Ptc(1,1,k,2)*w(k)
 
 !  end k loop
 
@@ -1497,20 +1610,19 @@ contains
           L_R2cscal(n,p) = L_R2cscal(n,p)*facl+ &
                            R2cscal*L_facl(n,p)
           do i = 1, 2
-            L_R2c(i,n,p) = L_R2c(i,n,p)+L_S1(i,n,p)/2.d0+ &
-                           L_S2(i,n,p)/2.d0
+            L_R2c(i,n,p) = L_R2c(i,n,p)+L_S1(n,p,i)/2.d0 + L_S2(n,p,i)/2.d0
           enddo
           L_R2cscal(n,p) = L_R2cscal(n,p)+L_S1scal(n,p)/2.d0+ &
                            L_S2scal(n,p)/2.d0
           if (m .gt. 0) then
             do i = 1, 2
-              L_R2c(i,n,p) = L_R2c(i,n,p)+L_S3(i,n,p)/2.d0- &
-                             L_S4(i,n,p)/2.d0
+              L_R2c(i,n,p) = L_R2c(i,n,p)+L_S3(n,p,i)/2.d0- &
+                             L_S4(n,p,i)/2.d0
             enddo
             do i = 3, nstokes
-              L_R2s(i,n,p) = L_R2s(i,n,p)+L_S1(i,n,p)/2.d0+ &
-                             L_S2(i,n,p)/2.d0-L_S3(i,n,p)/2.d0+ &
-                             L_S4(i,n,p)/2.d0
+              L_R2s(i,n,p) = L_R2s(i,n,p)+L_S1(n,p,i)/2.d0+ &
+                             L_S2(n,p,i)/2.d0-L_S3(n,p,i)/2.d0+ &
+                             L_S4(n,p,i)/2.d0
             enddo
           endif
         enddo
@@ -1589,9 +1701,8 @@ contains
 
       integer m,nmug,nlay,npar,nspars,layer
       logical linearize,s_linearize
-      double precision Prc(2,nmug,4,4),Prs(2,nmug,4,4)
-      double precision L_Prc(2,nmug,4,4,npar), &
-                       L_Prs(2,nmug,4,4,npar)
+      double precision Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Prc(4,4,npar,nmug,2), L_Prs(4,4,npar,nmug,2)
       double precision chibjl(nmug),facjl(nmug)
       double precision L_chibjl(nmug,npar),L_facjl(nmug,npar)
       double precision chibil(nmug),facil(nmug)
@@ -1600,19 +1711,148 @@ contains
 
 !  outputs
 
-      double precision R1c(2,nmug,4,4)
-      double precision R1s(2,nmug,4,4)
-      double precision R1cscal(2,nmug)
-      double precision L_R1c(2,nmug,4,4,nlay,npar)
-      double precision L_R1s(2,nmug,4,4,nlay,npar)
-      double precision L_R1cscal(2,nmug,nlay,npar)
-      double precision Ls_R1c(2,nmug,4,4,nspars)
-      double precision Ls_R1s(2,nmug,4,4,nspars)
-      double precision Ls_R1cscal(2,nmug,nspars)
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision R1cscal(nmug,1)
+      double precision L_R1c(4,4,nmug,nlay,npar,2)
+      double precision L_R1s(4,4,nmug,nlay,npar,2)
+      double precision L_R1cscal(nmug,nlay,npar,2)
+      double precision Ls_R1c(4,4,nmug,nspars,2)
+      double precision Ls_R1s(4,4,nmug,nspars,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
 
 !  local variables
 
       integer j,i,p,n,k1,k2
+
+#if 1
+!  viewing direction + all j-quadrature directions
+!   AND solar direction merged into one loop nest
+!  -----------------------------------------------
+      do j = 1,nmug
+
+!  update the linearised terms
+
+        if (linearize) then
+        do p = 1, npar
+          do n = 1, nlay
+            L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)*chibjl(j)
+            L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)*chibil(j) + R1cscal(j,2)*L_chibil(j,n,p)
+            if (n .eq. layer) then
+              L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1) + R1cscal(j,1)*L_chibjl(j,p) + facjl(j)*L_Prc(1,1,p,j,1) + L_facjl(j,p)*Prc(1,1,j,1)
+              L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)                              + facil(j)*L_Prc(1,1,p,j,2) + L_facil(j,p)*Prc(1,1,j,2)
+              if (m .gt. 0) then
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*  chibjl(j)+ &
+                                             R1c(k1,k2,j,1)    *L_chibjl(j,p)+ &
+                                             facjl(j)  *L_Prc(k1,k2,p,j,1)+ &
+                                           L_facjl(j,p)*  Prc(k1,k2,j,1)
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*  chibil(j)+ &
+                                             R1c(k1,k2,j,2)    *L_chibil(j,n,p)+ &
+                                             facil(j)  *L_Prc(k1,k2,p,j,2)+ &
+                                           L_facil(j,p)*  Prc(k1,k2,j,2)
+
+                    L_R1s(k1,k2,j,n,p,1) = L_R1s(k1,k2,j,n,p,1)*  chibjl(j)+ &
+                                             R1s(k1,k2,j,1)    *L_chibjl(j,p)+ &
+                                             facjl(j)  *L_Prs(k1,k2,p,j,1)+ &
+                                           L_facjl(j,p)*  Prs(k1,k2,j,1)
+                    L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)* chibil(j)+ &
+                                             R1s(k1,k2,j,2)* L_chibil(j,n,p)+ &
+                                             facil(j)  *L_Prs(k1,k2,p,j,2)+ &
+                                           L_facil(j,p)*  Prs(k1,k2,j,2)
+                  enddo
+                enddo
+              else ! m .gt. 0
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*  chibjl(j)+ &
+                                             R1c(k1,k2,j,1)    *L_chibjl(j,p)+ &
+                                             facjl(j)  *L_Prc(k1,k2,p,j,1)+ &
+                                           L_facjl(j,p)*  Prc(k1,k2,j,1)
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*  chibil(j)+ &
+                                             R1c(k1,k2,j,2)    *L_chibil(j,n,p)+ &
+                                             facil(j)  *L_Prc(k1,k2,p,j,2)+ &
+                                           L_facil(j,p)*  Prc(k1,k2,j,2)
+                  enddo
+                enddo
+              endif ! m .gt. 0
+
+!  Transmittance of linearised terms, all other layers .ne. layer
+
+            else ! n .eq. layer
+              if (m .gt. 0) then
+              do k2 = 1, 4
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1s(k1,k2,j,n,p,1) = L_R1s(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+                  L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)*chibil(j) + R1s(k1,k2,j,2)*L_chibil(j,n,p)
+                enddo
+              enddo
+              else
+              do k2 = 1, 4
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+                enddo
+              enddo
+              endif
+            endif ! n .eq. layer
+
+!  (exit the parameter loops)
+
+          enddo ! n
+        enddo ! p
+        endif ! linearize
+
+!  Transmittance of linearised surface terms
+
+        if (s_linearize) then
+          Ls_R1cscal(j,:,1) = Ls_R1cscal(j,:,1)*chibjl(j)
+          Ls_R1cscal(j,:,2) = Ls_R1cscal(j,:,2)*chibil(j)
+          if (m .gt. 0) then
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)*chibjl(j)
+              Ls_R1s(k1,k2,j,:,1) = Ls_R1s(k1,k2,j,:,1)*chibjl(j)
+              Ls_R1c(k1,k2,j,:,2) = Ls_R1c(k1,k2,j,:,2)*chibil(j)
+              Ls_R1s(k1,k2,j,:,2) = Ls_R1s(k1,k2,j,:,2)*chibil(j)
+            enddo
+          enddo
+          else
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)*chibjl(j)
+              Ls_R1c(k1,k2,j,:,2) = Ls_R1c(k1,k2,j,:,2)*chibil(j)
+            enddo
+          enddo
+          endif
+        endif
+
+!  update the R1 matrices themselves
+
+        R1cscal(j,1) = R1cscal(j,1)*chibjl(j)+facjl(j)*Prc(1,1,j,1)
+        R1cscal(j,2) = R1cscal(j,2)*chibil(j)+facil(j)*Prc(1,1,j,2)
+        if (m .gt. 0) then
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+            R1s(k1,k2,j,1) = R1s(k1,k2,j,1)*chibjl(j) + facjl(j)*Prs(k1,k2,j,1)
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+            R1s(k1,k2,j,2) = R1s(k1,k2,j,2)*chibil(j) + facil(j)*Prs(k1,k2,j,2)
+          enddo
+        enddo
+        else
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+          enddo
+        enddo
+        endif
+      enddo !  end j loop
+#else
 
 !  viewing direction + all j-quadrature directions
 !  -----------------------------------------------
@@ -1624,88 +1864,200 @@ contains
         if (linearize) then
         do p = 1, npar
           do n = 1, nlay
-
+            L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)*chibjl(j)
             if (n .eq. layer) then
-
-              L_R1cscal(1,j,n,p) = L_R1cscal(1,j,n,p)*chibjl(j)+ &
-                                   R1cscal(1,j)*L_chibjl(j,p)+ &
-                                   facjl(j)*L_Prc(1,j,1,1,p)+ &
-                                   L_facjl(j,p)*Prc(1,j,1,1)
-              do k1 = 1, 4
+              L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)+ &
+                                   R1cscal(j,1)*L_chibjl(j,p)+ &
+                                   facjl(j)*L_Prc(1,1,p,j,1)+ &
+                                   L_facjl(j,p)*Prc(1,1,j,1)
+              if (m .gt. 0) then
                 do k2 = 1, 4
-                  L_R1c(1,j,k1,k2,n,p) = L_R1c(1,j,k1,k2,n,p)* &
-                                         chibjl(j)+R1c(1,j,k1,k2)* &
-                                         L_chibjl(j,p)+facjl(j)* &
-                                         L_Prc(1,j,k1,k2,p)+ &
-                                         L_facjl(j,p)*Prc(1,j,k1,k2)
-                  if (m .gt. 0) then
-                    L_R1s(1,j,k1,k2,n,p) = L_R1s(1,j,k1,k2,n,p)* &
-                                           chibjl(j)+R1s(1,j,k1,k2)* &
-                                           L_chibjl(j,p)+facjl(j)* &
-                                           L_Prs(1,j,k1,k2,p)+ &
-                                           L_facjl(j,p)*Prs(1,j,k1,k2)
-                  endif
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j) + &
+                                            R1c(k1,k2,j,1)*L_chibjl(j,p) + &
+                                             facjl(j)*L_Prc(k1,k2,p,j,1)+ &
+                                           L_facjl(j,p)*Prc(k1,k2,j,1)
+
+                    L_R1s(k1,k2,j,n,p,1) = L_R1s(k1,k2,j,n,p,1)*chibjl(j) + &
+                                            R1s(k1,k2,j,1)*L_chibjl(j,p) + &
+                                             facjl(j)*L_Prs(k1,k2,p,j,1) + &
+                                           L_facjl(j,p)*Prs(k1,k2,j,1)
+                  enddo
                 enddo
-              enddo
+              else
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j) + &
+                                             R1c(k1,k2,j,1)*L_chibjl(j,p) + &
+                                             facjl(j)*L_Prc(k1,k2,p,j,1) + &
+                                           L_facjl(j,p)*Prc(k1,k2,j,1)
+                  enddo
+                enddo
+              endif
 
 !  Transmittance of linearised terms, all other layers .ne. layer
 
             else
-
-              L_R1cscal(1,j,n,p) = L_R1cscal(1,j,n,p)*chibjl(j)
-              do k1 = 1, 4
+              if (m .gt. 0) then
                 do k2 = 1, 4
-                  L_R1c(1,j,k1,k2,n,p) = L_R1c(1,j,k1,k2,n,p)*chibjl(j) 
-                  if (m .gt. 0) then
-                    L_R1s(1,j,k1,k2,n,p) = L_R1s(1,j,k1,k2,n,p)* &
-                                           chibjl(j)
-                  endif
+                  do k1 = 1, 4
+                    L_R1c1(k1,k2,j,n,p,1) = L_R1c1(k1,k2,j,n,p,1)*chibjl(j)
+                    L_R1s1(k1,k2,j,n,p,1) = L_R1s1(k1,k2,j,n,p,1)*chibjl(j)
+                  enddo
                 enddo
-              enddo
-
-            endif
+              else
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j)
+                  enddo
+                enddo
+              endif
+            endif ! n .eq. layer
 
 !  (exit the parameter loops)
 
-          enddo
-        enddo
-        endif
+          enddo ! n
+        enddo ! p
+        endif ! linearize
 
 !  Transmittance of linearised surface terms
 
         if (s_linearize) then
-          Ls_R1cscal(1,j,:) = Ls_R1cscal(1,j,:)*chibjl(j)
-          do k1 = 1, 4
+          Ls_R1cscal(j,:,1) = Ls_R1cscal(j,:,1)*chibjl(j)
+          if (m .gt. 0) then
             do k2 = 1, 4
-              Ls_R1c(1,j,k1,k2,:) = Ls_R1c(1,j,k1,k2,:)*chibjl(j)
-              if (m .gt. 0) then
-                Ls_R1s(1,j,k1,k2,:) = Ls_R1s(1,j,k1,k2,:)*chibjl(j)
-              endif
+              do k1 = 1, 4
+                Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)*chibjl(j)
+                Ls_R1s(k1,k2,j,:,1) = Ls_R1s(k1,k2,j,:,1)*chibjl(j)
+              enddo
             enddo
-          enddo
+          else
+            do k2 = 1, 4
+              do k1 = 1, 4
+                Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)*chibjl(j)
+              enddo
+            enddo
+          endif
         endif
 
 !  update the R1 matrices themselves
 
-        R1cscal(1,j) = R1cscal(1,j)*chibjl(j)+facjl(j)*Prc(1,j,1,1)
-        do k1 = 1, 4
-          do k2 = 1, 4
-            R1c(1,j,k1,k2) = R1c(1,j,k1,k2)*chibjl(j)+ &
-                             facjl(j)*Prc(1,j,k1,k2)
-            if (m .gt. 0) then
-              R1s(1,j,k1,k2) = R1s(1,j,k1,k2)*chibjl(j)+ &
-                               facjl(j)*Prs(1,j,k1,k2)
-           endif
+        R1cscal(j,1) = R1cscal(j,1)*chibjl(j)+facjl(j)*Prc(1,1,j,1)
+        if (m .gt. 0) then
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+            R1s(k1,k2,j,1) = R1s(k1,k2,j,1)*chibjl(j) + facjl(j)*Prs(k1,k2,j,1)
           enddo
         enddo
-
-!  end j loop
-
-      enddo
+        else
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+          enddo
+        enddo
+        endif
+      enddo !  end j loop
 
 !  solar direction
 !  ---------------
+#if 1
+      do j = 1,nmug
 
+!  update the linearised terms
+
+        if (linearize) then
+        do p = 1, npar
+          do n = 1, nlay
+            L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)*chibil(j)+ &
+                                 R1cscal(j,2)*L_chibil(j,n,p)
+            if (n .eq. layer) then
+              L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)+ &
+                                   facil(j)*L_Prc(1,1,p,j,2)+ &
+                                   L_facil(j,p)*Prc(1,1,j,2)
+              if (m .gt. 0) then
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + &
+                                             R1c(k1,k2,j,2)*L_chibil(j,n,p) + &
+                                             facil(j)*L_Prc(k1,k2,p,j,2) + &
+                                           L_facil(j,p)*Prc(k1,k2,j,2)
+
+                    L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)*chibil(j) + &
+                                             R1s(k1,k2,j,2)*L_chibil(j,n,p) + &
+                                           facil(j)*L_Prs(k1,k2,p,j,2) + &
+                                           L_facil(j,p)*Prs(k1,k2,j,2)
+                  enddo
+                enddo
+              else
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + &
+                                            R1c(k1,k2,j,2)*L_chibil(j,n,p) + &
+                                           facil(j)*L_Prc(k1,k2,p,j,2) + &
+                                           L_facil(j,p)*Prc(k1,k2,j,2)
+                  enddo
+                enddo
+              endif ! m .gt. 0
+            else
+              if (m .gt. 0) then
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+                    L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)*chibil(j) + R1s(k1,k2,j,2)*L_chibil(j,n,p)
+                  enddo
+                enddo
+              else
+                do k2 = 1, 4
+                  do k1 = 1, 4
+                    L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+                  enddo
+                enddo
+              endif
+            endif ! n .eq. layer
+          enddo ! n
+        enddo ! p
+        endif ! linearize
+
+!  Transmittance of linearised surface terms
+
+        if (s_linearize) then
+          Ls_R1cscal(j,:,2) = Ls_R1cscal(j,:,2)*chibil(j)
+          if (m .gt. 0) then
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,:,2) = Ls_R1c(k1,k2,j,:,2)*chibil(j)
+              Ls_R1s(k1,k2,j,:,2) = Ls_R1s(k1,k2,j,:,2)*chibil(j)
+            enddo
+          enddo
+          else
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,:,2) = Ls_R1c(k1,k2,j,:,2)*chibil(j)
+            enddo
+          enddo
+          endif
+        endif
+
+!  update the R1 matrices themselves
+
+        R1cscal(j,2) = R1cscal(j,2)*chibil(j)+facil(j)*Prc(1,1,j,2)
+        if (m .gt. 0) then
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+            R1s(k1,k2,j,2) = R1s(k1,k2,j,2)*chibil(j) + facil(j)*Prs(k1,k2,j,2)
+          enddo
+        enddo
+        else
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+          enddo
+        enddo
+        endif
+      enddo !  end j loop
+#else
       do i = 1,nmug
 
 !  update the linearised terms
@@ -1713,31 +2065,28 @@ contains
         if (linearize) then
         do p = 1, npar
           do n = 1, nlay
-            L_R1cscal(2,i,n,p) = L_R1cscal(2,i,n,p)*chibil(i)+ &
-                                 R1cscal(2,i)*L_chibil(i,n,p)
+            L_R1cscal(i,n,p,2) = L_R1cscal(i,n,p,2)*chibil(i) + R1cscal(i,2)*L_chibil(i,n,p)
             if (n .eq. layer) then
-              L_R1cscal(2,i,n,p) = L_R1cscal(2,i,n,p)+ &
-                                   facil(i)*L_Prc(2,i,1,1,p)+ &
-                                   L_facil(i,p)*Prc(2,i,1,1)
+              L_R1cscal(i,n,p,2) = L_R1cscal(i,n,p,2)+ &
+                                   facil(i)*L_Prc(1,1,p,i,2)+ &
+                                   L_facil(i,p)*Prc(1,1,i,2)
             endif
             do k1 = 1, 4
               do k2 = 1, 4
-                L_R1c(2,i,k1,k2,n,p) = L_R1c(2,i,k1,k2,n,p)* &
-                                       chibil(i)+R1c(2,i,k1,k2)* &
-                                       L_chibil(i,n,p)
+                L_R1c(i,k1,k2,n,p,2) = L_R1c(i,k1,k2,n,p,2)*chibil(i) + &
+                                         R1c(k1,k2,i,2)*L_chibil(i,n,p)
                 if (n .eq. layer) then
-                  L_R1c(2,i,k1,k2,n,p) = L_R1c(2,i,k1,k2,n,p)+ &
-                                         facil(i)*L_Prc(2,i,k1,k2,p)+ &
-                                         L_facil(i,p)*Prc(2,i,k1,k2)
+                  L_R1c(i,k1,k2,n,p,2) = L_R1c(i,k1,k2,n,p,2)+ &
+                                         facil(i)*L_Prc(k1,k2,p,i,2)+ &
+                                         L_facil(i,p)*Prc(k1,k2,i,2)
                 endif
                 if (m .gt. 0) then
-                  L_R1s(2,i,k1,k2,n,p) = L_R1s(2,i,k1,k2,n,p)* &
-                                         chibil(i)+R1s(2,i,k1,k2)* &
-                                         L_chibil(i,n,p)
+                  L_R1s(i,k1,k2,n,p,2) = L_R1s(i,k1,k2,n,p,2)*chibil(i) + &
+                                          R1s(k1,k2,i,2)*L_chibil(i,n,p)
                   if (n .eq. layer) then
-                    L_R1s(2,i,k1,k2,n,p) = L_R1s(2,i,k1,k2,n,p)+ &
-                                           facil(i)*L_Prs(2,i,k1,k2,p)+ &
-                                           L_facil(i,p)*Prs(2,i,k1,k2)
+                    L_R1s(i,k1,k2,n,p,2) = L_R1s(i,k1,k2,n,p,2)+ &
+                                           facil(i)*L_Prs(k1,k2,p,i,2)+ &
+                                           L_facil(i,p)*Prs(k1,k2,i,2)
                   endif
                 endif
               enddo
@@ -1749,12 +2098,12 @@ contains
 !  Transmittance of linearised surface terms
 
         if (s_linearize) then
-          Ls_R1cscal(2,i,:) = Ls_R1cscal(2,i,:)*chibil(i)
+          Ls_R1cscal(i,:,2) = Ls_R1cscal(i,:,2)*chibil(i)
           do k1 = 1, 4
             do k2 = 1, 4
-              Ls_R1c(2,i,k1,k2,:) = Ls_R1c(2,i,k1,k2,:)*chibil(i)
+              Ls_R1c(k1,k2,i,:,2) = Ls_R1c(k1,k2,i,:,2)*chibil(i)
               if (m .gt. 0) then
-                Ls_R1s(2,i,k1,k2,:) = Ls_R1s(2,i,k1,k2,:)*chibil(i)
+                Ls_R1s(k1,k2,i,:,2) = Ls_R1s(k1,k2,i,:,2)*chibil(i)
               endif
             enddo
           enddo
@@ -1762,23 +2111,19 @@ contains
 
 !  update the R1 matrices themselves
 
-        R1cscal(2,i) = R1cscal(2,i)*chibil(i)+facil(i)* &
-                       Prc(2,i,1,1)
+        R1cscal(i,2) = R1cscal(i,2)*chibil(i)+facil(i)*Prc(1,1,i,2)
 
         do k1 = 1, 4
           do k2 = 1, 4
-            R1c(2,i,k1,k2) = R1c(2,i,k1,k2)*chibil(i)+ &
-                             facil(i)*Prc(2,i,k1,k2)
+            R1c(k1,k2,i,2) = R1c(k1,k2,i,2)*chibil(i) + facil(i)*Prc(k1,k2,i,2)
             if (m .gt. 0) then
-              R1s(2,i,k1,k2) = R1s(2,i,k1,k2)*chibil(i)+ &
-                               facil(i)*Prs(2,i,k1,k2)
+              R1s(k1,k2,i,2) = R1s(k1,k2,i,2)*chibil(i) + facil(i)*Prs(k1,k2,i,2)
             endif
           enddo
         enddo
-
-!  end i loop
-
-      enddo
+      enddo !  end i loop
+#endif
+#endif
 
       return
       end subroutine L_ord1m
@@ -1801,10 +2146,10 @@ contains
 
 !  outputs
 
-      double precision Ptc(2,nmug,4,4),Pts(2,nmug,4,4), &
-                       Prc(2,nmug,4,4),Prs(2,nmug,4,4)
-      double precision L_Ptc(2,nmug,4,4,npar),L_Pts(2,nmug,4,4,npar), &
-                       L_Prc(2,nmug,4,4,npar),L_Prs(2,nmug,4,4,npar)
+      double precision Ptc(4,4,nmug,2),Pts(4,4,nmug,2), &
+                       Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Ptc(4,4,npar,nmug,2),L_Pts(4,4,npar,nmug,2), &
+                       L_Prc(4,4,npar,nmug,2),L_Prs(4,4,npar,nmug,2)
 
 !  local variables
 
@@ -1852,16 +2197,16 @@ contains
             i = nmug+2
             Zmplusmu(j,k1,k2) = 0.d0
             Zmminmu(j,k1,k2) = 0.d0
-            Ptc(1,j,k1,k2) = 0.d0
-            Pts(1,j,k1,k2) = 0.d0
-            Prc(1,j,k1,k2) = 0.d0
-            Prs(1,j,k1,k2) = 0.d0
+            Ptc(k1,k2,j,1) = 0.d0
+            Pts(k1,k2,j,1) = 0.d0
+            Prc(k1,k2,j,1) = 0.d0
+            Prs(k1,k2,j,1) = 0.d0
             if (linearize) then
             do p = 1, npar
-              L_Ptc(1,j,k1,k2,p) = 0.d0
-              L_Pts(1,j,k1,k2,p) = 0.d0
-              L_Prc(1,j,k1,k2,p) = 0.d0
-              L_Prs(1,j,k1,k2,p) = 0.d0
+              L_Ptc(k1,k2,p,j,1) = 0.d0
+              L_Pts(k1,k2,p,j,1) = 0.d0
+              L_Prc(k1,k2,p,j,1) = 0.d0
+              L_Prs(k1,k2,p,j,1) = 0.d0
               L_Zmplusmu(j,k1,k2,p) = 0.d0
               L_Zmminmu(j,k1,k2,p)  = 0.d0
             enddo
@@ -1874,16 +2219,16 @@ contains
           do i = 1, nmug
             Zmplusmu0(i,k1,k2) = 0.d0
             Zmminmu0(i,k1,k2) = 0.d0
-            Ptc(2,i,k1,k2) = 0.d0
-            Pts(2,i,k1,k2) = 0.d0
-            Prc(2,i,k1,k2) = 0.d0
-            Prs(2,i,k1,k2) = 0.d0
+            Ptc(k1,k2,i,2) = 0.d0
+            Pts(k1,k2,i,2) = 0.d0
+            Prc(k1,k2,i,2) = 0.d0
+            Prs(k1,k2,i,2) = 0.d0
             if (linearize) then
             do p = 1, npar
-              L_Ptc(2,i,k1,k2,p) = 0.d0
-              L_Pts(2,i,k1,k2,p) = 0.d0
-              L_Prc(2,i,k1,k2,p) = 0.d0
-              L_Prs(2,i,k1,k2,p) = 0.d0
+              L_Ptc(k1,k2,p,i,2) = 0.d0
+              L_Pts(k1,k2,p,i,2) = 0.d0
+              L_Prc(k1,k2,p,i,2) = 0.d0
+              L_Prs(k1,k2,p,i,2) = 0.d0
               L_Zmplusmu0(i,k1,k2,p) = 0.d0
               L_Zmminmu0(i,k1,k2,p)  = 0.d0
             enddo
@@ -2104,23 +2449,23 @@ contains
       do j = 1, nmug
         do k1 = 1, 2
           do k2 = 1, 2
-            Ptc(1,j,k1,k2) = Zmplusmu(j,k1,k2)
-            Prc(1,j,k1,k2) = Zmminmu(j,k1,k2)
+            Ptc(k1,k2,j,1) = Zmplusmu(j,k1,k2)
+            Prc(k1,k2,j,1) = Zmminmu(j,k1,k2)
             if (linearize) then
             do p = 1, npar
-              L_Ptc(1,j,k1,k2,p) = L_Zmplusmu(j,k1,k2,p)
-              L_Prc(1,j,k1,k2,p) = L_Zmminmu(j,k1,k2,p)
+              L_Ptc(k1,k2,p,j,1) = L_Zmplusmu(j,k1,k2,p)
+              L_Prc(k1,k2,p,j,1) = L_Zmminmu(j,k1,k2,p)
             enddo
             endif
           enddo
           if (m .gt. 0) then
             do k2 = 3, 4
-              Pts(1,j,k1,k2) = -Zmplusmu(j,k1,k2)
-              Prs(1,j,k1,k2) = -Zmminmu(j,k1,k2)
+              Pts(k1,k2,j,1) = -Zmplusmu(j,k1,k2)
+              Prs(k1,k2,j,1) = -Zmminmu(j,k1,k2)
               if (linearize) then
               do p = 1, npar
-                L_Pts(1,j,k1,k2,p) = -L_Zmplusmu(j,k1,k2,p)
-                L_Prs(1,j,k1,k2,p) = -L_Zmminmu(j,k1,k2,p)
+                L_Pts(k1,k2,p,j,1) = -L_Zmplusmu(j,k1,k2,p)
+                L_Prs(k1,k2,p,j,1) = -L_Zmminmu(j,k1,k2,p)
               enddo
               endif
             enddo
@@ -2128,23 +2473,23 @@ contains
         enddo
         do k1 = 3, nstokes
           do k2 = 3, 4
-            Ptc(1,j,k1,k2) = Zmplusmu(j,k1,k2)
-            Prc(1,j,k1,k2) = Zmminmu(j,k1,k2)
+            Ptc(k1,k2,j,1) = Zmplusmu(j,k1,k2)
+            Prc(k1,k2,j,1) = Zmminmu(j,k1,k2)
             if (linearize) then
             do p = 1, npar
-              L_Ptc(1,j,k1,k2,p) = L_Zmplusmu(j,k1,k2,p)
-              L_Prc(1,j,k1,k2,p) = L_Zmminmu(j,k1,k2,p)
+              L_Ptc(k1,k2,p,j,1) = L_Zmplusmu(j,k1,k2,p)
+              L_Prc(k1,k2,p,j,1) = L_Zmminmu(j,k1,k2,p)
             enddo
             endif
           enddo
           if (m .gt. 0) then
             do k2 = 1, 2
-              Pts(1,j,k1,k2) = Zmplusmu(j,k1,k2)
-              Prs(1,j,k1,k2) = Zmminmu(j,k1,k2)
+              Pts(k1,k2,j,1) = Zmplusmu(j,k1,k2)
+              Prs(k1,k2,j,1) = Zmminmu(j,k1,k2)
               if (linearize) then
               do p = 1, npar
-                L_Pts(1,j,k1,k2,p) = L_Zmplusmu(j,k1,k2,p)
-                L_Prs(1,j,k1,k2,p) = L_Zmminmu(j,k1,k2,p)
+                L_Pts(k1,k2,p,j,1) = L_Zmplusmu(j,k1,k2,p)
+                L_Prs(k1,k2,p,j,1) = L_Zmminmu(j,k1,k2,p)
               enddo
               endif
             enddo
@@ -2154,23 +2499,23 @@ contains
 
       do i = 1, nmug
         do k1 = 1, 2
-          Ptc(2,i,k1,1) = Zmplusmu0(i,k1,1)
-          Prc(2,i,k1,1) = Zmminmu0(i,k1,1)
+          Ptc(k1,1,i,2) = Zmplusmu0(i,k1,1)
+          Prc(k1,1,i,2) = Zmminmu0(i,k1,1)
           if (linearize) then
           do p = 1, npar
-            L_Ptc(2,i,k1,1,p) = L_Zmplusmu0(i,k1,1,p)
-            L_Prc(2,i,k1,1,p) = L_Zmminmu0(i,k1,1,p)
+            L_Ptc(k1,1,p,i,2) = L_Zmplusmu0(i,k1,1,p)
+            L_Prc(k1,1,p,i,2) = L_Zmminmu0(i,k1,1,p)
           enddo
           endif
         enddo
         if (m .gt. 0) then
           do k1 = 3, 4
-            Pts(2,i,k1,1) = Zmplusmu0(i,k1,1)
-            Prs(2,i,k1,1) = Zmminmu0(i,k1,1)
+            Pts(k1,1,i,2) = Zmplusmu0(i,k1,1)
+            Prs(k1,1,i,2) = Zmminmu0(i,k1,1)
             if (linearize) then
             do p = 1, npar
-              L_Pts(2,i,k1,1,p) = L_Zmplusmu0(i,k1,1,p)
-              L_Prs(2,i,k1,1,p) = L_Zmminmu0(i,k1,1,p)
+              L_Pts(k1,1,p,i,2) = L_Zmplusmu0(i,k1,1,p)
+              L_Prs(k1,1,p,i,2) = L_Zmminmu0(i,k1,1,p)
             enddo
             endif
           enddo
@@ -2533,4 +2878,250 @@ contains
       return
       end subroutine L_avsecant
 
+      subroutine L_ord1m_MGZ &
+        (nmug,nlay,npar,nspars, & !I
+         layer,linearize,s_linearize, & !I
+         Prc,Prs, & !I
+         L_Prc,L_Prs, & !I
+         chibjl,facjl,L_chibjl,L_facjl, & !I
+         chibil,facil,L_chibil,L_facil, & !I
+         R1c,R1s,R1cscal, &
+         L_R1c,L_R1s, L_R1cscal, &
+         Ls_R1c,Ls_R1s,Ls_R1cscal)
+
+      implicit none
+
+!  inputs
+
+      integer nmug,nlay,npar,nspars,layer
+      logical linearize,s_linearize
+      double precision Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Prc(4,4,npar,nmug,2), L_Prs(4,4,npar,nmug,2)
+      double precision chibjl(nmug),facjl(nmug)
+      double precision L_chibjl(nmug,npar),L_facjl(nmug,npar)
+      double precision chibil(nmug),facil(nmug)
+      double precision L_chibil(nmug,nlay,npar)
+      double precision L_facil(nmug,npar)
+
+!  outputs
+
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision R1cscal(nmug,2)
+      double precision L_R1c(4,4,nmug,nlay,npar,2) ! (2,8,4,4,19,7)
+      double precision L_R1s(4,4,nmug,nlay,npar,2) ! (2,8,4,4,19,7)
+      double precision L_R1cscal(nmug,nlay,npar,2)
+      double precision Ls_R1c(4,4,nmug,nspars,2)
+      double precision Ls_R1s(4,4,nmug,nspars,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
+
+!  local variables
+
+      integer j,i,p,n,k1,k2
+
+!!DIR$ assume (nmug .eq. 8)
+!!DIR$ assume (nlay .eq. 19)
+!!DIR$ assume (npar .eq. 7)
+
+!  viewing direction + all j-quadrature directions
+!  AND solar direction merged into one loop nest
+!  -----------------------------------------------
+
+!  update the linearised terms
+
+      if (linearize) then
+      do p = 1, npar
+        do n = 1, nlay
+          if (n .eq. layer) then
+            !!dir$ loop count=8
+            do j = 1,nmug
+              L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)*chibjl(j) + R1cscal(j,1)*L_chibjl(j,p)   + facjl(j)*L_Prc(1,1,p,j,1) + L_facjl(j,p)*Prc(1,1,j,1)
+              L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)*chibil(j) + R1cscal(j,2)*L_chibil(j,n,p) + facil(j)*L_Prc(1,1,p,j,2) + L_facil(j,p)*Prc(1,1,j,2)
+              do k2 = 1, 4
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j) + R1c(k1,k2,j,1)*L_chibjl(j,p)   + facjl(j)*L_Prc(k1,k2,p,j,1) + L_facjl(j,p)*Prc(k1,k2,j,1)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p) + facil(j)*L_Prc(k1,k2,p,j,2) + L_facil(j,p)*Prc(k1,k2,j,2)
+ 
+                  L_R1s(k1,k2,j,n,p,1) = L_R1s(k1,k2,j,n,p,1)*chibjl(j) + R1s(k1,k2,j,1)*L_chibjl(j,p)   + facjl(j)*L_Prs(k1,k2,p,j,1) + L_facjl(j,p)*Prs(k1,k2,j,1)
+                  L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)*chibil(j) + R1s(k1,k2,j,2)*L_chibil(j,n,p) + facil(j)*L_Prs(k1,k2,p,j,2) + L_facil(j,p)*Prs(k1,k2,j,2)
+                enddo ! k1
+              enddo ! k2
+            enddo !  end j loop
+          else
+            !!dir$ loop count=8
+            !!dir$ vector unaligned
+            do j = 1,nmug
+              L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)*chibjl(j)
+              L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)*chibil(j) + R1cscal(j,2)*L_chibil(j,n,p)
+              !!dir$ vector unaligned
+              do k2 = 1, 4
+                !!dir$ vector unaligned
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+  
+                  L_R1s(k1,k2,j,n,p,1) = L_R1s(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1s(k1,k2,j,n,p,2) = L_R1s(k1,k2,j,n,p,2)*chibil(j) + R1s(k1,k2,j,2)*L_chibil(j,n,p)
+                enddo ! k1
+              enddo ! k2
+            enddo !  end j loop
+          endif ! n .eq. layer
+        enddo ! n
+      enddo ! p
+      endif ! linearize
+
+!  Transmittance of linearised surface terms
+
+      if (s_linearize) then
+        do p = 1,nspars
+        do j = 1,nmug
+          Ls_R1cscal(j,p,1) = Ls_R1cscal(j,p,1)*chibjl(j)
+          Ls_R1cscal(j,p,2) = Ls_R1cscal(j,p,2)*chibil(j)
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,p,1) = Ls_R1c(k1,k2,j,p,1)*chibjl(j)
+              Ls_R1s(k1,k2,j,p,1) = Ls_R1s(k1,k2,j,p,1)*chibjl(j)
+              Ls_R1c(k1,k2,j,p,2) = Ls_R1c(k1,k2,j,p,2)*chibil(j)
+              Ls_R1s(k1,k2,j,p,2) = Ls_R1s(k1,k2,j,p,2)*chibil(j)
+            enddo
+          enddo
+        enddo !  end j loop
+        enddo ! p
+      endif
+
+!  update the R1 matrices themselves
+
+      do j = 1,nmug
+        R1cscal(j,1) = R1cscal(j,1)*chibjl(j)+facjl(j)*Prc(1,1,j,1)
+        R1cscal(j,2) = R1cscal(j,2)*chibil(j)+facil(j)*Prc(1,1,j,2)
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+            R1s(k1,k2,j,1) = R1s(k1,k2,j,1)*chibjl(j) + facjl(j)*Prs(k1,k2,j,1)
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+            R1s(k1,k2,j,2) = R1s(k1,k2,j,2)*chibil(j) + facil(j)*Prs(k1,k2,j,2)
+          enddo
+        enddo
+      enddo !  end j loop
+
+      return
+      end subroutine L_ord1m_MGZ
+
+      subroutine L_ord1m_MNGZ &
+        (nmug,nlay,npar,nspars, & !I
+         layer,linearize,s_linearize, & !I
+         Prc,Prs, & !I
+         L_Prc,L_Prs, & !I
+         chibjl,facjl,L_chibjl,L_facjl, & !I
+         chibil,facil,L_chibil,L_facil, & !I
+         R1c,R1s,R1cscal, &
+         L_R1c,L_R1s, L_R1cscal, &
+         Ls_R1c,Ls_R1s,Ls_R1cscal)
+
+      implicit none
+
+!  inputs
+
+      integer nmug,nlay,npar,nspars,layer
+      logical linearize,s_linearize
+      double precision Prc(4,4,nmug,2),Prs(4,4,nmug,2)
+      double precision L_Prc(4,4,npar,nmug,2), L_Prs(4,4,npar,nmug,2)
+      double precision chibjl(nmug),facjl(nmug)
+      double precision L_chibjl(nmug,npar),L_facjl(nmug,npar)
+      double precision chibil(nmug),facil(nmug)
+      double precision L_chibil(nmug,nlay,npar)
+      double precision L_facil(nmug,npar)
+
+!  outputs
+      double precision R1c(4,4,nmug,2)
+      double precision R1s(4,4,nmug,2)
+      double precision R1cscal(nmug,2)
+      double precision L_R1c(4,4,nmug,nlay,npar,2) ! (2,8,4,4,19,7)
+      double precision L_R1s(4,4,nmug,nlay,npar,2) ! (2,8,4,4,19,7)
+      double precision L_R1cscal(nmug,nlay,npar,2)
+      double precision Ls_R1c(4,4,nmug,nspars,2)
+      double precision Ls_R1s(4,4,nmug,nspars,2)
+      double precision Ls_R1cscal(nmug,nspars,2)
+
+!  local variables
+
+      integer j,i,p,n,k1,k2
+
+!  viewing direction + all j-quadrature directions
+!   AND solar direction merged into one loop nest
+!  -----------------------------------------------
+      do j = 1,nmug
+
+!  update the linearised terms
+
+        if (linearize) then
+        do p = 1, npar
+          do n = 1, nlay
+            L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)*chibjl(j)
+            L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)*chibil(j) + R1cscal(j,2)*L_chibil(j,n,p)
+            if (n .eq. layer) then
+              L_R1cscal(j,n,p,1) = L_R1cscal(j,n,p,1)+ &
+                                     R1cscal(j,1)*L_chibjl(j,p)+ &
+                                     facjl(j)*L_Prc(1,1,p,j,1)+ &
+                                   L_facjl(j,p)*Prc(1,1,j,1)
+              L_R1cscal(j,n,p,2) = L_R1cscal(j,n,p,2)+ &
+                                     facil(j)*L_Prc(1,1,p,j,2)+ &
+                                   L_facil(j,p)*Prc(1,1,j,2)
+              do k2 = 1, 4
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*  chibjl(j)+ &
+                                           R1c(k1,k2,j,1)    *L_chibjl(j,p)+ &
+                                           facjl(j)  *L_Prc(k1,k2,p,j,1)+ &
+                                         L_facjl(j,p)*  Prc(k1,k2,j,1)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*  chibil(j)+ &
+                                           R1c(k1,k2,j,2)    *L_chibil(j,n,p)+ &
+                                           facil(j)  *L_Prc(k1,k2,p,j,2)+ &
+                                         L_facil(j,p)*  Prc(k1,k2,j,2)
+                enddo
+              enddo
+
+!  Transmittance of linearised terms, all other layers .ne. layer
+
+            else ! n .eq. layer
+              do k2 = 1, 4
+                do k1 = 1, 4
+                  L_R1c(k1,k2,j,n,p,1) = L_R1c(k1,k2,j,n,p,1)*chibjl(j)
+                  L_R1c(k1,k2,j,n,p,2) = L_R1c(k1,k2,j,n,p,2)*chibil(j) + R1c(k1,k2,j,2)*L_chibil(j,n,p)
+                enddo
+              enddo
+            endif ! n .eq. layer
+
+!  (exit the parameter loops)
+
+          enddo ! n
+        enddo ! p
+        endif ! linearize
+
+!  Transmittance of linearised surface terms
+
+        if (s_linearize) then
+          Ls_R1cscal(j,:,1) = Ls_R1cscal(j,:,1)*chibjl(j)
+          Ls_R1cscal(j,:,2) = Ls_R1cscal(j,:,2)*chibil(j)
+          do k2 = 1, 4
+            do k1 = 1, 4
+              Ls_R1c(k1,k2,j,:,1) = Ls_R1c(k1,k2,j,:,1)*chibjl(j)
+              Ls_R1c(k1,k2,j,:,2) = Ls_R1c(k1,k2,j,:,2)*chibil(j)
+            enddo
+          enddo
+        endif
+
+!  update the R1 matrices themselves
+
+        R1cscal(j,1) = R1cscal(j,1)*chibjl(j)+facjl(j)*Prc(1,1,j,1)
+        R1cscal(j,2) = R1cscal(j,2)*chibil(j)+facil(j)*Prc(1,1,j,2)
+        do k2 = 1, 4
+          do k1 = 1, 4
+            R1c(k1,k2,j,1) = R1c(k1,k2,j,1)*chibjl(j) + facjl(j)*Prc(k1,k2,j,1)
+            R1c(k1,k2,j,2) = R1c(k1,k2,j,2)*chibil(j) + facil(j)*Prc(k1,k2,j,2)
+          enddo
+        enddo
+      enddo !  end j loop
+
+      return
+      end subroutine L_ord1m_MNGZ
 END module l_rad_second_m

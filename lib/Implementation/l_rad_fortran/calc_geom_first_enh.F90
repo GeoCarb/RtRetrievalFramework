@@ -67,10 +67,14 @@ subroutine calc_geom_first_enh                                            &
 
 !  LOS Quadratures for Enhanced PS
 
-      real(ffp), intent(inout)  :: xfine    (nlayers,maxfine)
-      real(ffp), intent(inout)  :: wfine    (nlayers,maxfine)
-      real(ffp), intent(inout)  :: csqfine  (nlayers,maxfine)
-      real(ffp), intent(inout)  :: cotfine  (nlayers,maxfine)
+      !real(ffp), intent(inout)  :: xfine    (nlayers,maxfine)
+      !real(ffp), intent(inout)  :: wfine    (nlayers,maxfine)
+      !real(ffp), intent(inout)  :: csqfine  (nlayers,maxfine)
+      !real(ffp), intent(inout)  :: cotfine  (nlayers,maxfine)
+      real(ffp), intent(inout)  :: xfine    (maxfine,nlayers)
+      real(ffp), intent(inout)  :: wfine    (maxfine,nlayers)
+      real(ffp), intent(inout)  :: csqfine  (maxfine,nlayers)
+      real(ffp), intent(inout)  :: cotfine  (maxfine,nlayers)
 
 !  Output arguments
 !  ================
@@ -83,8 +87,8 @@ subroutine calc_geom_first_enh                                            &
 
       integer  , Intent(out)  :: ntraverse  (0:nlayers)
       real(ffp), Intent(out)  :: sunpaths   (0:nlayers,nlayers)
-      integer  , Intent(out)  :: ntraverse_fine(nlayers,maxfine)
-      real(ffp), Intent(out)  :: sunpaths_fine (nlayers,nlayers,maxfine)
+      integer  , Intent(out)  :: ntraverse_fine(maxfine,nlayers)
+      real(ffp), Intent(out)  :: sunpaths_fine (nlayers,maxfine,nlayers)
 
 !  Exception handling
 

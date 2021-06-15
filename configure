@@ -685,7 +685,7 @@ implsrc
 interfacesrc
 supportsrc
 twostream_src
-lidort_3_6_src
+lidort_3_8_1_src
 thirdpartysrc
 binsrc
 srcscript
@@ -784,10 +784,10 @@ BUILD_TWOSTREAM_FALSE
 BUILD_TWOSTREAM_TRUE
 TWOSTREAM_LDFLAGS
 TWOSTREAM_CPPFLAGS
-BUILD_LIDORT_3_6_FALSE
-BUILD_LIDORT_3_6_TRUE
-LIDORT_3_6_LDFLAGS
-LIDORT_3_6_CPPFLAGS
+BUILD_LIDORT_3_8_1_FALSE
+BUILD_LIDORT_3_8_1_TRUE
+LIDORT_3_8_1_LDFLAGS
+LIDORT_3_8_1_CPPFLAGS
 BUILD_HDF5_FALSE
 BUILD_HDF5_TRUE
 HAVE_HDF5_FALSE
@@ -1002,7 +1002,7 @@ with_python_swig
 enable_debug
 enable_addcheck
 with_hdf5
-with_lidort_3_6
+with_lidort_3_8_1
 with_2stream
 with_blitz
 with_boost
@@ -1735,10 +1735,11 @@ Optional Packages:
                           You can also specify "build" if you want to build
                           your own local copy. See also THIRDPARTY variable
                           described below.
-  --with-lidort-3.6[=DIR] use LIDORT 3.6 (default is yes if found) - it is
+  --with-lidort-3.8.1[=DIR]
+                          use LIDORT 3.8.1 (default is yes if found) - it is
                           possible to specify the root directory for LIDORT
-                          3.6 (optional). You can also specify "build" if you
-                          want to build your own local copy. See also
+                          3.8.1 (optional). You can also specify "build" if
+                          you want to build your own local copy. See also
                           THIRDPARTY variable described below.
   --with-2stream[=DIR]    use 2stream (default is yes if found) - it is
                           possible to specify the root directory for 2stream
@@ -26439,59 +26440,59 @@ fi
 
 
 
-have_lidort_3_6="no"
-build_lidort_3_6="no"
+have_lidort_3_8_1="no"
+build_lidort_3_8_1="no"
 
-# Check whether --with-lidort-3.6 was given.
-if test "${with_lidort_3_6+set}" = set; then :
-  withval=$with_lidort_3_6;
+# Check whether --with-lidort-3.8.1 was given.
+if test "${with_lidort_3_8_1+set}" = set; then :
+  withval=$with_lidort_3_8_1;
     if test "$withval" = "no"; then
-        want_lidort_3_6="no"
+        want_lidort_3_8_1="no"
     elif test "$withval" = "yes"; then
-        want_lidort_3_6="yes"
-        ac_lidort_3_6_path=""
+        want_lidort_3_8_1="yes"
+        ac_lidort_3_8_1_path=""
     elif test "$withval" = "build"; then
-        want_lidort_3_6="yes"
-        build_lidort_3_6="yes"
+        want_lidort_3_8_1="yes"
+        build_lidort_3_8_1="yes"
         if test "x$prefix" = xNONE; then
-           ac_lidort_3_6_path="$ac_default_prefix"
+           ac_lidort_3_8_1_path="$ac_default_prefix"
         else
-           ac_lidort_3_6_path="$prefix"
+           ac_lidort_3_8_1_path="$prefix"
         fi
     else
-        want_lidort_3_6="yes"
-        ac_lidort_3_6_path="$withval"
+        want_lidort_3_8_1="yes"
+        ac_lidort_3_8_1_path="$withval"
     fi
 
 else
 
-    want_lidort_3_6="yes"
+    want_lidort_3_8_1="yes"
     if test "$THIRDPARTY" = "build"; then
-        want_lidort_3_6="yes"
-        build_lidort_3_6="yes"
+        want_lidort_3_8_1="yes"
+        build_lidort_3_8_1="yes"
         if test "x$prefix" = xNONE; then
-           ac_lidort_3_6_path="$ac_default_prefix"
+           ac_lidort_3_8_1_path="$ac_default_prefix"
         else
-           ac_lidort_3_6_path="$prefix"
+           ac_lidort_3_8_1_path="$prefix"
         fi
     fi
 
 fi
 
 
-if test "x$want_lidort_3_6" = "xyes"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIDORT 3.6 library" >&5
-$as_echo_n "checking for LIDORT 3.6 library... " >&6; }
+if test "x$want_lidort_3_8_1" = "xyes"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIDORT 3.8.1 library" >&5
+$as_echo_n "checking for LIDORT 3.8.1 library... " >&6; }
         succeeded=no
-        if test "$ac_lidort_3_6_path" != ""; then
-            LIDORT_3_6_LDFLAGS="$ac_lidort_3_6_path/lib/liblidort-3.6.0.la"
-            LIDORT_3_6_CPPFLAGS="-I$ac_lidort_3_6_path/include"
+        if test "$ac_lidort_3_8_1_path" != ""; then
+            LIDORT_3_8_1_LDFLAGS="$ac_lidort_3_8_1_path/lib/liblidort-3.8.1.la"
+            LIDORT_3_8_1_CPPFLAGS="-I$ac_lidort_3_8_1_path/include"
             succeeded=yes
         else
-            for ac_lidort_3_6_path_tmp in $prefix $THIRDPARTY /groups/algorithm/commonlib/$commonlib_version/$compiler_name /usr /usr/local /opt /opt/local /sw ; do
-                  if test -e "$ac_lidort_3_6_path_tmp/lib/liblidort-3.6.0.la" && test -r "$ac_lidort_3_6_path_tmp/lib/liblidort-3.6.0.la"; then
-                      LIDORT_3_6_LDFLAGS="$ac_lidort_3_6_path_tmp/lib/liblidort-3.6.0.la"
-                      LIDORT_3_6_CPPFLAGS="-I$ac_lidort_3_6_path_tmp/include"
+            for ac_lidort_3_8_1_path_tmp in $prefix $THIRDPARTY /groups/algorithm/commonlib/$commonlib_version/$compiler_name /usr /usr/local /opt /opt/local /sw ; do
+                  if test -e "$ac_lidort_3_8_1_path_tmp/lib/liblidort-3.8.1.la" && test -r "$ac_lidort_3_8_1_path_tmp/lib/liblidort-3.8.1.la"; then
+                      LIDORT_3_8_1_LDFLAGS="$ac_lidort_3_8_1_path_tmp/lib/liblidort-3.8.1.la"
+                      LIDORT_3_8_1_CPPFLAGS="-I$ac_lidort_3_8_1_path_tmp/include"
                       succeeded=yes
                       break;
                   fi
@@ -26506,24 +26507,24 @@ $as_echo "no" >&6; }
 $as_echo "yes" >&6; }
 
 
-                have_lidort_3_6="yes"
+                have_lidort_3_8_1="yes"
         fi
 fi
- if test "$build_lidort_3_6" = "yes"; then
-  BUILD_LIDORT_3_6_TRUE=
-  BUILD_LIDORT_3_6_FALSE='#'
+ if test "$build_lidort_3_8_1" = "yes"; then
+  BUILD_LIDORT_3_8_1_TRUE=
+  BUILD_LIDORT_3_8_1_FALSE='#'
 else
-  BUILD_LIDORT_3_6_TRUE='#'
-  BUILD_LIDORT_3_6_FALSE=
+  BUILD_LIDORT_3_8_1_TRUE='#'
+  BUILD_LIDORT_3_8_1_FALSE=
 fi
 
 
-if test "$have_lidort_3_6" = "no"; then
+if test "$have_lidort_3_8_1" = "no"; then
    as_fn_error $? "
-The LIDORT 3.6 library is required by Full Physics. Try specifying
-location using --with-lidort-3.6 if configure couldn't find the
-library. You can specify --with-lidort-3.6=build if you want to build your
-own local copy of LIDORT 3.6.
+The LIDORT 3.8.1 library is required by Full Physics. Try specifying
+location using --with-lidort-3.8.1 if configure couldn't find the
+library. You can specify --with-lidort-3.8.1=build if you want to build your
+own local copy of LIDORT 3.8.1.
 
 You can also specify THIRDPARTY=build if you want to build a local
 copy of all the Thirdparty libraries.
@@ -29569,7 +29570,7 @@ binsrc=bin
 
 thirdpartysrc=thirdparty
 
-lidort_3_6_src=thirdparty/lidort-3.6
+lidort_3_8_1_src=thirdparty/lidort-3.8.1
 
 twostream_src=thirdparty/2stream
 
@@ -29827,7 +29828,7 @@ lidort_maxatmoswfs="$ac_lidort_maxatmoswfs"
 # that depends on it every time we rerun the configuration script.
 #======================================================================
 
-ac_config_files="$ac_config_files thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.tmp:thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.in"
+ac_config_files="$ac_config_files thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.tmp:thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.in"
 
 
 #======================================================================
@@ -30084,8 +30085,8 @@ if test -z "${BUILD_HDF5_TRUE}" && test -z "${BUILD_HDF5_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_HDF5\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${BUILD_LIDORT_3_6_TRUE}" && test -z "${BUILD_LIDORT_3_6_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_LIDORT_3_6\" was never defined.
+if test -z "${BUILD_LIDORT_3_8_1_TRUE}" && test -z "${BUILD_LIDORT_3_8_1_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LIDORT_3_8_1\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_TWOSTREAM_TRUE}" && test -z "${BUILD_TWOSTREAM_FALSE}"; then
@@ -31390,7 +31391,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "script/setup_fp_env.sh") CONFIG_FILES="$CONFIG_FILES script/setup_fp_env.sh" ;;
     "lib/Support/global_fixture_default.cc") CONFIG_FILES="$CONFIG_FILES lib/Support/global_fixture_default.cc" ;;
-    "thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.tmp") CONFIG_FILES="$CONFIG_FILES thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.tmp:thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.in" ;;
+    "thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.tmp") CONFIG_FILES="$CONFIG_FILES thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.tmp:thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.in" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -32928,9 +32929,9 @@ compiler_lib_search_path=$lt_compiler_lib_search_path_CXX
 _LT_EOF
 
  ;;
-    "thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.tmp":F)
- f1=thirdparty/lidort-3.6/lidort_def/lidort_pars.F90.tmp
- f2=thirdparty/lidort-3.6/lidort_def/lidort_pars.F90
+    "thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.tmp":F)
+ f1=thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90.tmp
+ f2=thirdparty/lidort-3.8.1/lidort_def/lidort_pars.F90
  if test -f $f2; then :
 
    if cmp -s $f1 $f2 2>/dev/null; then :
@@ -33043,7 +33044,7 @@ echo "  Lua support:                  ${have_lua}"
 echo "  Build own HDF5 library:       ${build_hdf5}"
 
 
-echo "  Build own LIDORT 3.6 library: ${build_lidort_3_6}"
+echo "  Build own LIDORT 3.8.1 library: ${build_lidort_3_8_1}"
 
 
 echo "  Build own 2stream library:    ${build_twostream}"

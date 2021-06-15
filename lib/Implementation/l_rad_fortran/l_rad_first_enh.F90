@@ -35,7 +35,7 @@ contains
       integer nlay,nstokes,nfine,nfinedivs(nlay)
       integer surftype,npar,nspars,Ncrit
       integer ntraverse(0:nlay)
-      integer ntraverse_fine(nlay,nfine)
+      integer ntraverse_fine(nfine,nlay)
       logical linearize,s_linearize
       logical doNadir
       double precision spars(nspars)
@@ -47,14 +47,18 @@ contains
       double precision L_zmat(nlay,nstokes,npar)
       double precision emu0, theta, phi
       double precision heights(0:nlay)
-      double precision xfine(nlay,nfine)
-      double precision wfine(nlay,nfine)
-      double precision csqfine(nlay,nfine)
-      double precision cotfine(nlay,nfine)
+      !double precision xfine(nlay,nfine)
+      !double precision wfine(nlay,nfine)
+      !double precision csqfine(nlay,nfine)
+      !double precision cotfine(nlay,nfine)
+      double precision xfine(nfine,nlay)
+      double precision wfine(nfine,nlay)
+      double precision csqfine(nfine,nlay)
+      double precision cotfine(nfine,nlay)
       double precision Raycon
       double precision cota(0:nlay)
       double precision sunpaths(0:nlay,nlay)
-      double precision sunpaths_fine (nlay,nlay,nfine)
+      double precision sunpaths_fine (nlay,nfine,nlay)
 
 !  outputs
 
@@ -223,7 +227,7 @@ contains
       flux = 0.25d0/pie
 
 !  Get the exact first-order calculation
-
+      !print*,'L_rad_first_enh; nfinedivs',size(nfinedivs),nfinedivs
       call L_SSCORR_OUTGOING &
            (nlay,nfine,nfinedivs,nstokes, & !I
             linearize,s_linearize, & !I
