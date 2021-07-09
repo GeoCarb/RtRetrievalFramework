@@ -11,6 +11,15 @@ module brdf_functions_m
 
 contains
 
+    real(kind=c_double) function exact_brdf_value_coxmunk(params, sza, vza, azm) bind(c)
+        real(kind=c_double), intent(in) :: params(5)
+        real(kind=c_double), intent(in) :: sza
+        real(kind=c_double), intent(in) :: vza
+        real(kind=c_double), intent(in) :: azm
+
+        exact_brdf_value_coxmunk = 0.
+    end function exact_brdf_value_coxmunk
+
     real(kind=c_double) function exact_brdf_value_veg_f(params, sza, vza, azm) bind(c)
         real(kind=c_double), intent(in) :: params(5)
         real(kind=c_double), intent(in) :: sza

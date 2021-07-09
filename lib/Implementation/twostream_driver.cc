@@ -28,7 +28,7 @@ TwostreamBrdfDriver::TwostreamBrdfDriver(int surface_type)
     nspars = 5;
     break;
   case COXMUNK:
-    nspars = 3;
+    nspars = 4;
     break;
   default:
     Exception e("Unhandled BRDF type: ");
