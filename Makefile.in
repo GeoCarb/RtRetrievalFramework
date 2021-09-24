@@ -3998,7 +3998,9 @@ ococonfigdir = @configdir@/oco/config
 ococonfig_DATA = @ococonfigsrc@/config.lua \
 	@ococonfigsrc@/config_oco3.lua \
 	@ococonfigsrc@/config_uplooking.lua \
-	@ococonfigsrc@/config_rrv.lua @ococonfigsrc@/config_uq.lua
+	@ococonfigsrc@/config_rrv.lua \
+	@ococonfigsrc@/config_oco3_rrv.lua \
+	@ococonfigsrc@/config_uq.lua
 @BUILD_PYTHON_SWIG_TRUE@pkgpythonswigdir = @pythondir@/full_physics_swig
 @BUILD_PYTHON_SWIG_TRUE@pkgpythonswig_PYTHON =  \
 @BUILD_PYTHON_SWIG_TRUE@	@pythonsrc@/__init__.py $(patsubst \
