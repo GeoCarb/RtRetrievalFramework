@@ -3963,7 +3963,6 @@ function ConfigCommon:connor_solver(config)
    cov_initial:set(2, self.co_scale_cov_initial)
    config.conn_solver = ConnorSolver.create(cost_func, conv,
                                             self.gamma_initial,
-                                            config.atmosphere,
                                             index0, index1, cov_initial)
    local iter_log = SolverIterationLog(config.state_vector)
    iter_log:add_as_observer(config.conn_solver)

@@ -17,20 +17,18 @@ boost::shared_ptr<ConnorSolver> connor_solver_create(
   const boost::shared_ptr<CostFunction>& Cf,
   const boost::shared_ptr<ConvergenceCheck>& Conv,
   double Gamma_initial,
-  const boost::shared_ptr<RtAtmosphere>& atm,
   const blitz::Array<int, 1>& index0,
   const blitz::Array<int, 1>& index1,
   const blitz::Array<double, 1>& cov_initial)
 {
   return boost::shared_ptr<ConnorSolver>
     (new ConnorSolver(Cf, Conv, Gamma_initial,
-                      atm, index0, index1, cov_initial));
+                      index0, index1, cov_initial));
 }
 boost::shared_ptr<ConnorSolver> connor_solver_create2(
   const boost::shared_ptr<CostFunction>& Cf,
   const boost::shared_ptr<ConvergenceCheck>& Conv,
   double Gamma_initial,
-  const boost::shared_ptr<RtAtmosphere>& atm,
   const blitz::Array<int, 1>& index0,
   const blitz::Array<int, 1>& index1,
   const blitz::Array<double, 1>& cov_initial,
@@ -38,7 +36,7 @@ boost::shared_ptr<ConnorSolver> connor_solver_create2(
 {
   return boost::shared_ptr<ConnorSolver>
     (new ConnorSolver(Cf, Conv, Gamma_initial,
-                      atm, index0, index1, cov_initial,
+                      index0, index1, cov_initial,
                       Save_test_data));
 }
 REGISTER_LUA_CLASS(ConnorSolver)

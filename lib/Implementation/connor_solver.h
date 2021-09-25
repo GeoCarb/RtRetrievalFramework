@@ -1,6 +1,5 @@
 #ifndef CONNOR_SOLVER_H
 #define CONNOR_SOLVER_H
-#include "atmosphere_oco.h"
 #include "cost_function.h"
 #include "convergence_check.h"
 #include "observer.h"
@@ -69,7 +68,6 @@ public:
   ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
 	       const boost::shared_ptr<ConvergenceCheck>& Conv,
 	       double Gamma_initial,
-               const boost::shared_ptr<RtAtmosphere>& atm,
                const blitz::Array<int, 1> index0,
                const blitz::Array<int, 1> index1,
                const blitz::Array<double, 1> cov_initial,
