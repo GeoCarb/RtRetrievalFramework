@@ -150,7 +150,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
             creator = GeocarbConfig.level1b_hdf,
             noise = {
                creator = GeocarbConfig.oco_noise,
-               max_ms = { 1.4e21, 4.5e20, 2.5e20, 2.0e20 },
+               max_ms = { 1.4e21, 4.9e20, 2.5e20, 2.0e20 },
             },
          },
          met = {
