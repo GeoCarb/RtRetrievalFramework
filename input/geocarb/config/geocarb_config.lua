@@ -446,14 +446,9 @@ function GeocarbConfig.dispersion_covariance_i(field)
 end
 
 ------------------------------------------------------------
---- Create ILS table by reading from an L1B hdf file using
---- Lua to do the reading and index massaging.
+--- Common code for ils_table_l1b() and ils_table_arp()
 ------------------------------------------------------------
-GeocarbConfig.ils_table_l1b = Creator:new()
-
-function GeocarbConfig.ils_table_l1b:create()
-   -- Load reference to L1B HDF file
-   local l1b_hdf_file = self.config:l1b_hdf_file()
+function ils_table_create_common(self, hdf_file, delta_lambda_name, relative_response_name)
 
    local sid = self.config:l1b_sid_list()
    sounding_num = sid:sounding_number()
@@ -478,11 +473,11 @@ function GeocarbConfig.ils_table_l1b:create()
       local desc_band_name = self.config.common.desc_band_name:value(idx)
 
       -- Delta lambda
-      delta_lambda = l1b_hdf_file:read_double_4d_sounding("/InstrumentHeader/ils_delta_lambda", sounding_num)
+      delta_lambda = hdf_file:read_double_4d_sounding(delta_lambda_name, sounding_num)
       delta_lambda = delta_lambda(idx, Range.all(), Range.all())
 
       -- Load ILS response values
-      response = l1b_hdf_file:read_double_4d_sounding("/InstrumentHeader/ils_relative_response", sounding_num)
+      response = hdf_file:read_double_4d_sounding(relative_response_name, sounding_num)
       response = response(idx, Range.all(), Range.all())
 
       -- Calculate center wavenumber from dispersion, there should be number pixel
@@ -495,7 +490,7 @@ function GeocarbConfig.ils_table_l1b:create()
    return res
 end
 
-function GeocarbConfig.ils_table_l1b:initial_guess_i(i)
+function ils_table_initial_guess_i_common(self, i)
    local res = CompositeInitialGuess()
 
    local scale = Blitz_double_array_1d(1)
@@ -513,11 +508,57 @@ function GeocarbConfig.ils_table_l1b:initial_guess_i(i)
    return res
 end
 
-function GeocarbConfig.ils_table_l1b:register_output(ro)
+function ils_table_register_output_common(self, ro)
    for i = 1, self.config.number_pixel:rows() do
       local hdf_band_name = self.config.common.hdf_band_name:value(i-1)
       ro:push_back(IlsTableLogOutput.create(self.config.ils_func[i], hdf_band_name))
    end
+end
+
+------------------------------------------------------------
+--- Create ILS table by reading from an L1B hdf file using
+--- Lua to do the reading and index massaging.
+------------------------------------------------------------
+GeocarbConfig.ils_table_l1b = Creator:new()
+
+function GeocarbConfig.ils_table_l1b:create()
+   -- Load reference to L1B HDF file
+   local l1b_hdf_file = self.config:l1b_hdf_file()
+
+   return ils_table_create_common(self, l1b_hdf_file,
+                           "/InstrumentHeader/ils_delta_lambda",
+                           "/InstrumentHeader/ils_relative_response")
+end
+
+function GeocarbConfig.ils_table_l1b:initial_guess_i(i)
+   return ils_table_initial_guess_i_common(self, i)
+end
+
+function GeocarbConfig.ils_table_l1b:register_output(ro)
+   ils_table_register_output_common(self, ro)
+end
+
+------------------------------------------------------------
+--- Create ILS table by reading from an ARP hdf file using
+--- Lua to do the reading and index massaging.
+------------------------------------------------------------
+GeocarbConfig.ils_table_arp = Creator:new()
+
+function GeocarbConfig.ils_table_arp:create()
+   -- Load reference to ARP HDF file
+   local arp_hdf_file = self.config:arp_hdf_file()
+
+   return ils_table_create_common(self, arp_hdf_file,
+                           "/SpectralConversion/ils_delta_lambda",
+                           "/SpectralConversion/ils_relative_response")
+end
+
+function GeocarbConfig.ils_table_arp:initial_guess_i(i)
+   return ils_table_initial_guess_i_common(self, i)
+end
+
+function GeocarbConfig.ils_table_arp:register_output(ro)
+   ils_table_register_output_common(self, ro)
 end
 
 ------------------------------------------------------------

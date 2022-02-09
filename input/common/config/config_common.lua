@@ -480,6 +480,19 @@ function ConfigCommon:l1b_hdf_file()
 end
 
 ------------------------------------------------------------
+-- Open ARP HDF file if we have one.
+------------------------------------------------------------
+
+function ConfigCommon:arp_hdf_file()
+   if(self.arp_file and not self.arp_hdf_file_v) then
+      self.arp_hdf_file_v = HdfFile(self.arp_file)
+      self.input_file_description = self.input_file_description .. 
+	 "ARP input file:      " .. self.arp_file .. "\n"
+   end
+   return self.arp_hdf_file_v
+end
+
+------------------------------------------------------------
 -- Determine sounding id list from HDF file
 -- Contents is instrument specific and not defined here
 ------------------------------------------------------------
