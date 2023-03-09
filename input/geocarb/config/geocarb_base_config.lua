@@ -57,8 +57,10 @@ GeocarbBaseConfig = GeocarbConfig:new {
 
    solver = { threshold=2.0,
               min_iteration=3,
-              max_iteration=7,
-              max_divergence=2,
+--            max_iteration=7,
+--            max_divergence=2,
+              max_iteration=15,
+              max_divergence=5,
               max_chisq=1.4,
               gamma_initial=10.0,
               h2o_scale_index0=20,
