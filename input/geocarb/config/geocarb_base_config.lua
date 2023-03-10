@@ -349,6 +349,12 @@ GeocarbBaseConfig = GeocarbConfig:new {
                retrieve_bands = {true, true, true, true},
                eof_used = {true, true, true, true},
             },
+	    zero_offset_waveform = {
+	       creator = GeocarbConfig.zero_offset_waveform_land_only,
+	       apriori = ConfigCommon.hdf_apriori_i("Instrument/ZeroLevelOffset"),
+	       covariance = ConfigCommon.hdf_covariance_i("Instrument/ZeroLevelOffset"),
+	       retrieve_bands = { true, true, true, true },
+	    },
 
             -- Disabled by default, add "radiance_scaling" to
             -- config.fm.instrument_correction.ic to enable.
