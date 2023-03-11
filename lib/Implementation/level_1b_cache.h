@@ -140,6 +140,10 @@ public:
     range_check(i, 0, number_spectrometer());
     return stk_coeff[i];
   }    
+  virtual double stokes_coefficient_central_wl(int i) const
+  {
+    return stk_coeff_central_wl[i];
+  }
 
 //-----------------------------------------------------------------------
 /// Change value.
@@ -150,6 +154,12 @@ public:
     range_check(i, 0, number_spectrometer());
     stk_coeff[i].reference(V.copy());
   }
+  double set_stokes_coefficient_central_wl(int i, double wl)
+  {
+    range_check(i, 0, number_spectrometer());
+    stk_coeff_central_wl[i] = wl;
+  }
+
   virtual ArrayWithUnit<double, 1> spectral_coefficient(int i) const
   {
     range_check(i, 0, number_spectrometer());
@@ -236,6 +246,7 @@ private:
   std::vector<DoubleWithUnit> lat, lon, szen, sazm, solzen, solazm, alt,
 						    rvel;
   std::vector<blitz::Array<double, 2> > stk_coeff;
+  std::vector<double> stk_coeff_central_wl;
   std::vector<ArrayWithUnit<double, 1> > spec_coeff;
   std::vector<Time> tm;
   std::vector<SpectralRange> rad;
