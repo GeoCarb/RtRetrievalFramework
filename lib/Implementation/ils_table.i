@@ -17,17 +17,20 @@ namespace FullPhysics {
 class IlsTableLinear : public IlsFunction {
 public:
   IlsTableLinear(const blitz::Array<double, 1>& Wavenumber, 
-                 const blitz::Array<double, 2>& Delta_lambda, 
-                 const blitz::Array<double, 2>& Response,
-                 const std::string& Band_name, const std::string& Hdf_band_name,
-                 bool Interpolate_wavenumber = false);
+		 const blitz::Array<double, 2>& Delta_lambda, 
+		 const blitz::Array<double, 2>& Response,
+		 const blitz::Array<double, 1>& Scale,
+		 const blitz::Array<bool, 1>& Scale_flag,
+		 const std::string& Band_name, const std::string& Hdf_band_name,
+		 bool Interpolate_wavenumber = false);
   IlsTableLinear(const HdfFile& Hdf_static_input, int Spec_index,
                  const std::string& Band_name, const std::string& Hdf_band_name,
                  const std::string& Hdf_group = "Instrument/ILS");
   virtual ~IlsTableLinear() {}
   virtual void ils
   (const AutoDerivative<double>& wn_center,
-   const blitz::Array<double, 1>& wn, ArrayAd<double, 1>& OUTPUT) const;
+   const blitz::Array<double, 1>& wn, ArrayAd<double, 1>& OUTPUT,
+   bool jac_optimization=false) const;
 
   %python_attribute(wavenumber, blitz::Array<double, 1>)
   %python_attribute(delta_lambda, blitz::Array<double, 2>)
@@ -42,17 +45,20 @@ public:
 class IlsTableLog : public IlsFunction {
 public:
   IlsTableLog(const blitz::Array<double, 1>& Wavenumber, 
-              const blitz::Array<double, 2>& Delta_lambda, 
-              const blitz::Array<double, 2>& Response,
-              const std::string& Band_name, const std::string& Hdf_band_name,
-              bool Interpolate_wavenumber = false);
+	      const blitz::Array<double, 2>& Delta_lambda, 
+	      const blitz::Array<double, 2>& Response,
+	      const blitz::Array<double, 1>& Scale,
+	      const blitz::Array<bool, 1>& Scale_flag,
+	      const std::string& Band_name, const std::string& Hdf_band_name,
+	      bool Interpolate_wavenumber = false);
   IlsTableLog(const HdfFile& Hdf_static_input, int Spec_index,
               const std::string& Band_name, const std::string& Hdf_band_name,
               const std::string& Hdf_group = "Instrument/ILS");
   virtual ~IlsTableLog() {}
   virtual void ils
   (const AutoDerivative<double>& wn_center,
-   const blitz::Array<double, 1>& wn, ArrayAd<double, 1>& OUTPUT) const;
+   const blitz::Array<double, 1>& wn, ArrayAd<double, 1>& OUTPUT,
+   bool jac_optimization=false) const;
 
   %python_attribute(wavenumber, blitz::Array<double, 1>)
   %python_attribute(delta_lambda, blitz::Array<double, 2>)

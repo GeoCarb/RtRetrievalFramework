@@ -8,7 +8,7 @@ using namespace blitz;
 #include "register_lua.h"
 REGISTER_LUA_CLASS(CO2ProfilePrior)
 .def(luabind::constructor<const OcoMetFile&,
-     const HdfFile&>())
+     const HdfFile&, const std::string&>())
 .def("apriori_vmr", &CO2ProfilePrior::apriori_vmr)
 REGISTER_LUA_END()
 #endif
@@ -19,11 +19,11 @@ REGISTER_LUA_END()
 
 CO2ProfilePrior::CO2ProfilePrior
 (const OcoMetFile& Met_file,
- const HdfFile& Profile_file)
+ const HdfFile& Profile_file,
+ const std::string& field)
 : model_press(Met_file.pressure_levels())
 {
   boost::shared_ptr<HdfSoundingId> hsid = Met_file.sounding_id();
-  std::string field = "CO2Prior/co2_prior_profile_cpr";
   TinyVector<int, 3> sz = Profile_file.read_shape<3>(field);
   Array<double, 3> traw = Profile_file.read_field<double, 3>
     (field,

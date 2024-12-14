@@ -57,7 +57,8 @@ IlsTable<Lint>::IlsTable(const HdfFile& Hdf_static_input,
                          const std::string& Band_name,
                          const std::string& Hdf_band_name,
                          const std::string& Hdf_group)
-: band_name_(Band_name), hdf_band_name_(Hdf_band_name),
+: SubStateVectorArray<IlsFunction>(1.0, false),
+  band_name_(Band_name), hdf_band_name_(Hdf_band_name),
   from_hdf_file(true),
   hdf_file_name(Hdf_static_input.file_name())
 {
@@ -122,7 +123,7 @@ template<class Lint>
 void IlsTable<Lint>::ils
 (const AutoDerivative<double>& wn_center,
  const blitz::Array<double, 1>& wn,
- ArrayAd<double, 1>& res) const
+ ArrayAd<double, 1>& res, bool jac_optimization) const
 {
   // Note that this function is a bottleneck, so we have written this
   // for speed at the expense of some clarity.
@@ -133,19 +134,22 @@ void IlsTable<Lint>::ils
   t.gradient().resize(wn_center.number_variable());
   AutoDerivativeRef<double> tref(t.value(), t.gradient());
 
-  // w will be wn(i) - wn_center. We do this calculation in 2 steps
+  // w will be (wn(i) - wn_center)/coeff(0). We do this calculation in 2 steps
   // to speed up the calculation.
   AutoDerivative<double> w;
   w.gradient().resize(wn_center.number_variable());
-  w.gradient()(0) = -wn_center.gradient()(0);
-  w.gradient()(1) =  0.;
-
-  AutoDerivative<double> coeff2;
-  coeff2.value() = coeff.value()(0);
-  coeff2.gradient().resize(2);
-  coeff2.gradient()(0) = 0.;
-  coeff2.gradient()(1) = 1.;
-  AutoDerivative<double> w2;
+  AutoDerivative<double> scale;
+  // See IlsFunction for description of this optimization.
+  // We use d[wn_center,coeff]
+  if(jac_optimization)
+    scale = AutoDerivative<double>(coeff(0).value(), 1, 2);
+  else
+    scale = coeff(0);
+  blitz::Array<double, 1> g2 = (-wn_center/scale).gradient();
+  blitz::Array<double, 1> g1;
+  if(!scale.is_constant())
+    g1.reference((1/scale).gradient());
+  w.gradient() = g2;
 
   // This returns the value for the first wn not less than wn_center.
   it inter = delta_lambda_to_response.lower_bound(wn_center.value());
@@ -156,8 +160,10 @@ void IlsTable<Lint>::ils
     --inter;
 
   for(int i = 0; i < res.rows(); ++i) {
-    w.value() = (wn(i) - wn_center.value());
-    inter->second.interpolate(w * 1. / coeff2, res(i));
+    w.value() = (wn(i) - wn_center.value())/scale.value();
+    if(!scale.is_constant())
+      w.gradient() = wn(i) * g1 + g2;
+    inter->second.interpolate(w, res(i));
   }
 
   // Do an interpolation in the wavenumber direction, if requested.
@@ -169,6 +175,9 @@ void IlsTable<Lint>::ils
       f = (wn_center - wn1) / (wn2 - wn1);
       for(int i = 0; i < res.rows(); ++i) {
         w.value() = wn(i) - wn_center.value();
+	w.value() = (wn(i) - wn_center.value())/scale.value();
+	if(!scale.is_constant())
+	  w.gradient() = wn(i) * g1 + g2;
         inter->second.interpolate(w, tref);
         double v = res(i).value();
         res(i).value_ref() = (1 - f.value()) * v + f.value() * t.value();
