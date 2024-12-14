@@ -103,7 +103,7 @@ contains
 
 !  local variables
 
-      double precision Asurf,ws,ri,sfac,emu,flux
+      double precision Asurf,ws,ri,sfac,scale,emu,flux
 
       do_lambertian = .false.
 
@@ -189,13 +189,14 @@ contains
         Asurf = spars(3)
 !  Shadow parameter changed to spars(4), 8/17/2010, V. Natraj
         sfac = spars(4)
+        scale = spars(5)
 
 !  R1 and Linearized R1
 
         if (s_linearize) then
           call L_R1_glint_exact &
            (nstokes,nspars, & !inputs
-            emu,emu0,phi,ws,ri,Asurf,sfac, & !inputs ! V. Natraj, 7/17/2010
+            emu,emu0,phi,ws,ri,Asurf,sfac,scale, & !inputs ! V. Natraj, 7/17/2010
             R1,Ls_R1) ! outputs
 
 !  R1 alone
@@ -203,7 +204,7 @@ contains
         else
           call R1_glint_exact &
            (nstokes,nspars, & !inputs
-            emu,emu0,phi,ws,ri,Asurf,sfac, & !inputs ! V. Natraj, 8/17/2010
+            emu,emu0,phi,ws,ri,Asurf,sfac,scale, & !inputs ! V. Natraj, 8/17/2010
             R1) ! output
         endif
 

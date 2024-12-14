@@ -19,6 +19,7 @@ Level1bCache::Level1bCache(const Level1b& L1_in)
     alt.push_back(L1_in.altitude(i));
     rvel.push_back(L1_in.relative_velocity(i));
     stk_coeff.push_back(L1_in.stokes_coefficient(i).copy());
+    stk_coeff_central_wl.push_back(L1_in.stokes_coefficient_central_wl(i));
     spec_coeff.push_back(L1_in.spectral_coefficient(i));
     tm.push_back(L1_in.time(i));
     rad.push_back(L1_in.radiance(i).clone());

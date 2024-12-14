@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(simple)
 {
   int nlayer = 1;
   Array<double, 1> heights(nlayer+1);
-  Array<double, 1> surface_params(4); 
+  Array<double, 1> surface_params(5); 
   Array<double, 1> od(nlayer);
   Array<double, 1> ssa(nlayer);
   Array<double, 2> pf(lidort_driver->number_moment(), nlayer);
@@ -163,8 +163,9 @@ BOOST_AUTO_TEST_CASE(simple)
 
   ////////////////
   // Surface only
-  surface_params(0) = 1.0e-6;
-  surface_params(1) = 1.334;
+  surface_params(0) = 1.0;
+  surface_params(1) = 1.0e-6;
+  surface_params(2) = 1.334;
   
   taur = 1.0e-6/nlayer;
   taug = 1.0e-6/nlayer;
@@ -194,7 +195,7 @@ BOOST_AUTO_TEST_CASE(simple)
 {
   int nlayer = 1;
   Array<double, 1> heights(nlayer+1);
-  Array<double, 1> surface_params(4); 
+  Array<double, 1> surface_params(5); 
   ArrayAd<double, 1> od(nlayer, 1);
   ArrayAd<double, 1> ssa(nlayer, 1);
   ArrayAd<double, 2> pf(lidort_driver->number_moment(),nlayer, 1);
@@ -222,9 +223,10 @@ BOOST_AUTO_TEST_CASE(simple)
 
   ////////////////
   // Surface only
-  surface_params(0) = 1.0e-6;
-  surface_params(1) = 1.334;
-  surface_params(2) = 0.5;
+  surface_params(0) = 1.0;
+  surface_params(1) = 1.0e-6;
+  surface_params(2) = 1.334;
+  surface_params(3) = 0.5;
 
   taur = 1.0e-6/nlayer;
   taug = 1.0e-6/nlayer;
@@ -251,8 +253,8 @@ BOOST_AUTO_TEST_CASE(simple)
   BOOST_CHECK_EQUAL(check_brdf_inputs(lidort_driver), true);
 
   // Adjust analytic jacobians have same meaning as fd jacobians
-  jac_surf(0) *= lidort_surface.jacobian()(0,0);
   jac_surf(1) *= lidort_surface.jacobian()(1,0);
+  jac_surf(2) *= lidort_surface.jacobian()(2,0);
 
   // Value for VLIDORT
   refl_expt = 0.70235315460259928;
@@ -261,7 +263,7 @@ BOOST_AUTO_TEST_CASE(simple)
   // Check surface jacobians against FD
 
   blitz::Array<double, 1> pert_values(surface_params.extent(firstDim)-1);
-  pert_values = 1e-8, 1e-8, 1e-6;
+  pert_values = 1.e8, 1e-8, 1e-8, 1e-6;
 
   blitz::Array<double, 1> jac_surf_fd( jac_surf.extent() );
   double refl_fd;
@@ -298,8 +300,8 @@ BOOST_AUTO_TEST_CASE(simple)
   BOOST_CHECK_EQUAL(check_brdf_inputs(lidort_driver), true);
 
   // Adjust analytic jacobians have same meaning as fd jacobians
-  jac_surf(0) *= lidort_surface.jacobian()(0,0);
   jac_surf(1) *= lidort_surface.jacobian()(1,0);
+  jac_surf(2) *= lidort_surface.jacobian()(2,0);
 
   for(int p_idx = 0; p_idx < pert_values.extent(firstDim); p_idx++) {
     blitz::Array<double,1> surface_params_pert( surface_params.extent() );
@@ -331,8 +333,8 @@ BOOST_AUTO_TEST_CASE(simple)
   BOOST_CHECK_EQUAL(check_brdf_inputs(lidort_driver), true);
 
   // Adjust analytic jacobians have same meaning as fd jacobians
-  jac_surf(0) *= lidort_surface.jacobian()(0,0);
   jac_surf(1) *= lidort_surface.jacobian()(1,0);
+  jac_surf(2) *= lidort_surface.jacobian()(2,0);
 
   for(int p_idx = 0; p_idx < pert_values.extent(firstDim); p_idx++) {
     blitz::Array<double,1> surface_params_pert( surface_params.extent() );

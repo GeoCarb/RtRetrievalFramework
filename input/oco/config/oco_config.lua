@@ -50,6 +50,31 @@ function OcoConfig.instrument_correction_list_acquisition_mode:sub_object_key()
 end
 
 ------------------------------------------------------------
+--- Determine land vs water, and
+--- select the instrument corrections based on this.
+------------------------------------------------------------
+
+
+OcoConfig.instrument_correction_list_land_water = ConfigCommon.instrument_correction_list:new()
+
+
+function OcoConfig.instrument_correction_list_land_water:sub_object_key()
+
+   local lw
+   lw = self.config:land_or_water()
+   
+   local res
+   if lw == "land" then 
+      res = self.ic_land
+   elseif lw == "water" then 
+      res = self.ic_water
+   else
+      error("Unrecognized land/water " .. lw)
+   end
+   return res
+end
+
+------------------------------------------------------------
 -- Determine sounding id list from HDF file
 -- Overrides empty behavior from ConfigCommon
 ------------------------------------------------------------
@@ -374,6 +399,28 @@ function OcoConfig.ground_from_ground_type:get_creator()
    end
 end
 
+OcoConfig.ground_from_ground_type_scaled = DispatchCreator:new()
+
+function OcoConfig.ground_from_ground_type_scaled:get_creator()
+   local ground_type = self.config:ground_type_name()
+
+   if (ground_type == "lambertian") then
+      return ConfigCommon.ground_lambertian
+   elseif (ground_type == "brdf_soil") then
+      return ConfigCommon.ground_brdf_soil
+   elseif (ground_type == "brdf_veg") then
+      return ConfigCommon.ground_brdf_veg
+   elseif (ground_type == "coxmunk") then
+      if(self.config.using_radiance_scaling ~= nil) then
+         return ConfigCommon.ground_coxmunk
+      else
+         return ConfigCommon.ground_coxmunk_scaled
+      end
+   else
+      error("Invalid ground type value: " .. ground_type)
+   end
+end
+
 ------------------------------------------------------------
 --- Create lambertian ground initial guess from radiance
 --- but the other parts from the static HDF file
@@ -451,11 +498,6 @@ function OcoConfig.ils_table_l1b:create()
    local sid = self.config:l1b_sid_list()
    sounding_num = sid:sounding_number()
 
-   local scale = Blitz_double_array_1d(1)
--- scale:set(0, self.scale_apriori)
-   local scale_flag = Blitz_bool_array_1d(1)
--- scale_flag:set(0, self.retrieved)
-
    -- Use a simple table ILS since the ILS supplies
    -- a full set of delta_lambda/repsonses per pixel
    interpolate = false
@@ -463,6 +505,8 @@ function OcoConfig.ils_table_l1b:create()
    local idx
    local wavenumber, delta_lambda
    local res = {}
+   local scale = Blitz_double_array_1d(1)
+   local scale_flag = Blitz_bool_array_1d(1)
    for idx = 0, self.config.number_pixel:rows() - 1 do
       scale:set(0, self.scale_apriori[idx+1])
       scale_flag:set(0, self.retrieve_bands[idx+1])
@@ -488,28 +532,29 @@ function OcoConfig.ils_table_l1b:create()
    return res
 end
 
+-- For IlsInstrument, we need to build up the initial guess in
+-- the same order things are put into the statevector.
 function OcoConfig.ils_table_l1b:initial_guess_i(i)
    local res = CompositeInitialGuess()
-
    local scale = Blitz_double_array_1d(1)
    scale:set(0, self.scale_apriori[i])
    local scale_flag = Blitz_bool_array_1d(1)
    scale_flag:set(0, self.retrieve_bands[i])
    local covariance = Blitz_double_array_2d(1,1)
    covariance:set(0, 0, self.scale_cov[i])
-
    local ig = InitialGuessValue()
    ig:apriori_subset(scale_flag, scale)
    ig:apriori_covariance_subset(scale_flag, covariance)
    res:add_builder(ig)
-
    return res
 end
 
 function OcoConfig.ils_table_l1b:register_output(ro)
-   for i = 1, self.config.number_pixel:rows() do
-      local hdf_band_name = self.config.common.hdf_band_name:value(i-1)
-      ro:push_back(IlsTableLogOutput.create(self.config.ils_func[i], hdf_band_name))
+   if(self.use_scale) then
+      for i = 1, self.config.number_pixel:rows() do
+	 local hdf_band_name = self.config.common.hdf_band_name:value(i-1)
+	 ro:push_back(IlsTableLogOutput.create(self.config.ils_func[i], hdf_band_name))
+      end
    end
 end
 

@@ -57,8 +57,10 @@ GeocarbBaseConfig = GeocarbConfig:new {
 
    solver = { threshold=2.0,
               min_iteration=3,
-              max_iteration=7,
-              max_divergence=2,
+--            max_iteration=7,
+--            max_divergence=2,
+              max_iteration=15,
+              max_divergence=5,
               max_chisq=1.4,
               gamma_initial=10.0,
               h2o_scale_index0=20,
@@ -150,7 +152,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
             creator = GeocarbConfig.level1b_hdf,
             noise = {
                creator = GeocarbConfig.oco_noise,
-               max_ms = { 1.4e21, 4.5e20, 2.5e20, 2.0e20 },
+               max_ms = { 1.4e21, 4.9e20, 2.5e20, 2.0e20 },
             },
          },
          met = {
@@ -347,6 +349,12 @@ GeocarbBaseConfig = GeocarbConfig:new {
                retrieve_bands = {true, true, true, true},
                eof_used = {true, true, true, true},
             },
+	    zero_offset_waveform = {
+	       creator = GeocarbConfig.zero_offset_waveform_land_only,
+	       apriori = ConfigCommon.hdf_apriori_i("Instrument/ZeroLevelOffset"),
+	       covariance = ConfigCommon.hdf_covariance_i("Instrument/ZeroLevelOffset"),
+	       retrieve_bands = { true, true, true, true },
+	    },
 
             -- Disabled by default, add "radiance_scaling" to
             -- config.fm.instrument_correction.ic to enable.
@@ -384,7 +392,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
          fluorescence = {
             creator = GeocarbConfig.fluorescence_effect_land_only,
             apriori = ConfigCommon.fluorescence_apriori("Fluorescence"),
-            sif_sigma_scale = 1.0 / 3,
+            sif_sigma_scale = 1.0,
             covariance = ConfigCommon.fluorescence_covariance("Fluorescence"),
             reference_point = ConfigCommon.hdf_read_double_with_unit("Fluorescence/reference_point"),
             retrieved = true,
@@ -469,6 +477,15 @@ GeocarbBaseConfig = GeocarbConfig:new {
                covariance = ConfigCommon.hdf_covariance_i("Ground/Coxmunk_Albedo"),
                retrieve_bands = {true, true, true, true},
                creator = ConfigCommon.lambertian_retrieval,
+            },
+
+            -- Lambertian component of coxmunk + lambertian
+            coxmunk_scaled = {
+               apriori = ConfigCommon.hdf_apriori_i("Ground/Coxmunk_Scaled"),
+               covariance = ConfigCommon.hdf_covariance_i("Ground/Coxmunk_Scaled"),
+               retrieve_bands = { true, true, true, true },
+               scaled_brdf_name = "CoxMunk",
+               creator = ConfigCommon.brdf_scale_retrieval,
             },
 
             -- Brdf vegetative kernel with Rahman retrieved parameters

@@ -480,6 +480,19 @@ function ConfigCommon:l1b_hdf_file()
 end
 
 ------------------------------------------------------------
+-- Open ARP HDF file if we have one.
+------------------------------------------------------------
+
+function ConfigCommon:arp_hdf_file()
+   if(self.arp_file and not self.arp_hdf_file_v) then
+      self.arp_hdf_file_v = HdfFile(self.arp_file)
+      self.input_file_description = self.input_file_description .. 
+	 "ARP input file:      " .. self.arp_file .. "\n"
+   end
+   return self.arp_hdf_file_v
+end
+
+------------------------------------------------------------
 -- Determine sounding id list from HDF file
 -- Contents is instrument specific and not defined here
 ------------------------------------------------------------
@@ -880,10 +893,19 @@ function ConfigCommon:met_windspeed()
 end
 
 function ConfigCommon:met_temperature()
-   return self.config.met:temperature(self.config.pinp:pressure_level())
+   return self.config.met:temperature(self.config.pressure:pressure_level())
 end
 
 function ConfigCommon:met_h2o_vmr()
+   return self.config.met:vmr("H2O", self.config.pressure:pressure_level())
+end
+
+-- These use the deprecated fixed pressure levels object
+function ConfigCommon:met_temperature_fixed_pressure()
+   return self.config.met:temperature(self.config.pinp:pressure_level())
+end
+
+function ConfigCommon:met_h2o_vmr_fixed_pressure()
    return self.config.met:vmr("H2O", self.config.pinp:pressure_level())
 end
 
@@ -950,11 +972,11 @@ function ConfigCommon:reference_co2_apriori_met_apriori()
 end
 
 ------------------------------------------------------------
---- Get co2 apriori for the profile file
+--- Get co2 apriori from the profile file
 ------------------------------------------------------------
 
 function ConfigCommon:co2_profile_file_apriori()
-   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile())
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "CO2Prior/co2_prior_profile_cpr")
    return t:apriori_vmr(self.config.pressure)
 end
 
@@ -1001,6 +1023,15 @@ function ConfigCommon:reference_ch4_apriori_met_apriori()
 end
 
 ------------------------------------------------------------
+--- Get ch4 apriori from the profile file
+------------------------------------------------------------
+
+function ConfigCommon:ch4_profile_file_apriori()
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "CH4Prior/ch4_prior_profile_cpr")
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
 --- Load the CO VMR object
 ------------------------------------------------------------
 
@@ -1018,6 +1049,15 @@ end
 
 function ConfigCommon:reference_co_apriori_met_apriori()
    local t = self.config:reference_co_apriori_met_obj()
+   return t:apriori_vmr(self.config.pressure)
+end
+
+------------------------------------------------------------
+--- Get co apriori from the profile file
+------------------------------------------------------------
+
+function ConfigCommon:co_profile_file_apriori()
+   local t = CO2ProfilePrior(self.config.met, self.config:h_co2_profile(), "COPrior/co_prior_profile_cpr")
    return t:apriori_vmr(self.config.pressure)
 end
 
@@ -1125,6 +1165,10 @@ function ConfigCommon.ils_table:create()
    return res
 end
 
+function ConfigCommon.ils_table:initial_guess_i(i)
+   return CompositeInitialGuess()
+end
+
 ------------------------------------------------------------
 --- Create dispersion as a polynomial
 ------------------------------------------------------------
@@ -1163,8 +1207,8 @@ function ConfigCommon.dispersion_polynomial:create()
    local res = {}
    for i=1,self.config.number_pixel:rows() do
       local disp_coeff = self:coefficients(i)
-      local disp_flag = self:retrieval_flag(i)
       local disp_units = self:units(i)
+      local disp_flag = self:retrieval_flag(i)
       local desc_band_name = self.config.common.desc_band_name:value(i-1)
       res[i] = DispersionPolynomial(disp_coeff, disp_flag, disp_units,
                                     desc_band_name, 
@@ -1188,6 +1232,8 @@ function ConfigCommon.dispersion_polynomial:initial_guess()
    return res
 end
 
+-- For IlsInstrument, we need to build up the initial guess in
+-- the same order things are put into the statevector.
 function ConfigCommon.dispersion_polynomial:initial_guess_i(i)
    local res = CompositeInitialGuess()
    local disp_coeff = self:coefficients(i)
@@ -1366,49 +1412,36 @@ function ConfigCommon.ils_instrument:sub_object_key()
    return {"dispersion", "ils_func", "instrument_correction"}
 end
 
+-- We handle dispersion and ils_func separately
+function ConfigCommon.ils_instrument:sub_initial_guess_key()
+   return {"instrument_correction"}
+end
+
 function ConfigCommon.ils_instrument:create_parent_object(sub_object)
    local ils = VectorIls()
-   local i
-   for i, disp in ipairs(self.config.dispersion) do
-      ils:push_back(IlsConvolution(self.config.dispersion[i],
-                                   self.config.ils_func[i],
+   local i, ilf
+   for i, ilf in ipairs(self.config.ils_func) do
+      ils:push_back(IlsConvolution(self.config.dispersion[i], ilf, 
                                    self.ils_half_width[i]))
    end
    return IlsInstrument(ils, self.config.instrument_correction)
 end
 
 function ConfigCommon.ils_instrument:initial_guess()
-   local i
    local res = CompositeInitialGuess()
+   local i, j, k
+   local t, c
+   -- Reorder dispersion and ils_func. Because it comes in a IlsConvolution
+   -- indexed by spectrometer
    for i=1,self.config.number_pixel:rows() do
-      local t
-
-      k = 'dispersion'
-      t = self[k]
-      if t.retrieved then
-         local c = t.creator:new(t, self.config, k)
-         local ig = InitialGuessValue()
-         ig = c:initial_guess_i(i)
-         res:add_builder(ig)
-      end
-
-      k = 'ils_func'
-      t = self[k]
-      if t.retrieve_bands[i] then
-         local c = t.creator:new(t, self.config, k)
-         local ig = InitialGuessValue()
-         ig = c:initial_guess_i(i)
-         res:add_builder(ig)
+      for j, k in ipairs({"dispersion", "ils_func"}) do
+	 self.config:diagnostic_message("Initial guess " .. k .. "(" .. i .. ")")
+	 t = self[k]
+	 local c = t.creator:new(t, self.config, k)
+	 res:add_builder(c:initial_guess_i(i))
       end
    end
-
-   k = 'instrument_correction'
-   t = self[k]
-   local c = t.creator:new(t, self.config, k)
-   local ig = InitialGuessValue()
-   ig = c:initial_guess()
-   res:add_builder(ig)
-
+   res:add_builder(CompositeCreator.initial_guess(self))
    return res
 end
 
@@ -2228,6 +2261,21 @@ function ConfigCommon.temperature_level_offset:register_output(ro)
 end
 
 ------------------------------------------------------------
+--- Temperature using specificed level values
+--- where we fit all levels
+------------------------------------------------------------
+
+ConfigCommon.temperature_level = CreatorApriori:new {}
+
+function ConfigCommon.temperature_level:create()
+   return TemperatureLevel(self:apriori(), self.config.pressure, self:retrieval_flag())
+end
+
+function ConfigCommon.temperature_level:register_output(ro)
+  --ro:push_back(TemperatureLevelOutput.create(self.config.temperature))
+end
+
+------------------------------------------------------------
 --- Lambertian ground state vector component and initial guess
 ------------------------------------------------------------
 
@@ -2252,6 +2300,59 @@ function ConfigCommon.lambertian_retrieval:create()
 end
 
 function ConfigCommon.lambertian_retrieval:initial_guess()
+   local ig = CompositeInitialGuess()
+   for i=1,self.config.number_pixel:rows() do
+       local flag = self:retrieval_flag(i)
+
+       local ap = self:apriori_v(i - 1) 
+       local apcov_in = self:covariance_v(i - 1)
+
+       -- Copy input covariance to modified one which repeats the last covariance value if
+       -- the number of degrees is defined
+       local apcov_mod = Blitz_double_array_2d(ap:rows(), ap:rows())
+       apcov_mod:set(Range.all(), Range.all(), 0.0)
+       src_idx = 0
+       for dst_idx = 0, ap:rows()-1 do
+          apcov_mod:set(dst_idx, dst_idx, apcov_in(src_idx, src_idx))
+          if dst_idx < apcov_in:rows()-1 then
+             src_idx = src_idx + 1
+          end
+       end
+
+       local band_ig = InitialGuessValue()
+       band_ig:apriori_subset(flag, ap)
+       band_ig:apriori_covariance_subset(flag, apcov_mod)
+       ig:add_builder(band_ig)
+   end
+   return ig 
+end
+
+------------------------------------------------------------
+--- Lambertian ground state vector component and initial guess
+------------------------------------------------------------
+
+ConfigCommon.brdf_scale_retrieval = CreatorMultiSpec:new {}
+
+function ConfigCommon.brdf_scale_retrieval:create()
+   local num_coeff = self:apriori_v(0):rows()
+   local num_spec = self.config.number_pixel:rows()
+
+   local ap = Blitz_double_array_2d(num_spec, num_coeff)
+   local flag = Blitz_bool_array_2d(num_spec, num_coeff)
+
+   for i = 1, num_spec do
+       ap:set(i-1, Range.all(), self:apriori_v(i - 1))
+       flag:set(i-1, Range.all(), self:retrieval_flag(i))
+   end
+
+   local lambertian = GroundBrdfWeight(ap, flag, 
+                                       self.config.common.band_reference,
+                                       self.config.common.desc_band_name,
+                                       self.scaled_brdf_name)
+   return lambertian
+end
+
+function ConfigCommon.brdf_scale_retrieval:initial_guess()
    local ig = CompositeInitialGuess()
    for i=1,self.config.number_pixel:rows() do
        local flag = self:retrieval_flag(i)
@@ -2327,7 +2428,7 @@ function ConfigCommon.ground_coxmunk:register_output(ro)
 end
 
 ------------------------------------------------------------
---- Creates a GroundOco using both Lambertioan and Coxmunk 
+--- Creates a GroundOco using both Lambertian and Coxmunk 
 --- retrieval
 ------------------------------------------------------------
 
@@ -2344,6 +2445,26 @@ end
 
 function ConfigCommon.ground_coxmunk_plus_lamb:register_output(ro)
    ro:push_back(GroundCoxmunkPlusLambertianOutput.create(self.config.coxmunk, self.config.coxmunk_lambertian, self.config.common.hdf_band_name))
+end
+
+------------------------------------------------------------
+--- Creates a GroundOco using both Lambertian and Coxmunk 
+--- retrieval
+------------------------------------------------------------
+
+ConfigCommon.ground_coxmunk_scaled = CompositeCreator:new {}
+
+function ConfigCommon.ground_coxmunk_scaled:sub_object_key()
+   -- Ordering is important here or else the statevector is setup incorrectly
+   return { "coxmunk", "coxmunk_scaled" }
+end
+
+function ConfigCommon.ground_coxmunk_scaled:create_parent_object(sub_object)
+   return GroundCoxmunkScaled.create(self.config.coxmunk, self.config.coxmunk_scaled)
+end
+
+function ConfigCommon.ground_coxmunk_scaled:register_output(ro)
+   ro:push_back(GroundCoxmunkScaledOutput.create(self.config.l1b, self.config.coxmunk, self.config.coxmunk_scaled, self.config.common.hdf_band_name))
 end
 
 ------------------------------------------------------------
@@ -2395,17 +2516,13 @@ end
 ConfigCommon.brdf_retrieval = CreatorMultiSpec:new {}
 
 function ConfigCommon.brdf_retrieval:retrieval_flag(i)
-   local n_coefs = self:apriori_v(i - 1):rows()
+   local num_coefs = self:apriori_v(i - 1):rows()
 
-   local flag = Blitz_bool_array_1d(n_coefs)
-
-   n_coefs = self:apriori_v(0):rows()
-
-   n_coefs = self:apriori_v(0):rows()
+   local flag = Blitz_bool_array_1d(num_coefs)
 
    if self.retrieve_bands ~= nil and self.retrieve_bands[i] then
        flag:set(Range.all(), false)
-       for i = 5, n_coefs - 1 do
+       for i = 5, num_coefs - 1 do
            flag:set(i, true)
        end
    else
@@ -2422,12 +2539,10 @@ ConfigCommon.brdf_veg_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_veg_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-   local n_coefs  = self:apriori_v(0):rows()
+   local num_coefs = self:apriori_v(0):rows()
 
-   n_coefs = self:apriori_v(0):rows()
-
-   local ap = Blitz_double_array_2d(num_spec, n_coefs)
-   local flag = Blitz_bool_array_2d(num_spec, n_coefs)
+   local ap = Blitz_double_array_2d(num_spec, num_coefs)
+   local flag = Blitz_bool_array_2d(num_spec, num_coefs)
 
    for i = 1, num_spec do
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
@@ -2462,12 +2577,10 @@ ConfigCommon.brdf_soil_retrieval = ConfigCommon.brdf_retrieval:new {}
 
 function ConfigCommon.brdf_soil_retrieval:create()
    local num_spec = self.config.number_pixel:rows()
-   local n_coefs  = self:apriori_v(0):rows()
+   local num_coefs = self:apriori_v(0):rows()
 
-   n_coefs = self:apriori_v(0):rows()
-
-   local ap = Blitz_double_array_2d(num_spec, n_coefs)
-   local flag = Blitz_bool_array_2d(num_spec, n_coefs)
+   local ap = Blitz_double_array_2d(num_spec, num_coefs)
+   local flag = Blitz_bool_array_2d(num_spec, num_coefs)
 
    for i = 1, num_spec do
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
@@ -3863,7 +3976,6 @@ function ConfigCommon:connor_solver(config)
    cov_initial:set(2, self.co_scale_cov_initial)
    config.conn_solver = ConnorSolver.create(cost_func, conv,
                                             self.gamma_initial,
-                                            config.atmosphere,
                                             index0, index1, cov_initial)
    local iter_log = SolverIterationLog(config.state_vector)
    iter_log:add_as_observer(config.conn_solver)
