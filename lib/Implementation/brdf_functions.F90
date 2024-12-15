@@ -5,7 +5,7 @@ module brdf_functions_m
     USE LIDORT_pars_m, only : fpk, DEG_TO_RAD, MAXBEAMS, MAXSTREAMS_BRDF, &
                               MAX_BRDF_KERNELS, MAXSTHALF_BRDF, MAX_BRDF_PARAMETERS, &
                               ZERO, ONE, TWO, PIE, MAX_USER_STREAMS, MAX_USER_RELAZMS, &
-                              BPDFVEGN_IDX, BPDFSOIL_IDX, RAHMAN_IDX
+                              COXMUNK_IDX, BPDFVEGN_IDX, BPDFSOIL_IDX, RAHMAN_IDX
 
     USE l_surface_m
 
