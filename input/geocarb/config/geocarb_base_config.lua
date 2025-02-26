@@ -1,12 +1,9 @@
-
---- This sets up the "standard" run we use in the unit tests, you can
---- then use this and override any feature you want to be done
---- differently
----
---- Pull anything from CommonConfig through the CommonConfig name and
---- anything in GeocarbConfig from that name instead of all through
---- GeocarbConfig to better differentiate where routines are being
---- loaded from.
+-- This sets up the "standard" run we use in the unit tests, you can then
+-- use this and override any feature you want to be done differently
+--
+-- Pull anything from CommonConfig through the CommonConfig name and
+-- anything in GeoCarbConfig from that name instead of all through GeoCarbConfig
+-- to better differentiate where routines are being loaded from.
 
 require "geocarb_config"
 geocarb_base_config_dir = ConfigCommon.local_dir()
@@ -21,6 +18,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
    sid_string = os.getenv("sounding_id"),
    spectrum_file = os.getenv("spectrum_file"),
    met_file = os.getenv("met_file"),
+   co2_pr_file = os.getenv("co2_pr_file"),
    imap_file = os.getenv("imap_file"),
    --- Scene file is only used it we are trying to match a simulator
    --- run. So for a real data, this will be a empty string, and will
@@ -145,6 +143,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
       },
       spec_win = {
          creator = ConfigCommon.spectral_window_hdf,
+         bad_sample_mask = GeocarbConfig.l1b_bad_sample_mask,
       },
       input = {
          creator = ConfigCommon.l1b_met_input,
@@ -177,6 +176,8 @@ GeocarbBaseConfig = GeocarbConfig:new {
                             DoubleWithUnit(1.58e-03, "um")},
          dispersion = {
             creator = ConfigCommon.dispersion_polynomial,
+--          creator = ConfigCommon.dispersion_polynomial_fitted,
+--          creator = ConfigCommon.dispersion_polynomial_inst_doppler,
             apriori = ConfigCommon.l1b_spectral_coefficient_i,
             covariance = GeocarbConfig.dispersion_covariance_i("Instrument/Dispersion"),
             number_pixel = ConfigCommon.hdf_read_int_1d("Instrument/Dispersion/number_pixel"),
@@ -189,6 +190,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
             scale_apriori = {1.0, 1.0, 1.0, 1.0},
             scale_cov = {0.001, 0.001, 0.001, 0.001},
             retrieve_bands = {false, false, false, false},
+	    use_scale = false
          },
          instrument_correction = {
             creator = GeocarbConfig.instrument_correction_list_acquisition_mode,
@@ -410,8 +412,6 @@ GeocarbBaseConfig = GeocarbConfig:new {
          },
       },
       rt = {
---       creator = ConfigCommon.radiative_transfer_lrad,
---       nstream = 8,
          creator = ConfigCommon.radiative_transfer_lsi,
          nadir_threshold = 1e-6,
          lsi_constant = {
@@ -454,9 +454,8 @@ GeocarbBaseConfig = GeocarbConfig:new {
 
             -- Pure lambertian
             lambertian = {
---             albedo_coeffs = {{0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}, {0.2, 0.0}},
---             albedo_coeffs = {{0.25, 0.0}, {0.30, 0.0}, {0.15, 0.0}, {0.066, 0.0}},
 --             apriori = GeocarbConfig.albedo_from_constants,
+--             albedo_coeffs = {{0.25, 0.0}, {0.30, 0.0}, {0.15, 0.0}, {0.066, 0.0}},
                apriori = GeocarbConfig.oco_albedo_from_radiance(1),
                covariance = ConfigCommon.hdf_covariance_i("Ground/Albedo"),
                retrieve_bands = {true, true, true, true},
@@ -506,11 +505,13 @@ GeocarbBaseConfig = GeocarbConfig:new {
 
 --          creator = ConfigCommon.ground_lambertian,
             creator = GeocarbConfig.ground_from_ground_type,
+--          creator = GeocarbConfig.ground_from_ground_type_scaled,
          },
          aerosol = {
 --          creator = ConfigCommon.rayleigh_only,
---          creator = ConfigCommon.aerosol_creator,
             creator = ConfigCommon.merra_aerosol_creator,
+--          creator = ConfigCommon.merra_aerosol_mpop_creator,
+--          creator = ConfigCommon.aerosol_met_prior_creator,
             max_aod = 0.2,
             exp_aod = 0.8,
             min_types = 2,
@@ -553,9 +554,17 @@ GeocarbBaseConfig = GeocarbConfig:new {
             number_sub_layers = 10,
             gases = {"CO2", "H2O", "O2", "CH4", "CO"},
             CO2 = {
+--             scale_apriori = 1.0,
+--             scale_cov = 0.25,
+--             vmr_profile = ConfigCommon.reference_ch4_apriori_met_apriori,
+--             vmr_profile = ConfigCommon.tccon_co2_apriori_met,
+--             absco = "absco_carbo/fabiano_201803/raw/co2_carbo.hdf",
+--             table_scale = {1.0, 1.0, 1.0, 1.0},
+--             creator = ConfigCommon.vmr_scaled,
+
 --             apriori = ConfigCommon.reference_co2_apriori_met_apriori,
                apriori = ConfigCommon.tccon_co2_apriori_met,
---             apriori = GeocarbConfig.co2_apriori_from_scene,
+--             apriori = ConfigCommon.co2_profile_file_apriori,
                covariance = ConfigCommon.hdf_covariance("Gas/CO2"),
                absco = "absco_carbo/fabiano_201803/raw/co2_carbo.hdf",
                table_scale = {1.0, 1.0, 1.0, 1.0},
@@ -570,7 +579,6 @@ GeocarbBaseConfig = GeocarbConfig:new {
 --             scale_apriori = 1.0,
 --             scale_cov = 0.25,
 --             vmr_profile = ConfigCommon.reference_h2o_apriori_met_apriori,
---             vmr_profile = GeocarbConfig.h2o_apriori_from_scene,
 --             absco = "absco_carbo/fabiano_201803/raw/h2o_carbo.hdf",
 --             creator = ConfigCommon.vmr_level_scaled,
             },
@@ -579,16 +587,9 @@ GeocarbBaseConfig = GeocarbConfig:new {
                absco = "absco_carbo/fabiano_201803/raw/o2_carbo.hdf",
                table_scale = 1.0,
                creator = ConfigCommon.vmr_level_constant_well_mixed,
-
---             apriori = GeocarbConfig.o2_apriori_from_scene,
---             covariance = ConfigCommon.hdf_covariance("Gas/O2"),
---             absco = "absco_carbo/fabiano_201803/raw/o2_carbo.hdf",
---             table_scale = {1.0, 1.0, 1.0, 1.0},
---             creator = ConfigCommon.vmr_level,
             },
             CH4 = {
 --             apriori = ConfigCommon.reference_ch4_apriori_met_apriori,
---             apriori = GeocarbConfig.ch4_apriori_from_scene,
 --             absco = "absco_carbo/fabiano_201803/raw/ch4_carbo.hdf",
 --             table_scale = {1.0, 1.0, 1.0, 1.0},
 --             creator = ConfigCommon.vmr_level_constant,
@@ -596,20 +597,20 @@ GeocarbBaseConfig = GeocarbConfig:new {
                scale_apriori = 1.0,
                scale_cov = 0.25,
                vmr_profile = ConfigCommon.reference_ch4_apriori_met_apriori,
---             vmr_profile = GeocarbConfig.ch4_apriori_from_scene,
+--             vmr_profile = ConfigCommon.co2_profile_file_apriori,
                absco = "absco_carbo/fabiano_201803/raw/ch4_carbo.hdf",
                creator = ConfigCommon.vmr_level_scaled,
 
 --             apriori = ConfigCommon.reference_ch4_apriori_met_apriori,
---             apriori = GeocarbConfig.ch4_apriori_from_scene,
+--             apriori = = ConfigCommon.ch4_profile_file_apriori,
 --             covariance = ConfigCommon.hdf_covariance("Gas/CH4"),
 --             absco = "absco_carbo/fabiano_201803/raw/ch4_carbo.hdf",
 --             table_scale = {1.0, 1.0, 1.0, 1.0},
+--             profile_retrieval = true,
 --             creator = ConfigCommon.vmr_level,
             },
             CO = {
 --             apriori = ConfigCommon.reference_co_apriori_met_apriori,
---             apriori = GeocarbConfig.co_apriori_from_scene,
 --             absco = "absco_carbo/fabiano_201803/raw/co_carbo.hdf",
 --             table_scale = {1.0, 1.0, 1.0, 1.0},
 --             creator = ConfigCommon.vmr_level_constant,
@@ -617,15 +618,16 @@ GeocarbBaseConfig = GeocarbConfig:new {
                scale_apriori = 1.0,
                scale_cov = 0.25,
                vmr_profile = ConfigCommon.reference_co_apriori_met_apriori,
---             vmr_profile = GeocarbConfig.co_apriori_from_scene,
+--             vmr_profile = ConfigCommon.co_profile_file_apriori,
                absco = "absco_carbo/fabiano_201803/raw/co_carbo.hdf",
                creator = ConfigCommon.vmr_level_scaled,
 
 --             apriori = ConfigCommon.reference_co_apriori_met_apriori,
---             apriori = GeocarbConfig.co_apriori_from_scene,
+--             apriori = = ConfigCommon.co_profile_file_apriori,
 --             covariance = ConfigCommon.hdf_covariance("Gas/CO"),
 --             absco = "absco_carbo/fabiano_201803/raw/co_carbo.hdf",
 --             table_scale = {1.0, 1.0, 1.0, 1.0},
+--             profile_retrieval = true,
 --             creator = ConfigCommon.vmr_level,
             },
          },

@@ -1,4 +1,3 @@
-
 -- This sets up the "standard" run we use in the unit tests, you can then
 -- use this and override any feature you want to be done differently
 --
@@ -75,9 +74,9 @@ OcoBaseConfig = OcoConfig:new {
 ------------------------------------------------------------
 -- Iterative solver
 --
--- Thresholds and limits for the retrieval process.  
+-- Thresholds and limits for the retrieval process.
 -- Some thresholds are for testing the cost function.  For
--- example g_tol_abs is a tolerance for checking the 
+-- example g_tol_abs is a tolerance for checking the
 -- gradient of the cost function.  On the other hand, some
 -- are used for testing the minimizer (solver).  For
 -- example, minimizer_size_tol is used to check the solver.
@@ -85,7 +84,7 @@ OcoBaseConfig = OcoConfig:new {
 -- thresholds and not the solver or the problem thresholds.
 ------------------------------------------------------------
 
-   -- solver = 
+   -- solver =
    not_used_solver = { max_cost_function_calls=20,
                        dx_tol_abs=1e-5,
                        dx_tol_rel=1e-5,
@@ -96,7 +95,7 @@ OcoBaseConfig = OcoConfig:new {
                        create = ConfigCommon.iterative_solver},
 
 ------------------------------------------------------------
--- If true then launch solver, otherwise just do a 
+-- If true then launch solver, otherwise just do a
 -- forward model calculation, with jacobians if
 -- write_jacobians is true
 ------------------------------------------------------------
@@ -160,7 +159,7 @@ OcoBaseConfig = OcoConfig:new {
             },
             --- Can select this to include bad samples in residual, with a
             --- really high uncertainty. Should also remove bad_sample from
-            --- the spectral window if you use this (so 
+            --- the spectral window if you use this (so
             --- config.fm.spec_win.bad_sample_mask = nil. Should also set
             --- spectral window to be the full range.
             -- noise = {
@@ -190,7 +189,7 @@ OcoBaseConfig = OcoConfig:new {
       },
       instrument = {
          creator = ConfigCommon.ils_instrument,
-         ils_half_width = { DoubleWithUnit(4.09e-04, "um"), 
+         ils_half_width = { DoubleWithUnit(4.09e-04, "um"),
                             DoubleWithUnit(1.08e-03, "um"),
                             DoubleWithUnit(1.40e-03, "um") },
          dispersion = {
@@ -454,7 +453,7 @@ OcoBaseConfig = OcoConfig:new {
 	       retrieve_bands = { false, true, true },
 	    },
 
-            -- Disabled by default, add "radiance_scaling" to 
+            -- Disabled by default, add "radiance_scaling" to
             -- config.fm.instrument_correction.ic to enable.
             -- Coxmunk+Lambertian will be used instead
             radiance_scaling = {
@@ -487,10 +486,10 @@ OcoBaseConfig = OcoConfig:new {
             retrieved = false,
          },
          fluorescence = {
+            creator = OcoConfig.fluorescence_effect_land_only,
             apriori = ConfigCommon.fluorescence_apriori("Fluorescence"),
             sif_sigma_scale = 1.0,
             covariance = ConfigCommon.fluorescence_covariance("Fluorescence"),
-            creator = OcoConfig.fluorescence_effect_land_only,
             reference_point = ConfigCommon.hdf_read_double_with_unit("Fluorescence/reference_point"),
             retrieved = true,
          },
@@ -498,7 +497,7 @@ OcoBaseConfig = OcoConfig:new {
       spec_samp = {
          creator = ConfigCommon.nonuniform_spectrum_sampling,
          high_resolution_spectrum_spacing = DoubleWithUnit(0.01, "cm^-1"),
-         nonunif_rt_grid_files = { 
+         nonunif_rt_grid_files = {
             o2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_1"),
             weak_co2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_2"),
             strong_co2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_3"),
@@ -538,12 +537,12 @@ OcoBaseConfig = OcoConfig:new {
             creator = ConfigCommon.temperature_met,
          },
          ground = {
-            -- Instrument specific solar strengths used for ground calculations 
+            -- Instrument specific solar strengths used for ground calculations
             solar_strength = {4.87e21, 2.096e21, 1.15e21},
 
             -- Pure lambertian
             lambertian = {
-               apriori = OcoConfig.oco_albedo_from_radiance(1),  
+               apriori = OcoConfig.oco_albedo_from_radiance(1),
                covariance = ConfigCommon.hdf_covariance_i("Ground/Albedo"),
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.lambertian_retrieval,
@@ -581,7 +580,7 @@ OcoBaseConfig = OcoConfig:new {
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.brdf_veg_retrieval,
             },
-            
+
             -- Brdf soil kernel with Rahman retrieved parameters
             brdf_soil = {
                apriori = ConfigCommon.brdf_soil_apriori("Ground/BrdfQuadratic"),
