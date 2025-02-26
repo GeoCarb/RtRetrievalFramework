@@ -4,13 +4,13 @@
 
 namespace FullPhysics {
 /****************************************************************//**
-  This class implements the ACOS specific ECMWF reading 
+  This class implements the ACOS specific ECMWF reading
   functionality.
 *******************************************************************/
 
 class AcosMetFile : public Meteorology {
 public:
-  AcosMetFile(const std::string& Fname, const boost::shared_ptr<HdfSoundingId>& 
+  AcosMetFile(const std::string& Fname, const boost::shared_ptr<HdfSoundingId>&
 	      Hdf_sounding_id, bool Avg_sounding_number);
   AcosMetFile(const std::string& Fname, const HeritageFile& Run_file);
   ~AcosMetFile() {}
@@ -23,7 +23,7 @@ public:
       return read_array("/Meteorology/vector_pressure_levels_met");
     return read_array("/ecmwf/specific_humidity_pressures");
   }
-  
+
   using Meteorology::specific_humidity;
   blitz::Array<double, 1> specific_humidity() const
   {
@@ -31,28 +31,28 @@ public:
       return read_array("/Meteorology/specific_humidity_profile_met");
     return read_array("ecmwf/specific_humidity");
   }
-  
+
   double surface_pressure() const
   {
     if(met_format)
       return read_scalar("Meteorology/surface_pressure_met");
     return read_scalar("ecmwf/surface_pressure");
   }
-  
+
   double windspeed_u() const
   {
     if(met_format)
       return read_scalar("Meteorology/windspeed_u_met");
     return read_scalar("ecmwf/windspeed_u");
   }
-  
+
   double windspeed_v() const
   {
     if(met_format)
       return read_scalar("Meteorology/windspeed_v_met");
     return read_scalar("ecmwf/windspeed_v");
   }
-  
+
   using Meteorology::temperature;
   blitz::Array<double, 1> temperature() const
   {
@@ -60,16 +60,21 @@ public:
       return read_array("Meteorology/temperature_profile_met");
     return read_array("ecmwf/temperature");
   }
-  void print(std::ostream& Os) const { Os << "AcosMetFile"; }
-private:
 
-  //-----------------------------------------------------------------------
-  /// ACOS specific ECMWF reader routines
-  //-----------------------------------------------------------------------
-  
+  const std::string& file_name() const { return h.file_name(); }
+  const HdfFile& hdf_file() const { return h;}
+  const boost::shared_ptr<HdfSoundingId>& sounding_id() const { return hsid; }
+  void print(std::ostream& Os) const { Os << "AcosMetFile"; }
+
   double read_scalar(const std::string& Field) const;
   blitz::Array<double, 1> read_array(const std::string& Field) const;
-  
+
+  blitz::Array<double, 1> read_array_aer(const std::string& Field) const;
+  blitz::Array<int, 1> read_array_aer_int(const std::string& Field) const;
+  blitz::Array<double, 2> read_array_aer_2d(const std::string& Field) const;
+
+private:
+
   HdfFile h;
   boost::shared_ptr<HdfSoundingId> hsid;
   bool average_sounding_number;

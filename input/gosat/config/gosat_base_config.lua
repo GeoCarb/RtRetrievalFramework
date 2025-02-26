@@ -18,11 +18,20 @@ GosatBaseConfig = AcosConfig:new {
    sid_string = os.getenv("sounding_id"),
    spectrum_file = os.getenv("spectrum_file"),
    met_file = os.getenv("met_file"),
+   co2_pr_file = os.getenv("co2_pr_file"),
+   imap_file = os.getenv("imap_file"),
+   --- Scene file is only used it we are trying to match a simulator
+   --- run. So for a real data, this will be a empty string, and will
+   --- in fact be ignored.
+   scene_file = os.getenv("scene_file"),
    static_file = gosat_base_config_dir .. "/../input/l2_gosat_static_input.h5",
    static_eof_file = gosat_base_config_dir .. "/../input/l2_gosat_eof.h5",
    static_solar_file = config_common_dir .. "/../input/l2_solar_model.h5",
    static_aerosol_file = config_common_dir .. "/../input/l2_aerosol_combined.h5",
-   merra_dir = "/groups/algorithm/l2_fp/merra_composite",
+   -- Can have a different aerosol file for Merra aerosols
+   -- static_merra_aerosol_file = config_common_dir .. "/../input/l2_aerosol_combined_RH.h5",
+
+   merra_dir = "",
 
 ------------------------------------------------------------
 -- Set this true to get diagnostic messages to help debug
@@ -44,17 +53,30 @@ GosatBaseConfig = AcosConfig:new {
 -- Connor solver
 ------------------------------------------------------------
 
-   solver ={ max_iteration=7, max_divergence=2,
-	     max_chisq=1.4, threshold=0.1, gamma_initial=5.0,
-	     create = ConfigCommon.connor_solver,
-	   },
+   solver = { threshold=0.1,
+              min_iteration=1,
+              max_iteration=7,
+              max_divergence=2,
+              max_chisq=1.4,
+              gamma_initial=5.0,
+              h2o_scale_index0=-20,
+              h2o_scale_index1=-20,
+              h2o_scale_cov_initial=0.001,
+              ch4_scale_index0=-21,
+              ch4_scale_index1=-21,
+              ch4_scale_cov_initial=0.001,
+              co_scale_index0=-22,
+              co_scale_index1=-22,
+              co_scale_cov_initial=0.0001,
+              create = ConfigCommon.connor_solver,
+            },
 
 ------------------------------------------------------------
 -- Iterative solver
 --
--- Thresholds and limits for the retrieval process.  
+-- Thresholds and limits for the retrieval process.
 -- Some thresholds are for testing the cost function.  For
--- example g_tol_abs is a tolerance for checking the 
+-- example g_tol_abs is a tolerance for checking the
 -- gradient of the cost function.  On the other hand, some
 -- are used for testing the minimizer (solver).  For
 -- example, minimizer_size_tol is used to check the solver.
@@ -62,19 +84,18 @@ GosatBaseConfig = AcosConfig:new {
 -- thresholds and not the solver or the problem thresholds.
 ------------------------------------------------------------
 
-   -- solver = 
-   not_used_solver = 
-      { max_cost_function_calls=20,
-	dx_tol_abs=1e-5, dx_tol_rel=1e-5, 
-	g_tol_abs=1e-5,
-	minimizer_size_tol=1e-5,
-	opt_problem = ConfigCommon.nlls_max_a_posteriori,
-	iter_solver = ConfigCommon.nlls_solver_gsl_lmsder,
-	create = ConfigCommon.iterative_solver,
-     },
+   -- solver =
+   not_used_solver = { max_cost_function_calls=20,
+                       dx_tol_abs=1e-5,
+                       dx_tol_rel=1e-5,
+                       g_tol_abs=1e-5,
+                       minimizer_size_tol=1e-5,
+                       opt_problem = ConfigCommon.nlls_max_a_posteriori,
+                       iter_solver = ConfigCommon.nlls_solver_gsl_lmsder,
+                       create = ConfigCommon.iterative_solver},
 
 ------------------------------------------------------------
--- If true then launch solver, otherwise just do a 
+-- If true then launch solver, otherwise just do a
 -- forward model calculation, with jacobians if
 -- write_jacobians is true
 ------------------------------------------------------------
@@ -120,6 +141,7 @@ GosatBaseConfig = AcosConfig:new {
       },
       spec_win = {
          creator = ConfigCommon.spectral_window_hdf,
+--       bad_sample_mask = GosatConfig.l1b_bad_sample_mask,
       },
       input = {
           creator = ConfigCommon.l1b_met_input,
@@ -143,7 +165,9 @@ GosatBaseConfig = AcosConfig:new {
                             DoubleWithUnit(20, "cm^-1"),
                             DoubleWithUnit(20, "cm^-1") },
          dispersion = {
+--          creator = ConfigCommon.dispersion_polynomial,
             creator = ConfigCommon.dispersion_polynomial_fitted,
+--          creator = ConfigCommon.dispersion_polynomial_inst_doppler,
             aband_solar_line_location = DoubleWithUnit(12985.16325e0, "cm^-1"),
             aband_solar_line_width = DoubleWithUnit(0.2*0.2, "cm^-1"),
             aband_search_width = DoubleWithUnit(2.83, "cm^-1"),
@@ -152,23 +176,24 @@ GosatBaseConfig = AcosConfig:new {
             apriori = ConfigCommon.l1b_spectral_coefficient,
             covariance = ConfigCommon.hdf_covariance_i("Instrument/Dispersion"),
             number_pixel = ConfigCommon.hdf_read_int_1d("Instrument/Dispersion/number_pixel"),
+            retrieved = true,
             is_one_based = true,
+            num_parameters = 2,
          },
          ils_func = {
             creator = ConfigCommon.ils_table,
+--          creator = GosatCommon.ils_table_l1b,
+            scale_apriori = {1.0, 1.0, 1.0, 1.0},
+            scale_cov = {0.001, 0.001, 0.001, 0.001},
+            retrieve_bands = {false, false, false, false},
+	    use_scale = false
          },
          instrument_correction = {
             creator = AcosConfig.instrument_correction_list_h_and_m,
-            ic_h_gain = { "zero_offset_waveform", "eof_h_gain_1",
-	    		  "eof_h_gain_2", "eof_h_gain_3" },
-	    ic_m_gain = { "zero_offset_waveform", "eof_m_gain_1",
-	    		  "eof_m_gain_2", "eof_m_gain_3" },
-            zero_offset_waveform = {
-               apriori = ConfigCommon.hdf_apriori_i("Instrument/ZeroLevelOffset"),
-               covariance = ConfigCommon.hdf_covariance_i("Instrument/ZeroLevelOffset"),
-               creator = ConfigCommon.zero_offset_waveform,
-               retrieve_bands = { true, false, false },
-            },
+            ic_h_gain = { "eof_h_gain_2", "eof_h_gain_3",
+                          "zero_offset_waveform"},
+	    ic_m_gain = { "eof_m_gain_2", "eof_m_gain_3",
+                          "zero_offset_waveform"},
             eof_h_gain_1 = {
 	       hdf_group = "Instrument/EmpiricalOrthogonalFunction/H_gain",
                apriori = ConfigCommon.hdf_eof_apriori_i_j("Instrument/EmpiricalOrthogonalFunction", 1 - 1),
@@ -217,6 +242,16 @@ GosatBaseConfig = AcosConfig:new {
                creator = ConfigCommon.empirical_orthogonal_function,
                retrieve_bands = { true, true, true },
             },
+            zero_offset_waveform = {
+               apriori = ConfigCommon.hdf_apriori_i("Instrument/ZeroLevelOffset"),
+               covariance = ConfigCommon.hdf_covariance_i("Instrument/ZeroLevelOffset"),
+               creator = ConfigCommon.zero_offset_waveform,
+               retrieve_bands = { true, false, false },
+            },
+
+            -- Disabled by default, add "radiance_scaling" to
+            -- config.fm.instrument_correction.ic to enable.
+            -- Coxmunk+Lambertian will be used instead
             radiance_scaling = {
                apriori = ConfigCommon.hdf_apriori_i("Instrument/RadianceScaling/Coxmunk"),
                covariance = ConfigCommon.hdf_covariance_i("Instrument/RadianceScaling/Coxmunk"),
@@ -226,10 +261,9 @@ GosatBaseConfig = AcosConfig:new {
          },
       },
       spectrum_effect = {
-
          creator = AcosConfig.spectrum_effect_list_h_and_m,
-         speceff_h_gain = { "solar_model", "fluorescence" },
-	 speceff_m_gain = { "solar_model",  },
+         speceff_h_gain = { "solar_model", "instrument_doppler", "fluorescence" },
+         speceff_m_gain = { "solar_model", "instrument_doppler"  },
          solar_model = {
             creator = ConfigCommon.solar_absorption_and_continuum,
             doppler_shift = {
@@ -244,19 +278,24 @@ GosatBaseConfig = AcosConfig:new {
                convert_from_photon = true,
             },
          },
+         instrument_doppler = {
+            creator = ConfigCommon.instrument_doppler,
+            retrieved = false,
+         },
          fluorescence = {
+            creator = AcosConfig.fluorescence_effect_land_only,
             apriori = ConfigCommon.fluorescence_apriori("Fluorescence"),
             sif_sigma_scale = 1.0,
             covariance = ConfigCommon.fluorescence_covariance("Fluorescence"),
-            creator = AcosConfig.fluorescence_effect_land_only,
             reference_point = ConfigCommon.hdf_read_double_with_unit("Fluorescence/reference_point"),
             retrieved = true,
          },
       },
       spec_samp = {
+--       creator = ConfigCommon.uniform_spectrum_sampling,
          creator = ConfigCommon.nonuniform_spectrum_sampling,
          high_resolution_spectrum_spacing = DoubleWithUnit(0.01, "cm^-1"),
-         nonunif_rt_grid_files = { 
+         nonunif_rt_grid_files = {
             o2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_1"),
             weak_co2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_2"),
             strong_co2 = ConfigCommon.hdf_read_spec_dom("Spectrum_Sampling/nonuniform_grid_3"),
@@ -269,7 +308,7 @@ GosatBaseConfig = AcosConfig:new {
             dedicated_twostream = true,
 	    -- Note that the "1" here is just a convention to use the
 	    -- dedicated two stream code
-            low_stream = 1, 
+            low_stream = 1,
 	    -- LIDORT input is in Half-Streams. Full-streams is double
 	    -- this (so high_stream = 8 would mean 16 full-streams)
             high_stream = 8
@@ -296,12 +335,12 @@ GosatBaseConfig = AcosConfig:new {
             creator = ConfigCommon.temperature_met,
          },
          ground = {
-            -- Instrument specific solar strengths used for ground calculations 
+            -- Instrument specific solar strengths used for ground calculations
             solar_strength = {7.2e-6, 6.5e-6, 4.5e-6},
 
             -- Pure lambertian
             lambertian = {
-               apriori = ConfigCommon.albedo_from_signal_level(1),  
+               apriori = ConfigCommon.albedo_from_signal_level(1),
                covariance = ConfigCommon.hdf_covariance_i("Ground/Albedo"),
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.lambertian_retrieval,
@@ -322,27 +361,40 @@ GosatBaseConfig = AcosConfig:new {
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.lambertian_retrieval,
             },
-            
+
+            -- Lambertian component of coxmunk + lambertian
+            coxmunk_scaled = {
+               apriori = ConfigCommon.hdf_apriori_i("Ground/Coxmunk_Scaled_Quadratic"),
+               covariance = ConfigCommon.hdf_covariance_i("Ground/Coxmunk_Scaled_Quadratic"),
+               retrieve_bands = { true, true, true },
+               scaled_brdf_name = "CoxMunk",
+               creator = ConfigCommon.brdf_scale_retrieval,
+            },
+
             -- Brdf vegetative kernel with Rahman retrieved parameters
             brdf_veg = {
-               apriori = ConfigCommon.brdf_veg_apriori("Ground/Brdf"),
-               covariance = ConfigCommon.hdf_covariance_i("Ground/Brdf"),
+               apriori = ConfigCommon.brdf_veg_apriori("Ground/BrdfQuadratic"),
+               covariance = ConfigCommon.hdf_covariance_i("Ground/BrdfQuadratic"),
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.brdf_veg_retrieval,
             },
-            
+
             -- Brdf soil kernel with Rahman retrieved parameters
             brdf_soil = {
-               apriori = ConfigCommon.brdf_soil_apriori("Ground/Brdf"),
-               covariance = ConfigCommon.hdf_covariance_i("Ground/Brdf"),
+               apriori = ConfigCommon.brdf_soil_apriori("Ground/BrdfQuadratic"),
+               covariance = ConfigCommon.hdf_covariance_i("Ground/BrdfQuadratic"),
                retrieve_bands = { true, true, true },
                creator = ConfigCommon.brdf_soil_retrieval,
             },
 
-            creator = AcosConfig.ground_from_ground_type
+--          creator = ConfigCommon.ground_lambertian,
+--          creator = AcosConfig.ground_from_ground_type
+            creator = AcosConfig.ground_from_ground_type_scaled,
          },
          aerosol = {
-	    creator = ConfigCommon.merra_aerosol_creator,
+--          creator = ConfigCommon.rayleigh_only,
+--	    creator = ConfigCommon.merra_aerosol_creator,
+            creator = ConfigCommon.aerosol_met_prior_creator,
 	    max_aod = 0.2,
 	    exp_aod = 0.8,
 	    min_types = 2,
@@ -383,21 +435,23 @@ GosatBaseConfig = AcosConfig:new {
             creator = ConfigCommon.absorber_creator,
             gases = {"CO2", "H2O", "O2"},
             CO2 = {
-               apriori = ConfigCommon.reference_co2_apriori_met_apriori,
+--             apriori = ConfigCommon.reference_co2_apriori_met_apriori,
+--             apriori = ConfigCommon.tccon_co2_apriori_met,
+               apriori = ConfigCommon.co2_profile_file_apriori,
                covariance = ConfigCommon.hdf_covariance("Gas/CO2"),
-               absco = "v5.1.0/co2_v51.hdf",
-               table_scale = {1.0, 1.0, 1.004},
+               absco = "v5.2_final/raw/co2_v52.hdf",
+               table_scale = {1.0, 1.0, 1.0},
                creator = ConfigCommon.vmr_level,
             },
             H2O = {
                scale_apriori = 1.0,
                scale_cov = 0.25,
-               absco = "v5.1.0/h2o_v51.hdf",
+               absco = "v5.2_final/raw/h2o_v52.hdf",
                creator = ConfigCommon.vmr_met,
             },
             O2 = {
                apriori = ConfigCommon.hdf_read_double_1d("Gas/O2/average_mole_fraction"),
-               absco = "v5.1.0/o2_v51.hdf",
+               absco = "v5.2_final/raw/o2_v52.hdf",
                table_scale = 1.0048,
                creator = ConfigCommon.vmr_level_constant_well_mixed,
             },

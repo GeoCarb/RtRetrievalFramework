@@ -1,6 +1,7 @@
 #ifndef CO2_PROFILE_PRIOR_H
 #include "pressure.h"
 #include "hdf_file.h"
+#include "acos_met_file.h"
 #include "oco_met_file.h"
 
 namespace FullPhysics {
@@ -12,6 +13,9 @@ namespace FullPhysics {
 class CO2ProfilePrior: public Printable<CO2ProfilePrior> {
 public:
   CO2ProfilePrior(const OcoMetFile& Met_file,
+		  const HdfFile& Profile_file,
+                  const std::string& field);
+  CO2ProfilePrior(const AcosMetFile& Met_file,
 		  const HdfFile& Profile_file,
                   const std::string& field);
   virtual ~CO2ProfilePrior() {}

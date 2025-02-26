@@ -21,15 +21,25 @@ const boost::shared_ptr<RelativeHumidity> &Rh,
 const blitz::Array<double, 2>& Aerosol_cov,
 const blitz::Array<double, 1>& val)
 {
-  if(boost::dynamic_pointer_cast<OcoMetFile>(Met_file) == 0)
-    throw Exception("Need a OcoMetFile");
-  return boost::shared_ptr<AerosolMetPrior>
-    (new AerosolMetPrior(*boost::dynamic_pointer_cast<OcoMetFile>(Met_file),
-			 Aerosol_property, Press, Rh, Aerosol_cov,
-			 val(0), static_cast<int>(val(1)),
-			 static_cast<int>(val(2)), val(3),
-			 static_cast<int>(val(4)) == 1,
-			 static_cast<int>(val(5)) == 1));
+  if(boost::dynamic_pointer_cast<OcoMetFile>(Met_file) != 0)
+    return boost::shared_ptr<AerosolMetPrior>
+      (new AerosolMetPrior(*boost::dynamic_pointer_cast<OcoMetFile>(Met_file),
+                           Aerosol_property, Press, Rh, Aerosol_cov,
+                           val(0), static_cast<int>(val(1)),
+                           static_cast<int>(val(2)), val(3),
+                           static_cast<int>(val(4)) == 1,
+                           static_cast<int>(val(5)) == 1));
+  else if(boost::dynamic_pointer_cast<AcosMetFile>(Met_file) != 0)
+    return boost::shared_ptr<AerosolMetPrior>
+      (new AerosolMetPrior(*boost::dynamic_pointer_cast<AcosMetFile>(Met_file),
+                           Aerosol_property, Press, Rh, Aerosol_cov,
+                           val(0), static_cast<int>(val(1)),
+                           static_cast<int>(val(2)), val(3),
+                           static_cast<int>(val(4)) == 1,
+                           static_cast<int>(val(5)) == 1));
+  else
+    throw Exception("Need an AcosMetFile or an OcoMetFile");
+
 }
 REGISTER_LUA_CLASS(AerosolMetPrior)
 .def("aerosol", &AerosolMetPrior::aerosol)
@@ -91,6 +101,70 @@ AerosolMetPrior::AerosolMetPrior
   Array<int, 1> aod_sort_index = Met_file.read_array_int("/Aerosol/composite_aod_sort_index_met");
   Array<std::string, 1> comp_name = 
     Met_file.hdf_file().read_field<std::string, 1>("/Metadata/CompositeAerosolTypes");
+
+  init(Aerosol_property,
+       Aerosol_cov,
+       aod_frac,
+       aod_gauss,
+       aod_sort_index,
+       comp_name,
+       Exp_aod,
+       Min_types,
+       Max_types,
+       Max_residual);
+}
+
+AerosolMetPrior::AerosolMetPrior
+(const AcosMetFile& Met_file,
+ const HdfFile& Aerosol_property,
+ const boost::shared_ptr< Pressure > &Press, 
+ const boost::shared_ptr<RelativeHumidity> &Rh,
+ const blitz::Array<double, 2>& Aerosol_cov,
+ double Exp_aod,
+ int Min_types,
+ int Max_types,
+ bool Linear_aod,
+ bool Relative_humidity_aerosol,
+ double Max_residual,
+ double Reference_wn)
+: linear_aod(Linear_aod),
+  rh_aerosol(Relative_humidity_aerosol),
+  press(Press),
+  rh(Rh),
+  ref_wn(Reference_wn),
+  met_fname(Met_file.file_name()),
+  prop_fname(Aerosol_property.file_name())
+{
+  Array<double, 1> aod_frac = Met_file.read_array_aer("/Aerosol/composite_aod_fraction_met");
+  Array<double, 2> aod_gauss =  Met_file.read_array_aer_2d("/Aerosol/composite_aod_gaussian_met");
+  Array<int, 1> aod_sort_index = Met_file.read_array_aer_int("/Aerosol/composite_aod_sort_index_met");
+  Array<std::string, 1> comp_name = 
+    Met_file.hdf_file().read_field<std::string, 1>("/Metadata/CompositeAerosolTypes");
+
+  init(Aerosol_property,
+       Aerosol_cov,
+       aod_frac,
+       aod_gauss,
+       aod_sort_index,
+       comp_name,
+       Exp_aod,
+       Min_types,
+       Max_types,
+       Max_residual);
+}
+
+void AerosolMetPrior::init
+(const HdfFile& Aerosol_property,
+ const blitz::Array<double, 2>& Aerosol_cov,
+ const Array<double, 1>& aod_frac,
+ const Array<double, 2>& aod_gauss,
+ const Array<int, 1>& aod_sort_index,
+ const Array<std::string, 1>& comp_name,
+ double Exp_aod,
+ int Min_types,
+ int Max_types,
+ double Max_residual)
+{
   double total_aod = sum(aod_gauss(Range::all(), 3));
   ig.reset(new CompositeInitialGuess);
   // Loop over composite types until thresholds are reached:

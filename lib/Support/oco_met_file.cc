@@ -46,7 +46,7 @@ blitz::Array<double, 1> OcoMetFile::vmr(const std::string& Species) const
         return ozone_vmr();
     } else {
         return Meteorology::vmr(Species);
-    }   
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -62,7 +62,7 @@ blitz::Array<double, 1> OcoMetFile::ozone_vmr() const
 }
 
 //-----------------------------------------------------------------------
-/// Read a field where a single number is expected to be returned
+/// Read a field where a single number is expected to be returned.
 //-----------------------------------------------------------------------
 
 double OcoMetFile::read_scalar(const std::string& Field) const
@@ -122,7 +122,7 @@ Array<double, 2> OcoMetFile::read_array_2d(const std::string& Field) const
   Array<double, 4> traw = h.read_field<double, 4>
     (Field,
      TinyVector<int, 4>(hsid->frame_number(), hsid->sounding_number(), 0,0),
-     TinyVector<int, 4>(1,1,sz[2], sz[3]));
+     TinyVector<int, 4>(1,1, sz[2], sz[3]));
   Array<double, 2> V(traw.extent(thirdDim), traw.extent(fourthDim));
 
   V = traw(0, 0, Range::all(), Range::all());

@@ -7,6 +7,7 @@
 #include "pressure.h"
 #include "composite_initial_guess.h"
 #include "oco_met_file.h"
+#include "acos_met_file.h"
 
 namespace FullPhysics {
 /****************************************************************//**
@@ -16,6 +17,18 @@ namespace FullPhysics {
 class AerosolMetPrior: public Printable<AerosolMetPrior> {
 public:
   AerosolMetPrior(const OcoMetFile& Met_file,
+	       const HdfFile& Aerosol_property,
+	       const boost::shared_ptr<Pressure> &Press,
+	       const boost::shared_ptr<RelativeHumidity> &Rh,
+	       const blitz::Array<double, 2>& Aerosol_cov,
+	       double Exp_aod = 0.8,
+	       int Min_types = 2,
+	       int Max_types = 2,
+	       bool Linear_aod = false,
+	       bool Relative_humidity_aerosol = false,
+	       double Max_residual = 0.005,
+	       double Reference_wn=1e4/0.755);
+  AerosolMetPrior(const AcosMetFile& Met_file,
 	       const HdfFile& Aerosol_property,
 	       const boost::shared_ptr<Pressure> &Press,
 	       const boost::shared_ptr<RelativeHumidity> &Rh,
@@ -57,6 +70,17 @@ private:
   boost::shared_ptr<RelativeHumidity> rh;
   double ref_wn;
   std::string met_fname, prop_fname;
+
+  void init(const HdfFile& Aerosol_property,
+            const blitz::Array<double, 2>& Aerosol_cov,
+            const blitz::Array<double, 1>& aod_frac,
+            const blitz::Array<double, 2>& aod_gauss,
+            const blitz::Array<int, 1>& aod_sort_index,
+            const blitz::Array<std::string, 1>& comp_name,
+            double Exp_aod,
+            int Min_types,
+            int Max_types,
+            double Max_residual);
 };
 }
 #endif
