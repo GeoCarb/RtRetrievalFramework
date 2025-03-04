@@ -68,6 +68,21 @@ public:
   ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
 	       const boost::shared_ptr<ConvergenceCheck>& Conv,
 	       double Gamma_initial,
+	       const std::string& Save_test_data = "")
+    : save_test_data_(Save_test_data),
+      cost_function_(Cf),
+      convergence_check_(Conv),
+      gamma_initial(Gamma_initial)
+  {
+    index0.resize(3);
+    index0 = -1;
+    index1.resize(3);
+    index1 = -1;
+  }
+
+  ConnorSolver(const boost::shared_ptr<CostFunction>& Cf,
+	       const boost::shared_ptr<ConvergenceCheck>& Conv,
+	       double Gamma_initial,
                const blitz::Array<int, 1> index0,
                const blitz::Array<int, 1> index1,
                const blitz::Array<double, 1> cov_initial,
@@ -80,6 +95,7 @@ public:
       index1(index1),
       cov_initial(cov_initial)
   { }
+
   virtual ~ConnorSolver() {}
 
   virtual void add_observer(Observer<ConnorSolver>& Obs)

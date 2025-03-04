@@ -70,7 +70,7 @@ GeocarbBaseConfig = GeocarbConfig:new {
               co_scale_index0=22,
               co_scale_index1=22,
               co_scale_cov_initial=0.0001,
-              create = ConfigCommon.connor_solver },
+              create = GeocarbConfig.connor_solver },
 
 ------------------------------------------------------------
 -- Iterative solver

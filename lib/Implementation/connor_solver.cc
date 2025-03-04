@@ -40,6 +40,13 @@ boost::shared_ptr<ConnorSolver> connor_solver_create2(
                       Save_test_data));
 }
 REGISTER_LUA_CLASS(ConnorSolver)
+.def(luabind::constructor<const boost::shared_ptr<CostFunction>&,
+			  const boost::shared_ptr<ConvergenceCheck>&,
+			  double>())
+.def(luabind::constructor<const boost::shared_ptr<CostFunction>&,
+			  const boost::shared_ptr<ConvergenceCheck>&,
+			  double,
+                          std::string>())
 .scope
 [
  luabind::def("create", &connor_solver_create),

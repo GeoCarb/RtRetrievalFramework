@@ -653,6 +653,47 @@ function GeocarbConfig.tropopause_height_ap(self, base, type, aer_name)
 end
 
 ------------------------------------------------------------
+-- Create the connor solver we normally use.
+--
+-- Depends on:
+--   self.forward_model
+--   self.solver_constant
+------------------------------------------------------------
+
+function GeocarbConfig:connor_solver(config)
+   local cost_func = ForwardModelCostFunction(config.forward_model)
+   local conv = ConnorConvergence(config.forward_model, 
+                                  self.threshold, 
+                                  self.min_iteration, 
+                                  self.max_iteration, 
+                                  self.max_divergence, 
+                                  self.max_chisq)
+   local out = ConnorConvergenceOutput.create(conv)
+   config.register_output:push_back(out)
+   -- Luabind can only handle up to 10 arguments per function. As an easy
+   -- work around we put the various thresholds into an array.
+   local index0 = Blitz_int_array_1d(3)
+   index0:set(0, self.h2o_scale_index0)
+   index0:set(1, self.ch4_scale_index0)
+   index0:set(2, self.co_scale_index0)
+   local index1 = Blitz_int_array_1d(3)
+   index1:set(0, self.h2o_scale_index1)
+   index1:set(1, self.ch4_scale_index1)
+   index1:set(2, self.co_scale_index1)
+   local cov_initial = Blitz_double_array_1d(3)
+   cov_initial:set(0, self.h2o_scale_cov_initial)
+   cov_initial:set(1, self.ch4_scale_cov_initial)
+   cov_initial:set(2, self.co_scale_cov_initial)
+   config.conn_solver = ConnorSolver.create(cost_func, conv,
+                                            self.gamma_initial,
+                                            index0, index1, cov_initial)
+   local iter_log = SolverIterationLog(config.state_vector)
+   iter_log:add_as_observer(config.conn_solver)
+   out = ConnorSolverOutput(config.conn_solver, config.write_jacobian)
+   config.register_output:push_back(out)
+end
+
+------------------------------------------------------------
 --- Nonuniform spectral sampling
 ---
 --- This depends on:
@@ -674,8 +715,9 @@ function GeocarbConfig.nonuniform_spectrum_sampling:create()
                                      uspec_samp)
 end
 
-
-
+------------------------------------------------------------
+---
+------------------------------------------------------------
 
 function GeocarbConfig:albedo_from_constants(i)
    local ac = Blitz_double_array_1d(2)
