@@ -7,6 +7,8 @@ using namespace FullPhysics;
 #include "register_lua.h"
 REGISTER_LUA_DERIVED_CLASS(ConnorConvergence, ConvergenceCheck)
 .def(luabind::constructor<const boost::shared_ptr<ForwardModel>&,
+			  double, int, int, double>())
+.def(luabind::constructor<const boost::shared_ptr<ForwardModel>&,
 			  double, int, int, int, double>())
 REGISTER_LUA_END()
 #endif
@@ -24,6 +26,21 @@ REGISTER_LUA_END()
 /// \param Max_chisq The maximum chisq
 /// \todo Replace fortran microwindow class with a C++ one.
 //-----------------------------------------------------------------------
+
+ConnorConvergence::ConnorConvergence(
+    const boost::shared_ptr<ForwardModel>& Fm,
+    double Threshold, int Max_iteration,
+    int Max_divergence, double Max_chisq)
+: fm(Fm),
+  threshold(Threshold), min_iteration(1),
+  max_iteration(Max_iteration), max_divergence(Max_divergence),
+  max_chisq(Max_chisq)
+{
+  range_min_check(threshold, 0.0);
+  range_min_check(Max_iteration, 1);
+  range_min_check(Max_divergence, 1);
+  range_min_check(Max_chisq, 0.0);
+}
 
 ConnorConvergence::ConnorConvergence(
     const boost::shared_ptr<ForwardModel>& Fm,

@@ -3955,8 +3955,7 @@ function ConfigCommon:connor_solver(config)
    local cost_func = ForwardModelCostFunction(config.forward_model)
    local conv = ConnorConvergence(config.forward_model, 
                                   self.threshold, 
-                                  self.min_iteration,
-                                  self.max_iteration,  
+                                  self.max_iteration, 
                                   self.max_divergence, 
                                   self.max_chisq)
    local out = ConnorConvergenceOutput.create(conv)

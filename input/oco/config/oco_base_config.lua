@@ -53,23 +53,10 @@ OcoBaseConfig = OcoConfig:new {
 -- Connor solver
 ------------------------------------------------------------
 
-   solver = { threshold=2.0,
-              min_iteration=1,
-              max_iteration=7,
-              max_divergence=2,
-              max_chisq=1.4,
-              gamma_initial=10.0,
-              h2o_scale_index0=-20,
-              h2o_scale_index1=-20,
-              h2o_scale_cov_initial=0.001,
-              ch4_scale_index0=-21,
-              ch4_scale_index1=-21,
-              ch4_scale_cov_initial=0.001,
-              co_scale_index0=-22,
-              co_scale_index1=-22,
-              co_scale_cov_initial=0.0001,
+   solver = { max_iteration=7, max_divergence=2,
+              max_chisq=1.4, threshold=2.0, gamma_initial=10.0,
               create = ConfigCommon.connor_solver,
-            },
+           },
 
 ------------------------------------------------------------
 -- Iterative solver
