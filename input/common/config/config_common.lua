@@ -1738,8 +1738,17 @@ function ConfigCommon.fluorescence_apriori(field)
 	 local idx = sid:frame_number()
 	 local sif_757 = self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_757nm_corr_idp", idx, sounding_index)
 	 local sif_771 = self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_771nm_corr_idp", idx, sounding_index)
-	 -- This value of 1.8 was supplied by Christian, see Ticket #2160
-	 apr:set(0, (sif_757 + 1.8 * sif_771)/2)
+	 if(sif_757 == -999999.0) then
+	    -- if SIF757 failed, use only SIF771
+	    apr:set(0, 1.8 * sif_771)
+	 elseif(sif_771 == -999999.0) then
+	    -- if SIF771 failed, use only SI757
+	    apr:set(0, sif_757)
+	 else
+	    -- Average values
+	    -- This value of 1.8 was supplied by Christian, see Ticket #2160
+	    apr:set(0, (sif_757 + 1.8 * sif_771)/2)
+	 end
       end
       return apr
    end
@@ -1762,11 +1771,16 @@ function ConfigCommon.fluorescence_covariance(field)
 	 local sid = self.config:l1b_sid_list()
 	 local sounding_index = sid:sounding_number()
 	 local idx = sid:frame_number()
-	 local sif_sigma = self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_757nm_uncert_idp", idx, sounding_index)
-	 if(sif_sigma < 0) then
-	    error("sif_sigma < 0")
+	 local sif_757 = self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_757nm_corr_idp", idx, sounding_index)
+	 local t = self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_757nm_uncert_idp", idx, sounding_index)
+	 if(sif_757 == -999999.0) then
+            -- if SIF757 failed, fall back to SIF771.
+	    t = self.sif_uncert_ratio * self.config:h_imap():read_double_2d("DOASFluorescence/fluorescence_radiance_771nm_uncert_idp", idx, sounding_index)
 	 end
-	 local sigma = self.sif_sigma_scale * sif_sigma
+	 if(t < 0) then
+	    error("both IDP retrievals failed, cannot set fluorescence prior")
+	 end
+	 local sigma = self.sif_sigma_scale * t
 	 cov:set(0, 0, sigma * sigma)
       else
 	 -- Make Fs_755 covariance as as x% of the continuum level
@@ -2529,6 +2543,7 @@ function ConfigCommon.brdf_retrieval:retrieval_flag(i)
    else
         flag:set(Range.all(), false)
    end
+
    return flag
 end
 
@@ -2549,6 +2564,7 @@ function ConfigCommon.brdf_veg_retrieval:create()
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
        flag:set(i-1, Range.all(), self:retrieval_flag(i))
    end
+
    return GroundBrdfVeg(ap, flag, self.config.common.band_reference, self.config.common.desc_band_name)
 end
 
@@ -2587,6 +2603,7 @@ function ConfigCommon.brdf_soil_retrieval:create()
        ap:set(i-1, Range.all(), self:apriori_v(i - 1))
        flag:set(i-1, Range.all(), self:retrieval_flag(i))
    end
+
    return GroundBrdfSoil(ap, flag, self.config.common.band_reference, self.config.common.desc_band_name)
 end
 
@@ -3784,7 +3801,7 @@ function ConfigCommon.radiative_transfer_lsi:create()
    local rt_low
    if(low_stream == 1 and use_twostream) then
       rt_low = TwostreamRt(self.config.atmosphere, self.config.stokes_coefficient,
-                           sza, zen, azm, do_full_quadrature, pure_nadir)
+                           sza, zen, azm, do_full_quadrature)
    else
       rt_low = LidortRt(self.config.atmosphere, self.config.stokes_coefficient,
                         sza, zen, azm, pure_nadir, low_stream, nmom_low, 

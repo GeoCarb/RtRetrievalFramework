@@ -72,6 +72,6 @@ void AbsorberVmrMet::print(std::ostream& Os) const
      << "  Retrieval flag: " << (used_flag_value()(0) ? 
 					"True\n" : "False\n")
      << "  Meteorology:\n";
-  opad << met->vmr(gas_name()) << "\n";
+  opad << *met << "\n";
   opad.strict_sync();
 }

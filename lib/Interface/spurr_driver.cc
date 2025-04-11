@@ -131,15 +131,15 @@ ArrayAd<double, 1> SpurrBrdfDriver::setup_brdf_inputs(int surface_type, const Ar
     break;
   case COXMUNK:
     parameter_indexes.resize(4);
-    parameter_indexes(0) = 0;
-    parameter_indexes(1) = 1;
-    parameter_indexes(2) = 2;
-    parameter_indexes(3) = 4;
+    parameter_indexes(0) = 0; // scale factor
+    parameter_indexes(1) = 1; // windspeed
+    parameter_indexes(2) = 2; // refractive index
+    parameter_indexes(3) = 4; // shadowing
     setup_coxmunk_inputs(0, rt_surf_params, parameter_indexes);
 
     // lamberitan component to coxmunk
     parameter_indexes.resize(1);
-    parameter_indexes(0) = 3;
+    parameter_indexes(0) = 3; // albedo
     setup_lambertian_inputs(1, rt_surf_params, parameter_indexes);
     break;
   case BREONVEG:
@@ -178,9 +178,6 @@ void SpurrBrdfDriver::setup_lambertian_inputs(int kernel_index, ArrayAd<double, 
   
   // According to LIDORT user's guide section "2.7.1 BRDFs as a sum of kernel functions" this should be 1.0
   brdf_params(kernel_index, 0) = 1.0;
-
-  // lambertian_albedo value only used do_brdf_surface = False
-  lambertian_albedo(0) = surface_parameters(albedo_idx).value();
 }
 
 void SpurrBrdfDriver::setup_coxmunk_inputs(int kernel_index, ArrayAd<double, 1>& surface_parameters, const Array<int, 1>& parameter_indexes) const

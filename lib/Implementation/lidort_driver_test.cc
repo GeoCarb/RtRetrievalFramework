@@ -9,10 +9,11 @@ using namespace FullPhysics;
 using namespace blitz;
 
 bool check_brdf_inputs(boost::shared_ptr<LidortRtDriver>& lidort_driver) {
-  Lidort_Sup_Accessories brdf_check = Lidort_Sup_Accessories(lidort_driver->brdf_interface()->brdf_sup_in_ptr(),
+  Lidort_Brdf_Sup_Accessories brdf_check = Lidort_Brdf_Sup_Accessories(
+      lidort_driver->brdf_interface()->brdf_sup_in_ptr(),
       lidort_driver->lidort_interface()->lidort_fixin_ptr(),
       lidort_driver->lidort_interface()->lidort_modin_ptr());
-  brdf_check.brdf_input_checker();
+  brdf_check.brdf_input_check();
 
   Lidort_Exception_Handling& brdf_check_status = brdf_check.lidort_brdfcheck_status();
   Lidort_Pars lid_pars = Lidort_Pars::instance();
@@ -263,7 +264,8 @@ BOOST_AUTO_TEST_CASE(simple)
   // Check surface jacobians against FD
 
   blitz::Array<double, 1> pert_values(surface_params.extent(firstDim)-1);
-  pert_values = 1.e8, 1e-8, 1e-8, 1e-6;
+  pert_values = 0;
+  pert_values = 1e-8, 1e-8, 1e-8, 1e-6;
 
   blitz::Array<double, 1> jac_surf_fd( jac_surf.extent() );
   double refl_fd;
@@ -288,7 +290,6 @@ BOOST_AUTO_TEST_CASE(simple)
 
   // Pseudo-spherical mode FD test
   lidort_driver->set_pseudo_spherical();
-  lidort_driver->lidort_interface()->lidort_modin().mbool().ts_do_no_azimuth(true);
  
   lidort_surface.value() = surface_params;
   lidort_surface.jacobian() = 1.0;
@@ -423,7 +424,7 @@ BOOST_AUTO_TEST_CASE(simple)
                                                     od, ssa, pf, refl_calc, jac_atm, jac_surf);
 
   // Compare against an offline calculated value, or could compare against value from l_rad
-  double refl_expected = 0.03540780793662445;
+  double refl_expected = 0.035435854422713485;
   BOOST_CHECK_CLOSE(refl_expected, refl_calc, 1e-3);
 
   // Check surface jacobians against FD

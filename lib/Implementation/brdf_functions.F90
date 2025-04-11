@@ -2,10 +2,10 @@ module brdf_functions_m
 
     use iso_c_binding
 
-    USE LIDORT_pars, only : fpk, DEG_TO_RAD, MAXBEAMS, MAXSTREAMS_BRDF, MAX_BRDF_KERNELS, &
-                            MAXSTHALF_BRDF, MAX_BRDF_PARAMETERS, ZERO, ONE, TWO, PIE, &
-                            MAX_USER_STREAMS, MAX_USER_RELAZMS, COXMUNK_IDX, &
-                            BREONVEG_IDX, BREONSOIL_IDX, RAHMAN_IDX
+    USE LIDORT_pars_m, only : fpk, DEG_TO_RAD, MAXBEAMS, MAXSTREAMS_BRDF, MAX_BRDF_KERNELS, &
+                              MAXSTHALF_BRDF, MAX_BRDF_PARAMETERS, ZERO, ONE, TWO, PIE, &
+                              MAX_USER_STREAMS, MAX_USER_RELAZMS, COXMUNK_IDX, &
+                              BPDFVEGN_IDX, BPDFSOIL_IDX, RAHMAN_IDX
 
     USE l_surface_m
 
@@ -21,7 +21,7 @@ contains
         real(kind=c_double), intent(in) :: vza
         real(kind=c_double), intent(in) :: azm
 
-        exact_brdf_value_veg_f = exact_brdf_value_f(BREONVEG_IDX, params, sza, vza, azm)
+        exact_brdf_value_veg_f = exact_brdf_value_f(BPDFVEGN_IDX, params, sza, vza, azm)
     end function exact_brdf_value_veg_f
 
     real(kind=c_double) function exact_brdf_value_soil_f(params, sza, vza, azm) bind(c)
@@ -30,7 +30,7 @@ contains
         real(kind=c_double), intent(in) :: vza
         real(kind=c_double), intent(in) :: azm
 
-        exact_brdf_value_soil_f = exact_brdf_value_f(BREONSOIL_IDX, params, sza, vza, azm)
+        exact_brdf_value_soil_f = exact_brdf_value_f(BPDFSOIL_IDX, params, sza, vza, azm)
     end function exact_brdf_value_soil_f
 
     real(kind=c_double) function exact_brdf_value_coxmunk(params, sza, vza, azm) bind(c)
@@ -146,7 +146,7 @@ contains
       N_BRDF_PARAMETERS(2) = 3
       BRDF_PARAMETERS = ZERO
       ! Breon refactive index squared, same as value hardcoded inside lrad
-      BRDF_PARAMETERS(1,1)   = 2.25_fpk 
+      BRDF_PARAMETERS(1,1)   = 1.5_fpk  ! refractive index (value itself, not the square of it)
       BRDF_PARAMETERS(2,1)   = params(2) ! hotspot parameter
       BRDF_PARAMETERS(2,2)   = params(3) ! Asymmetry parameter
       BRDF_PARAMETERS(2,3)   = params(4) ! anisotropy
@@ -168,9 +168,9 @@ contains
       spars(5) = BRDF_FACTORS(2)
 
       hfunction_index = 0
-      if (breon_type == BREONVEG_IDX) then
+      if (breon_type == BPDFVEGN_IDX) then
           hfunction_index = 1
-      else if (breon_type == BREONSOIL_IDX) then
+      else if (breon_type == BPDFSOIL_IDX) then
           hfunction_index = 2
       endif
 
@@ -525,6 +525,8 @@ contains
 !  Exact BRDF (LIDORT)
 !  -------------------
 
+     R1 = ZERO
+
 !  Kernel loop
 
       DO K = 1, N_BRDF_KERNELS
@@ -675,6 +677,7 @@ contains
 !  Exact BRDF (LIDORT)
 !  -------------------
 
+      R1 = ZERO
       Ls_R1 = ZERO
 
 !  Kernel loop
@@ -706,19 +709,19 @@ contains
         real(kind=c_double), intent(in) :: params(5)
         real(kind=c_double), intent(in) :: sza
 
-        black_sky_albedo_veg_f = black_sky_albedo_f(BREONVEG_IDX, params, sza)
+        black_sky_albedo_veg_f = black_sky_albedo_f(BPDFVEGN_IDX, params, sza)
     end function black_sky_albedo_veg_f
 
     real(kind=c_double) function black_sky_albedo_soil_f(params, sza) bind(c)
         real(kind=c_double), intent(in) :: params(5)
         real(kind=c_double), intent(in) :: sza
 
-        black_sky_albedo_soil_f = black_sky_albedo_f(BREONSOIL_IDX, params, sza)
+        black_sky_albedo_soil_f = black_sky_albedo_f(BPDFSOIL_IDX, params, sza)
     end function black_sky_albedo_soil_f
   
     real(kind=c_double) function black_sky_albedo_f(breon_type, params, sza) bind(c)
 
-      USE brdf_sup_aux_m, only : BRDF_GAULEG, BRDF_QUADRATURE_Gaussian
+      USE brdf_sup_aux_m, only : GETQUAD2, BRDF_QUADRATURE_Gaussian
 
       ! There should only be 5 parameters, ordered how GroundBrdf does so
       integer(c_int), intent(in)       :: breon_type
@@ -816,7 +819,7 @@ contains
       N_BRDF_PARAMETERS(2) = 3
       BRDF_PARAMETERS = ZERO
       ! Breon refactive index squared, same as value hardcoded inside lrad
-      BRDF_PARAMETERS(1,1)   = 2.25_fpk 
+      BRDF_PARAMETERS(1,1)   = 1.5_fpk  ! refractive index (value itself, not the square of it)
       BRDF_PARAMETERS(2,1)   = params(2) ! Overall amplitude
       BRDF_PARAMETERS(2,2)   = params(3) ! Asymmetry parameter
       BRDF_PARAMETERS(2,3)   = params(4) ! Geometric factor
@@ -845,7 +848,7 @@ contains
 !  Set up Quadrature streams for BSA Scaling.
 
       SCAL_NSTREAMS = MAXSTREAMS_SCALING
-      CALL BRDF_GAULEG ( ZERO, ONE, SCAL_QUAD_STREAMS, SCAL_QUAD_WEIGHTS, SCAL_NSTREAMS )
+      CALL GETQUAD2(ZERO, ONE, SCAL_NSTREAMS, SCAL_QUAD_STREAMS, SCAL_QUAD_WEIGHTS)
       DO I = 1, SCAL_NSTREAMS
          SCAL_QUAD_SINES(I)   = SQRT(ONE-SCAL_QUAD_STREAMS(I)*SCAL_QUAD_STREAMS(I))
          SCAL_QUAD_STRMWTS(I) = SCAL_QUAD_STREAMS(I) * SCAL_QUAD_WEIGHTS(I)
@@ -906,9 +909,9 @@ contains
 
 !  module, dimensions and numbers
 
-      USE LIDORT_pars, only : fpk, MAX_BRDF_PARAMETERS, &
-                              MAXBEAMS, &
-                              MAXSTREAMS_BRDF
+      USE LIDORT_pars_m, only : fpk, MAX_BRDF_PARAMETERS, &
+                                MAXBEAMS, &
+                                MAXSTREAMS_BRDF
 
       USE brdf_sup_routines_m, only : BRDF_FUNCTION
 
@@ -986,7 +989,7 @@ contains
 
 !  include file of dimensions and numbers
 
-      USE LIDORT_PARS, only : fpk, MAXSTREAMS_BRDF, ZERO, HALF
+      USE LIDORT_PARS_m, only : fpk, MAXSTREAMS_BRDF, ZERO, HALF
 
       IMPLICIT NONE
 
