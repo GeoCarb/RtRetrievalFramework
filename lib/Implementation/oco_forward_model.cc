@@ -64,8 +64,21 @@ Spectrum OcoForwardModel::apply_spectrum_corrections(const Spectrum& highres_spe
 {
   if(!g)
     throw Exception ("setup_grid needs to be called before calling apply_spectrum_corrections");
+
+//#define OLD_OS
+#define OLD_OS_QUAD
+//#define NEW_OS
+
+#if defined(OLD_OS)
   Spectrum highres_spec_intepolated =
     g->interpolate_spectrum(highres_spec, Spec_index);
+#elif defined(OLD_OS_QUAD)
+  Spectrum highres_spec_intepolated =
+    g->interpolate_spectrum_quad(highres_spec, Spec_index);
+#else
+
+#endif
+
   notify_spectrum_update(highres_spec_intepolated, "high_res_interpolated", Spec_index);
 
   BOOST_FOREACH(const boost::shared_ptr<SpectrumEffect>& i, spec_effect[Spec_index]) {

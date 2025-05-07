@@ -63,6 +63,7 @@ public:
   const SpectralDomain high_resolution_interpolated_grid(int Spec_index) const;
 
   Spectrum interpolate_spectrum(const Spectrum& Spec_in, int Spec_index) const;
+  Spectrum interpolate_spectrum_quad(const Spectrum& Spec_in, int Spec_index) const;
 
   //-----------------------------------------------------------------------
   /// Pixel indexes to use for low resolution grid.

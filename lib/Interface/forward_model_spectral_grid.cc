@@ -98,3 +98,97 @@ Spectrum ForwardModelSpectralGrid::interpolate_spectrum
   return Spectrum(hgrid_inter.clone(), 
           SpectralRange(res, Spec_in.spectral_range().units()));
 }
+
+
+//-----------------------------------------------------------------------
+/// Quadratic interpolation.
+//-----------------------------------------------------------------------
+Array<double, 1> interpolate_quadratic(const Array<double, 1>& x, const Array<double, 1>& y, const Array<double, 1>& xx, bool bound)
+{
+    int i = 0;
+    int p = 0;
+    int nx  = x.rows();
+    int nxx = xx.rows();
+
+    Array<double, 1> yy(nxx);
+
+    for ( ; i < nxx; ++i) {
+        double this_xx = xx(i);
+
+        while (x(p) < this_xx && p < nx - 1)
+            p++;
+        p--;
+        if (p < 0) p = 0;
+
+        if (this_xx == x(p))
+            yy(i) = y(p);
+        else {
+            if (p < 1) {
+                yy(i) = y(p) + (y(p+1) - y(p)) * (this_xx - x(p)) / (x(p+1) - x(p));
+/*
+                double f_1 = (this_xx - x(p+1)) / (x(p)   - x(p+1));
+                double f_2 = (this_xx - x(p))   / (x(p+1) - x(p));
+
+                yy(i) = f_1 * y(p) + f_2 * y(p+1);
+*/
+            }
+            else {
+                double x_1  = x(p-1);
+                double x_2  = x(p);
+                double x_3  = x(p+1);
+                double xx_i = this_xx;
+
+                double f_1 = (xx_i - x_2) * (xx_i - x_3) / ((x_1 - x_2) * (x_1 - x_3));
+                double f_2 = (xx_i - x_1) * (xx_i - x_3) / ((x_2 - x_1) * (x_2 - x_3));
+                double f_3 = (xx_i - x_1) * (xx_i - x_2) / ((x_3 - x_1) * (x_3 - x_2));
+
+                yy(i) = f_1 * y(p-1) + f_2 * y(p) + f_3 * y(p+1);
+            }
+        }
+    }
+
+    if (bound) {
+        for (int i = 0; i < nxx; ++i) {
+            if (xx(i) < x(0))      yy(i) = y(0);
+            if (xx(i) > x(nx - 1)) yy(i) = y(nx - 1);
+        }
+    }
+
+    return yy;
+}
+
+
+//-----------------------------------------------------------------------
+/// Interpolate a spectrum to the high_resolution_interpolated_grid()
+/// sampling. 
+//-----------------------------------------------------------------------
+Spectrum ForwardModelSpectralGrid::interpolate_spectrum_quad
+(const Spectrum& Spec_in, int Spec_index) const
+{
+  range_check(Spec_index, 0, number_spectrometer());
+  if(!spectrum_sampling->need_interpolation(Spec_index))
+    return Spec_in;
+
+  Range ra(Range::all());
+
+  SpectralDomain hgrid_inter = high_resolution_interpolated_grid(Spec_index);
+  ArrayAd<double, 1> res(hgrid_inter.data().rows(),
+             Spec_in.spectral_range().data_ad().number_variable());
+  Array<double, 1> spec_in_dom = Spec_in.spectral_domain().data();
+  Array<double, 1> ispec_dom = 
+    hgrid_inter.convert_wave(Spec_in.spectral_domain().units());
+
+  res.value()(ra) = interpolate_quadratic(spec_in_dom, Spec_in.spectral_range().data(), ispec_dom, true);
+
+  if(res.number_variable() > 0) {
+    std::vector<Array<double, 1> > yvec;
+    for(int i = 0; i< spec_in_dom.rows(); ++i)
+      yvec.push_back(Spec_in.spectral_range().data_ad().jacobian()(i, ra));
+
+    for (int i = 0; i < Spec_in.spectral_range().data_ad().number_variable(); ++i)
+        res.jacobian()(ra, i) = interpolate_quadratic(spec_in_dom, Spec_in.spectral_range().data_ad().jacobian()(ra, i), ispec_dom, true);
+  }
+
+  return Spectrum(hgrid_inter.clone(), 
+          SpectralRange(res, Spec_in.spectral_range().units()));
+}
