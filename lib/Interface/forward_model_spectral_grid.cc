@@ -67,6 +67,21 @@ using namespace blitz;
 Spectrum ForwardModelSpectralGrid::interpolate_spectrum
 (const Spectrum& Spec_in, int Spec_index) const
 { 
+  if (nus_sampling_method == 0)
+    return interpolate_spectrum_linear(Spec_in, Spec_index);
+  else if (nus_sampling_method == 1)
+    return interpolate_spectrum_quadratic(Spec_in, Spec_index);
+  else
+    throw Exception("Invalid interpolation method.");
+}
+
+//-----------------------------------------------------------------------
+/// Interpolate a spectrum to the high_resolution_interpolated_grid()
+/// sampling. 
+//-----------------------------------------------------------------------
+Spectrum ForwardModelSpectralGrid::interpolate_spectrum_linear
+(const Spectrum& Spec_in, int Spec_index) const
+{ 
   range_check(Spec_index, 0, number_spectrometer());
   if(!spectrum_sampling->need_interpolation(Spec_index))
     return Spec_in;
@@ -162,7 +177,7 @@ Array<double, 1> interpolate_quadratic(const Array<double, 1>& x, const Array<do
 /// Interpolate a spectrum to the high_resolution_interpolated_grid()
 /// sampling. 
 //-----------------------------------------------------------------------
-Spectrum ForwardModelSpectralGrid::interpolate_spectrum_quad
+Spectrum ForwardModelSpectralGrid::interpolate_spectrum_quadratic
 (const Spectrum& Spec_in, int Spec_index) const
 {
   range_check(Spec_index, 0, number_spectrometer());

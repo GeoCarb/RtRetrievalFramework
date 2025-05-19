@@ -13,7 +13,8 @@ REGISTER_LUA_DERIVED_CLASS(OcoForwardModel, ForwardModel)
        const boost::shared_ptr<RadiativeTransfer>&,
        const boost::shared_ptr<SpectrumSampling>&,
        const boost::shared_ptr<StateVector>&,
-       const std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >& >())
+       const std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >&,
+       int>())
 REGISTER_LUA_END()
 #endif
 
@@ -28,9 +29,11 @@ OcoForwardModel::OcoForwardModel(
       const boost::shared_ptr<RadiativeTransfer>& Rt,
       const boost::shared_ptr<SpectrumSampling>& Spectrum_sampling,
       const boost::shared_ptr<StateVector>& Sv,
-      const std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >& Spectrum_effect)
-: spec_effect(Spectrum_effect), inst(Inst), swin(Spectral_window), 
-  l1b(Level1b), rt(Rt), spectrum_sampling_(Spectrum_sampling), statev(Sv)
+      const std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >& Spectrum_effect,
+      int Nus_sampling_method)
+: inst(Inst), swin(Spectral_window), l1b(Level1b), rt(Rt),
+  spectrum_sampling_(Spectrum_sampling), statev(Sv), spec_effect(Spectrum_effect),
+  nus_sampling_method(Nus_sampling_method)
 {
   if(spec_effect.size() == 0)
     spec_effect.resize(number_spectrometer());
@@ -65,20 +68,7 @@ Spectrum OcoForwardModel::apply_spectrum_corrections(const Spectrum& highres_spe
   if(!g)
     throw Exception ("setup_grid needs to be called before calling apply_spectrum_corrections");
 
-//#define OLD_OS
-#define OLD_OS_QUAD
-//#define NEW_OS
-
-#if defined(OLD_OS)
-  Spectrum highres_spec_intepolated =
-    g->interpolate_spectrum(highres_spec, Spec_index);
-#elif defined(OLD_OS_QUAD)
-  Spectrum highres_spec_intepolated =
-    g->interpolate_spectrum_quad(highres_spec, Spec_index);
-#else
-
-#endif
-
+  Spectrum highres_spec_intepolated = g->interpolate_spectrum(highres_spec, Spec_index);
   notify_spectrum_update(highres_spec_intepolated, "high_res_interpolated", Spec_index);
 
   BOOST_FOREACH(const boost::shared_ptr<SpectrumEffect>& i, spec_effect[Spec_index]) {

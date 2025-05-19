@@ -31,8 +31,10 @@ public:
   ForwardModelSpectralGrid(
    const boost::shared_ptr<Instrument>& Inst,
    const boost::shared_ptr<SpectralWindow>& Spectral_window,
-   const boost::shared_ptr<SpectrumSampling>& Spectrum_sampling) 
-      : inst(Inst), spectral_window(Spectral_window), spectrum_sampling(Spectrum_sampling) {};
+   const boost::shared_ptr<SpectrumSampling>& Spectrum_sampling,
+   int Sampling_method = 0) 
+      : inst(Inst), spectral_window(Spectral_window), spectrum_sampling(Spectrum_sampling),
+        nus_sampling_method(Sampling_method) {};
 
   ForwardModelSpectralGrid() {}
   virtual ~ForwardModelSpectralGrid() {}
@@ -63,7 +65,8 @@ public:
   const SpectralDomain high_resolution_interpolated_grid(int Spec_index) const;
 
   Spectrum interpolate_spectrum(const Spectrum& Spec_in, int Spec_index) const;
-  Spectrum interpolate_spectrum_quad(const Spectrum& Spec_in, int Spec_index) const;
+  Spectrum interpolate_spectrum_linear(const Spectrum& Spec_in, int Spec_index) const;
+  Spectrum interpolate_spectrum_quadratic(const Spectrum& Spec_in, int Spec_index) const;
 
   //-----------------------------------------------------------------------
   /// Pixel indexes to use for low resolution grid.
@@ -74,6 +77,7 @@ private:
   boost::shared_ptr<Instrument> inst;
   boost::shared_ptr<SpectralWindow> spectral_window;
   boost::shared_ptr<SpectrumSampling> spectrum_sampling;
+  int nus_sampling_method;
 };
 }
 #endif

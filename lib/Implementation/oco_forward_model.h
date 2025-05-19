@@ -30,11 +30,12 @@ public:
    const boost::shared_ptr<SpectrumSampling>& Spectrum_sampling,
    const boost::shared_ptr<StateVector>& Sv,
    const std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >& Spectrum_effect = 
-                  std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >());
+                  std::vector<std::vector<boost::shared_ptr<SpectrumEffect> > >(),
+   int Nus_sampling_method = 0);
   virtual ~OcoForwardModel() {}
   virtual void setup_grid()
   {
-    g.reset(new ForwardModelSpectralGrid(inst, swin, spectrum_sampling_));
+    g.reset(new ForwardModelSpectralGrid(inst, swin, spectrum_sampling_, nus_sampling_method));
   }
   virtual boost::shared_ptr<StateVector> state_vector() const { return statev; }
   virtual int number_spectrometer() const {return swin->number_spectrometer();}
@@ -100,6 +101,7 @@ private:
   boost::shared_ptr<SpectrumSampling> spectrum_sampling_;
   boost::shared_ptr<StateVector> statev;
   boost::shared_ptr<ForwardModelSpectralGrid> g;
+  int nus_sampling_method;
 };
 }
 #endif

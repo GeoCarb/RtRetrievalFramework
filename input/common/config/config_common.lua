@@ -3900,11 +3900,18 @@ function ConfigCommon.oco_forward_model:sub_initial_guess_key()
 end
 
 function ConfigCommon.oco_forward_model:create_parent_object(sub_object)
+   if(self.spec_samp.nus_sampling_method == nil) then
+       nus_sampling_method = 0
+   else
+       nus_sampling_method = self.spec_samp.nus_sampling_method
+   end
+
    return OcoForwardModel(self.config.instrument,
                           self.config.spec_win, self.config.l1b, 
                           self.config.rt, self.config.spec_samp, 
                           self.config.state_vector,
-                          self.config.spectrum_effect)
+                          self.config.spectrum_effect,
+                          nus_sampling_method)
 end
 
 function ConfigCommon.oco_forward_model:register_output(ro)

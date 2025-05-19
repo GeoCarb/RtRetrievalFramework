@@ -84,17 +84,7 @@ void FluorescenceEffect::apply_effect(Spectrum& Spec,
     
     // Interpolate to obtain contribution we should add to rt radiances which have been interpolated and solar
     // doppler shifted
-
-//#define OLD_OS
-#define OLD_OS_QUAD
-//#define NEW_OS
-
-#if defined(OLD_OS)
-    Spectrum fluor_effect_interpolated = Forward_model_grid.interpolate_spectrum      (f_contrib_spectrum, spec_index);
-#elif defined(OLD_OS_QUAD)
-    Spectrum fluor_effect_interpolated = Forward_model_grid.interpolate_spectrum_quad(f_contrib_spectrum, spec_index);
-#else
-#endif
+    Spectrum fluor_effect_interpolated = Forward_model_grid.interpolate_spectrum(f_contrib_spectrum, spec_index);
 
     // Save interpolated fluoresence contribution for use in output products
     f_contrib_ad.reference(fluor_effect_interpolated.spectral_range().data_ad());
